@@ -33,16 +33,16 @@ if (isset($_POST['login'])) {
             $_SESSION['logged_in'] = true;
 
             // Redirect ke beranda
-            header("Location: ../beranda.php");
+            header("Location: ../front/beranda-user.php");
             exit();
         } else {
             // Password salah
-            header("Location: ../index.php?error=invalid");
+            header("Location: ../../index.php?error=invalid");
             exit();
         }
     } else {
         // Username tidak ditemukan
-        header("Location: ../index.php?error=invalid");
+        header("Location: ../../index.php?error=invalid");
         exit();
     }
     
