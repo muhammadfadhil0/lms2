@@ -14,6 +14,7 @@ if (isset($_POST['register'])) {
     $password = $_POST['password'];
     $confirm_password = $_POST['confirm_password'];
     
+
     // Validate empty fields
     if (empty($email) || empty($username) || empty($password) || empty($confirm_password)) {
         header("Location: ../../src/front/register.php?error=empty");

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Masuk - Point</title>
     <?php require 'assets/head.php'; ?>
 </head>
 
@@ -14,9 +14,9 @@
 <body>
     <div class="flex min-h-full flex-col justify-center px-6 py-12 lg:px-8">
         <div class="sm:mx-auto sm:w-full  sm:max-w-sm">
-            <img src="assets/img/logo.png" alt="Your Company" class="mx-auto h-20 w-auto text-left md:text-center" />
-            <h2 class="mt-10 text-left md:text-center text-2xl font-bold tracking-tight text-black">Halo, Selamat Datang di Point</h2>
-            <p class="mt-1 text-left md:text-center text-sm text-gray-600">Cari sumber belajarmu di sini, login untuk melanjutkan</p>
+            <img src="assets/img/logo.png" alt="Your Company" class="mx-auto h-20 w-auto text-center" />
+            <h2 class="mt-10 text-center text-2xl font-bold tracking-tight text-black">Halo, Selamat Datang <span class="hidden md:block">di Point</span></h2>
+            <p class="mt-1 text-center text-sm text-gray-600">Cari sumber belajarmu di sini, login untuk melanjutkan</p>
         </div>
 
         <div class="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
