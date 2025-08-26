@@ -16,20 +16,20 @@
     <nav class="flex-1 p-4">
         <ul class="space-y-2">
             <li>
-                <a href="#" class="flex items-center space-x-3 p-3 rounded-lg bg-blue-50 text-blue-600 font-medium group">
-                    <i class="ti ti-home text-xl flex-shrink-0"></i>
+                <a href="#" class="buttonSidebar flex items-center space-x-3 p-3 rounded-lg bg-blue-50 text-blue-600 font-medium group">
+                    <i class="ti ti-home iconSidebar text-xl flex-shrink-0"></i>
                     <span class="nav-text transition-all duration-300 ease-in-out overflow-hidden whitespace-nowrap">Beranda</span>
                 </a>
             </li>
             <li>
-                <a href="#" class="flex items-center space-x-3 p-3 rounded-lg text-gray-600 hover:bg-gray-50 hover:text-gray-800 transition-colors group">
-                    <i class="ti ti-clipboard-check text-xl flex-shrink-0"></i>
+                <a href="#" class="buttonSidebar flex items-center space-x-3 p-3 rounded-lg text-gray-600 hover:bg-gray-50 hover:text-gray-800 transition-colors group">
+                    <i class="ti ti-clipboard-check iconSidebar text-xl flex-shrink-0"></i>
                     <span class="nav-text transition-all duration-300 ease-in-out overflow-hidden whitespace-nowrap">Ujian</span>
                 </a>
             </li>
             <li>
-                <a href="#" class="flex items-center space-x-3 p-3 rounded-lg text-gray-600 hover:bg-gray-50 hover:text-gray-800 transition-colors group">
-                    <i class="ti ti-robot text-xl flex-shrink-0"></i>
+                <a href="#" class="buttonSidebar flex items-center space-x-3 p-3 rounded-lg text-gray-600 hover:bg-gray-50 hover:text-gray-800 transition-colors group">
+                    <i class="ti ti-robot iconSidebar text-xl flex-shrink-0"></i>
                     <span class="nav-text transition-all duration-300 ease-in-out overflow-hidden whitespace-nowrap">AI</span>
                 </a>
             </li>

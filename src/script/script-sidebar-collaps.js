@@ -1,4 +1,4 @@
-    let sidebarCollapsed = false;
+let sidebarCollapsed = false;
 
     function toggleSidebar() {
         const sidebar = document.getElementById('sidebar');
@@ -7,6 +7,8 @@
         const toggleIcon = document.getElementById('toggleIcon');
         const navTexts = document.querySelectorAll('.nav-text');
         const mainContent = document.querySelector('[data-main-content]');
+        const icons = document.querySelectorAll('.iconSidebar');
+        const btns = document.querySelectorAll('.buttonSidebar');
 
         sidebarCollapsed = !sidebarCollapsed;
 
@@ -26,6 +28,16 @@
             toggleIcon.classList.remove('ti-menu-2');
             toggleIcon.classList.add('ti-menu');
 
+            // remove margin icon
+            icons.forEach(icon => {
+                icon.classList.add('m-0');
+            });
+
+            // add justify to button
+            btns.forEach(btn => {
+                btn.classList.add('justify-center');
+            });
+
             // Adjust main content margin
             if (mainContent) {
                 mainContent.classList.remove('md:ml-64');
@@ -35,6 +47,16 @@
             // Expand sidebar
             sidebar.classList.remove('w-16');
             sidebar.classList.add('w-64');
+
+            // remove justify in button
+            btns.forEach(btn => {
+                btn.classList.remove('justify-center');
+            });
+
+            // add margin
+            icons.forEach(icon => {
+                icon.classList.remove('m-0');
+            });
 
             // Show text elements with delay
             setTimeout(() => {
@@ -56,13 +78,21 @@
             }
         }
     }
-
-
     
 
     function toggleProfileDropdown() {
-        const dropdown = document.getElementById('profileDropdown');
-        dropdown.classList.toggle('hidden');
+        // If sidebar is collapsed, expand it first
+        if (sidebarCollapsed) {
+            toggleSidebar();
+            // Add a small delay before opening dropdown to allow sidebar animation to complete
+            setTimeout(() => {
+                const dropdown = document.getElementById('profileDropdown');
+                dropdown.classList.toggle('hidden');
+            }, 200);
+        } else {
+            const dropdown = document.getElementById('profileDropdown');
+            dropdown.classList.toggle('hidden');
+        }
     }
 
     // Close dropdown when clicking outside
