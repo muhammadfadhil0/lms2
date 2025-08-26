@@ -10,7 +10,7 @@
 </head>
 <body class="bg-gray-50">
     <!-- Main Content -->
-    <div class="md:ml-64 min-h-screen pb-20 md:pb-0">
+    <div data-main-content class="md:ml-64 min-h-screen pb-20 md:pb-0 transition-all duration-300 ease-in-out">
         <!-- Header -->
         <header class="bg-white p-4 md:p-6">
             <div class="flex items-center justify-between">
