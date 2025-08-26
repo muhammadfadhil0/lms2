@@ -1,15 +1,15 @@
-    <!-- Mobile Bottom Tab Bar -->
+<!-- Mobile Bottom Tab Bar -->
     <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 md:hidden z-50">
         <div class="flex justify-around py-2">
-            <a href="#" class="flex flex-col items-center p-2 text-blue-600">
+            <a href="beranda-user.php" class="flex flex-col items-center p-2 <?php echo ($currentPage == 'beranda') ? 'text-orange bg-orange-tipis' : 'text-gray-500 hover:text-gray-700'; ?>">
                 <i class="ti ti-home text-xl mb-1"></i>
                 <span class="text-xs">Beranda</span>
             </a>
-            <a href="#" class="flex flex-col items-center p-2 text-gray-500 hover:text-gray-700">
+            <a href="ujian-user.php" class="flex flex-col items-center p-2 <?php echo ($currentPage == 'ujian') ? 'text-orange bg-orange-tipis' : 'text-gray-500 hover:text-gray-700'; ?>">
                 <i class="ti ti-clipboard-check text-xl mb-1"></i>
                 <span class="text-xs">Ujian</span>
             </a>
-            <a href="#" class="flex flex-col items-center p-2 text-gray-500 hover:text-gray-700">
+            <a href="#" class="flex flex-col items-center p-2 <?php echo ($currentPage == 'ai') ? 'text-orange bg-orange-tipis' : 'text-gray-500 hover:text-gray-700'; ?>">
                 <i class="ti ti-robot text-xl mb-1"></i>
                 <span class="text-xs">AI</span>
             </a>

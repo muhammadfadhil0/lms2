@@ -1,5 +1,5 @@
 <!-- cek sekarang ada di halaman apa -->
-<?php $currentPage = 'beranda'; ?>
+<?php $currentPage = 'ujian'; ?>
 <!-- includes -->
 <?php require '../component/sidebar.php'; ?>
 <?php require '../component/menu-bar-mobile.php'; ?>
@@ -9,7 +9,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <?php require '../../assets/head.php'; ?>
-    <title>Beranda</title>
+    <title>Ujian</title>
 </head>
 <body class="bg-gray-50">
 
@@ -19,7 +19,7 @@
         <header class="bg-white p-4 md:p-6">
             <div class="flex items-center justify-between">
                 <div>
-                    <h1 class="text-xl md:text-2xl font-bold text-gray-800">Beranda</h1>
+                    <h1 class="text-xl md:text-2xl font-bold text-gray-800">Ujian</h1>
                 </div>
                 <div class="flex items-center space-x-2 md:space-x-4">
                     <button class="p-2 text-gray-400 hover:text-gray-600 transition-colors">
@@ -34,46 +34,9 @@
 
         <!-- Main Content Area -->
         <main class="p-4 md:p-6">
-            <!-- Stats Cards -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-8">
-                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6">
-                    <div class="flex items-center">
-                        <div class="p-2 md:p-3 bg-orange-tipis rounded-lg">
-                            <i class="ti ti-book text-orange-600 text-lg md:text-xl"></i>
-                        </div>
-                        <div class="ml-3 md:ml-4">
-                            <p class="text-xs md:text-sm text-gray-600">Total Kelas</p>
-                            <p class="text-xl md:text-2xl font-bold text-gray-800">12</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6">
-                    <div class="flex items-center">
-                        <div class="p-2 md:p-3 bg-orange-tipis rounded-lg">
-                            <i class="ti ti-clipboard-check text-orange-600 text-lg md:text-xl"></i>
-                        </div>
-                        <div class="ml-3 md:ml-4">
-                            <p class="text-xs md:text-sm text-gray-600">Ujian Selesai</p>
-                            <p class="text-xl md:text-2xl font-bold text-gray-800">8</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6 sm:col-span-2 md:col-span-1">
-                    <div class="flex items-center">
-                        <div class="p-2 md:p-3 bg-orange-tipis rounded-lg">
-                            <i class="ti ti-clock text-orange-600 text-lg md:text-xl"></i>
-                        </div>
-                        <div class="ml-3 md:ml-4">
-                            <p class="text-xs md:text-sm text-gray-600">Tugas Pending</p>
-                            <p class="text-xl md:text-2xl font-bold text-gray-800">4</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
             <!-- Classes Section -->
             <div class="mb-6">
-                <h2 class="text-lg md:text-xl font-bold text-gray-800 mb-4">Kelas Tersedia</h2>
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                     <!-- Class Card 1 -->
                     <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
@@ -181,6 +144,6 @@
         </main>
     </div>
 
-    <script src="../script/menu-bar-script.js"></script>
+<script src="../script/menu-bar-script.js"></script>
 </body>
 </html>

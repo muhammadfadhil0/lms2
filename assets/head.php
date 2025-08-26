@@ -12,10 +12,18 @@
 
     .bg-orange {
         background-color: rgb(255, 99, 71);
-        color: black;
+    }
+
+    .bg-orange-tipis {
+        background-color: rgba(255, 99, 71, 0.1);
+        backdrop-filter: blur(4px);
     }
 
     .text-orange {
         color: rgb(255, 99, 71);
+    }
+
+    .bg-orange-tipis.rounded-lg {
+        border-radius: 0.5rem;
     }
 </style>

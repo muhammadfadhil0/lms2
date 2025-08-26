@@ -1,4 +1,6 @@
 <?php require 'modal-logout.php'; ?>
+<?php require '../logic/active-page-sidebar.php'; ?>
+
 
 <div id="sidebar" class="fixed left-0 top-0 h-full w-64 bg-white shadow-lg border-r border-gray-200 flex flex-col hidden md:flex transition-all duration-300 ease-in-out z-40">
     <!-- Logo/Header with Toggle -->
@@ -16,19 +18,19 @@
     <nav class="flex-1 p-4">
         <ul class="space-y-2">
             <li>
-                <a href="#" class="buttonSidebar flex items-center space-x-3 p-3 rounded-lg bg-blue-50 text-blue-600 font-medium group">
+                <a href="../front/beranda-user.php" class="buttonSidebar flex items-center space-x-3 p-3 rounded-lg <?php echo isActivePage('beranda', $currentPage) ? 'bg-orange text-white' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'; ?> font-medium group transition-colors">
                     <i class="ti ti-home iconSidebar text-xl flex-shrink-0"></i>
                     <span class="nav-text transition-all duration-300 ease-in-out overflow-hidden whitespace-nowrap">Beranda</span>
                 </a>
             </li>
             <li>
-                <a href="#" class="buttonSidebar flex items-center space-x-3 p-3 rounded-lg text-gray-600 hover:bg-gray-50 hover:text-gray-800 transition-colors group">
+                <a href="../front/ujian-user.php" class="buttonSidebar flex items-center space-x-3 p-3 rounded-lg <?php echo isActivePage('ujian', $currentPage) ? 'bg-orange text-white' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'; ?> font-medium group transition-colors">
                     <i class="ti ti-clipboard-check iconSidebar text-xl flex-shrink-0"></i>
                     <span class="nav-text transition-all duration-300 ease-in-out overflow-hidden whitespace-nowrap">Ujian</span>
                 </a>
             </li>
             <li>
-                <a href="#" class="buttonSidebar flex items-center space-x-3 p-3 rounded-lg text-gray-600 hover:bg-gray-50 hover:text-gray-800 transition-colors group">
+                <a href="#" class="buttonSidebar flex items-center space-x-3 p-3 rounded-lg <?php echo isActivePage('ai', $currentPage) ? 'bg-orange text-white' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'; ?> font-medium group transition-colors">
                     <i class="ti ti-robot iconSidebar text-xl flex-shrink-0"></i>
                     <span class="nav-text transition-all duration-300 ease-in-out overflow-hidden whitespace-nowrap">AI</span>
                 </a>
