@@ -1,6 +1,6 @@
 <?php require 'modal-logout.php'; ?>
 
-<div class="fixed left-0 top-0 h-full w-64 bg-white shadow-lg border-r border-gray-200 flex flex-col">
+<div class="fixed left-0 top-0 h-full w-64 bg-white shadow-lg border-r border-gray-200 flex flex-col hidden md:flex">
     <!-- Logo/Header -->
     <div class="p-6 border-b border-gray-200">
         <h1 class="text-xl font-bold text-gray-800">LMS Dashboard</h1>
