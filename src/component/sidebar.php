@@ -30,9 +30,9 @@
                 </a>
             </li>
             <li>
-                <a href="#" class="buttonSidebar flex items-center space-x-3 p-3 rounded-lg <?php echo isActivePage('ai', $currentPage) ? 'bg-orange text-white' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'; ?> font-medium group transition-colors">
+                <a href="../front/pingo.php" class="buttonSidebar flex items-center space-x-3 p-3 rounded-lg <?php echo isActivePage('pingo', $currentPage) ? 'bg-orange text-white' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'; ?> font-medium group transition-colors">
                     <i class="ti ti-robot iconSidebar text-xl flex-shrink-0"></i>
-                    <span class="nav-text transition-all duration-300 ease-in-out overflow-hidden whitespace-nowrap">AI</span>
+                    <span class="nav-text transition-all duration-300 ease-in-out overflow-hidden whitespace-nowrap">Pingo</span>
                 </a>
             </li>
         </ul>
