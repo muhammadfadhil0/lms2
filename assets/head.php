@@ -26,4 +26,22 @@
     .bg-orange-tipis.rounded-lg {
         border-radius: 0.5rem;
     }
+
+    .tab-btn {
+        transition: all 0.2s ease;
+    }
+
+    .tab-btn.active {
+        border-color: rgb(255, 99, 71) !important;
+        color: rgb(255, 99, 71) !important;
+    }
+
+    .tab-btn:not(.active) {
+        border-color: transparent;
+        color: #6b7280;
+    }
+
+    .tab-btn:not(.active):hover {
+        color: #374151;
+    }
 </style>

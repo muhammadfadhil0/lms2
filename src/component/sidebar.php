@@ -54,11 +54,7 @@
 
             <!-- Dropdown Menu -->
             <div id="profileDropdown" class="hidden absolute bottom-full left-0 right-0 mb-2 bg-white border border-gray-200 rounded-lg shadow-lg">
-                <a href="#" class="flex items-center space-x-2 p-3 hover:bg-gray-50 transition-colors">
-                    <i class="ti ti-user text-gray-500"></i>
-                    <span class="text-sm text-gray-700">Profile</span>
-                </a>
-                <a href="#" class="flex items-center space-x-2 p-3 hover:bg-gray-50 transition-colors">
+                <a href="../front/settings.php" class="flex items-center space-x-2 p-3 hover:bg-gray-50 transition-colors">
                     <i class="ti ti-settings text-gray-500"></i>
                     <span class="text-sm text-gray-700">Settings</span>
                 </a>

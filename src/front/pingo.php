@@ -9,7 +9,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <?php require '../../assets/head.php'; ?>
-    <title>AI Chat - Pingo</title>
+    <title>Pingo</title>
 </head>
 <body class="">
 
@@ -19,7 +19,7 @@
         <header class="bg-white p-3 md:p-6 flex-shrink-0">
             <div class="flex items-center justify-between">
                 <div>
-                    <h1 class="text-lg md:text-2xl font-bold text-gray-800">AI Assistant</h1>
+                    <h1 class="text-lg md:text-2xl font-bold text-gray-800">Pingo</h1>
                     <p class="text-xs md:text-sm text-gray-600">Tanya apapun tentang pembelajaran</p>
                 </div>
                 <div class="flex items-center space-x-1 md:space-x-4">
