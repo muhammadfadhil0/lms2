@@ -103,9 +103,9 @@
                                     2 jam/minggu
                                 </span>
                             </div>
-                            <button class="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors text-sm md:font-medium">
+                            <a href="kelas-user.php" class="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors text-sm md:font-medium inline-block text-center">
                                 Ikuti Kelas
-                            </button>
+                            </a>
                         </div>
                     </div>
 

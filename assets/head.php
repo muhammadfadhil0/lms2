@@ -44,4 +44,16 @@
     .tab-btn:not(.active):hover {
         color: #374151;
     }
+
+    .bg-orange-600 {
+        background-color: rgb(234, 88, 63);
+    }
+
+    .border-orange-200 {
+        border-color: rgba(255, 99, 71, 0.2);
+    }
+
+    .ring-orange-500 {
+        --tw-ring-color: rgb(255, 99, 71);
+    }
 </style>
