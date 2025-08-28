@@ -69,15 +69,23 @@ class PostinganLogic {
                 $sql = "DELETE FROM like_postingan WHERE postingan_id = ? AND user_id = ?";
                 $stmt = $this->conn->prepare($sql);
                 $stmt->bind_param("ii", $postingan_id, $user_id);
-                $stmt->execute();
-                return ['success' => true, 'action' => 'unlike'];
+                
+                if ($stmt->execute()) {
+                    return ['success' => true, 'action' => 'unliked', 'message' => 'Unlike berhasil'];
+                } else {
+                    return ['success' => false, 'message' => 'Gagal menghapus like'];
+                }
             } else {
                 // Like
                 $sql = "INSERT INTO like_postingan (postingan_id, user_id) VALUES (?, ?)";
                 $stmt = $this->conn->prepare($sql);
                 $stmt->bind_param("ii", $postingan_id, $user_id);
-                $stmt->execute();
-                return ['success' => true, 'action' => 'like'];
+                
+                if ($stmt->execute()) {
+                    return ['success' => true, 'action' => 'liked', 'message' => 'Like berhasil'];
+                } else {
+                    return ['success' => false, 'message' => 'Gagal menambah like'];
+                }
             }
         } catch (Exception $e) {
             return ['success' => false, 'message' => 'Error: ' . $e->getMessage()];
@@ -149,6 +157,24 @@ class PostinganLogic {
             }
         } catch (Exception $e) {
             return ['success' => false, 'message' => 'Error: ' . $e->getMessage()];
+        }
+    }
+    
+    // Mendapatkan postingan berdasarkan ID
+    public function getPostinganById($postingan_id) {
+        try {
+            $sql = "SELECT p.*, u.namaLengkap as namaPenulis, u.role as rolePenulis
+                    FROM postingan_kelas p
+                    JOIN users u ON p.user_id = u.id
+                    WHERE p.id = ?";
+            
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bind_param("i", $postingan_id);
+            $stmt->execute();
+            
+            return $stmt->get_result()->fetch_assoc();
+        } catch (Exception $e) {
+            return null;
         }
     }
     

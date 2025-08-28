@@ -1,7 +1,7 @@
 <!-- cek sekarang ada di halaman apa -->
-<?php 
+<?php
 session_start();
-$currentPage = 'kelas'; 
+$currentPage = 'kelas';
 
 // Check if user is logged in and is a siswa
 if (!isset($_SESSION['user']) || $_SESSION['user']['role'] != 'siswa') {
@@ -11,6 +11,7 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['role'] != 'siswa') {
 
 // Include logic files
 require_once '../logic/kelas-logic.php';
+require_once '../logic/postingan-logic.php';
 
 // Check if kelas ID is provided
 if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
@@ -49,18 +50,25 @@ if (!$isEnrolled) {
 // Get class students
 $siswaKelas = $kelasLogic->getSiswaKelas($kelas_id);
 $jumlahSiswa = count($siswaKelas);
+
+// Get class posts
+$postinganLogic = new PostinganLogic();
+$statistikPostingan = $postinganLogic->getStatistikPostingan($kelas_id);
 ?>
 <!-- includes -->
 <?php require '../component/sidebar.php'; ?>
 <?php require '../component/menu-bar-mobile.php'; ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <?php require '../../assets/head.php'; ?>
+    <link rel="stylesheet" href="../css/kelas-posting.css">
     <title><?php echo htmlspecialchars($detailKelas['namaKelas']); ?> - Kelas</title>
 </head>
+
 <body class="bg-gray-50">
     <!-- Main Content -->
     <div class="md:ml-64 min-h-screen transition-all duration-300 ease-in-out" data-main-content>
@@ -75,13 +83,13 @@ $jumlahSiswa = count($siswaKelas);
                 <span class="text-gray-600"><?php echo htmlspecialchars($detailKelas['namaKelas']); ?></span>
             </div>
         </div>
-        
+
         <!-- Jumbotron -->
         <div class="relative h-60 lg:h-80 bg-gradient-to-r from-orange-500 to-orange-600 overflow-hidden">
             <?php if (!empty($detailKelas['gambarKover'])): ?>
-                <img src="<?php echo htmlspecialchars($detailKelas['gambarKover']); ?>" 
-                     alt="<?php echo htmlspecialchars($detailKelas['namaKelas']); ?>" 
-                     class="w-full h-full object-cover">
+                <img src="<?php echo htmlspecialchars($detailKelas['gambarKover']); ?>"
+                    alt="<?php echo htmlspecialchars($detailKelas['namaKelas']); ?>"
+                    class="w-full h-full object-cover">
                 <div class="absolute inset-0 bg-black bg-opacity-40"></div>
             <?php else: ?>
                 <div class="w-full h-full bg-gradient-to-r from-orange-500 to-orange-600 flex items-center justify-center">
@@ -109,155 +117,46 @@ $jumlahSiswa = count($siswaKelas);
                 <div class="flex-1 lg:w-2/3">
                     <!-- Create Post -->
                     <div class="bg-white rounded-lg p-4 lg:p-6 shadow-sm mb-6">
-                        <div class="flex items-start space-x-3 lg:space-x-4">
-                            <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=150&q=80" 
-                                 alt="Your Avatar" class="w-8 h-8 lg:w-10 lg:h-10 rounded-full">
-                            <div class="flex-1">
-                                <textarea placeholder="Bagikan sesuatu dengan kelas..." 
-                                          class="w-full p-3 rounded-lg resize-none focus:ring-2 focus:ring-orange-500 focus:outline-none bg-gray-50" 
-                                          rows="3"></textarea>
-                                <div class="flex items-center justify-between mt-4">
-                                    <div class="flex space-x-2 lg:space-x-4">
-                                        <button class="flex items-center text-gray-600 hover:text-orange transition-colors text-sm lg:text-base">
-                                            <i class="ti ti-photo mr-1 lg:mr-2"></i>
-                                            <span class="hidden sm:inline">Foto</span>
-                                        </button>
-                                        <button class="flex items-center text-gray-600 hover:text-orange transition-colors text-sm lg:text-base">
-                                            <i class="ti ti-file mr-1 lg:mr-2"></i>
-                                            <span class="hidden sm:inline">File</span>
-                                        </button>
-                                        <button class="flex items-center text-gray-600 hover:text-orange transition-colors text-sm lg:text-base">
-                                            <i class="ti ti-link mr-1 lg:mr-2"></i>
-                                            <span class="hidden sm:inline">Link</span>
+                        <form id="postForm">
+                            <div class="flex items-start space-x-3 lg:space-x-4">
+                                <div class="w-8 h-8 lg:w-10 lg:h-10 rounded-full bg-orange-500 flex items-center justify-center">
+                                    <i class="ti ti-user text-white"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <textarea id="postTextarea" name="konten" placeholder="Bagikan sesuatu dengan kelas..."
+                                        class="w-full p-3 rounded-lg resize-none focus:ring-2 focus:ring-orange-500 focus:outline-none bg-gray-50"
+                                        rows="3" required></textarea>
+                                    <div class="flex items-center justify-between mt-4">
+                                        <div class="flex space-x-2 lg:space-x-4">
+                                            <button type="button" class="flex items-center text-gray-600 hover:text-orange transition-colors text-sm lg:text-base">
+                                                <i class="ti ti-photo mr-1 lg:mr-2"></i>
+                                                <span class="hidden sm:inline">Foto</span>
+                                            </button>
+                                            <button type="button" class="flex items-center text-gray-600 hover:text-orange transition-colors text-sm lg:text-base">
+                                                <i class="ti ti-file mr-1 lg:mr-2"></i>
+                                                <span class="hidden sm:inline">File</span>
+                                            </button>
+                                            <button type="button" class="flex items-center text-gray-600 hover:text-orange transition-colors text-sm lg:text-base">
+                                                <i class="ti ti-link mr-1 lg:mr-2"></i>
+                                                <span class="hidden sm:inline">Link</span>
+                                            </button>
+                                        </div>
+                                        <button type="submit" class="bg-orange text-white px-4 lg:px-6 py-2 rounded-lg hover:bg-orange-600 transition-colors text-sm lg:text-base">
+                                            Posting
                                         </button>
                                     </div>
-                                    <button class="bg-orange text-white px-4 lg:px-6 py-2 rounded-lg hover:bg-orange-600 transition-colors text-sm lg:text-base">
-                                        Posting
-                                    </button>
                                 </div>
                             </div>
-                        </div>
+                        </form>
                     </div>
 
                     <!-- Posts Feed -->
-                    <div class="space-y-6">
-                        <!-- Post 1 -->
-                        <div class="bg-white rounded-lg shadow-sm">
-                            <div class="p-4 lg:p-6">
-                                <div class="flex items-start space-x-3 lg:space-x-4 mb-4">
-                                    <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=150&q=80" 
-                                         alt="Instructor" class="w-10 h-10 lg:w-12 lg:h-12 rounded-full">
-                                    <div class="flex-1">
-                                        <h3 class="font-semibold text-gray-900 text-sm lg:text-base">Dr. Ahmad Fulan, M.Kom</h3>
-                                        <p class="text-xs lg:text-sm text-gray-600">Dosen • 2 jam yang lalu</p>
-                                    </div>
-                                    <button class="text-gray-400 hover:text-gray-600">
-                                        <i class="ti ti-dots"></i>
-                                    </button>
-                                </div>
-                                <div class="mb-4">
-                                    <p class="text-gray-800 mb-3 text-sm lg:text-base">Selamat pagi semua! Reminder untuk tugas UTS yang deadline-nya besok ya. Jangan lupa upload di sistem pembelajaran online.</p>
-                                    <div class="bg-orange-tipis rounded-lg p-3 lg:p-4">
-                                        <div class="flex items-center">
-                                            <i class="ti ti-file-text text-orange mr-3 text-lg lg:text-xl"></i>
-                                            <div>
-                                                <h4 class="font-medium text-gray-900 text-sm lg:text-base">Tugas UTS - Pemrograman Web</h4>
-                                                <p class="text-xs lg:text-sm text-gray-600">Deadline: 23 November 2024, 23:59</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="flex items-center justify-between pt-4 border-t border-gray-100">
-                                    <div class="flex items-center space-x-4 lg:space-x-6">
-                                        <button class="flex items-center text-gray-600 hover:text-orange transition-colors text-sm lg:text-base">
-                                            <i class="ti ti-heart mr-1 lg:mr-2"></i>
-                                            <span>12</span>
-                                        </button>
-                                        <button class="flex items-center text-gray-600 hover:text-orange transition-colors text-sm lg:text-base">
-                                            <i class="ti ti-message-circle mr-1 lg:mr-2"></i>
-                                            <span>5</span>
-                                        </button>
-                                        <button class="flex items-center text-gray-600 hover:text-orange transition-colors text-sm lg:text-base">
-                                            <i class="ti ti-share mr-1 lg:mr-2"></i>
-                                            <span class="hidden sm:inline">Bagikan</span>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Post 2 -->
-                        <div class="bg-white rounded-lg shadow-sm">
-                            <div class="p-4 lg:p-6">
-                                <div class="flex items-start space-x-3 lg:space-x-4 mb-4">
-                                    <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=150&q=80" 
-                                         alt="Student" class="w-10 h-10 lg:w-12 lg:h-12 rounded-full">
-                                    <div class="flex-1">
-                                        <h3 class="font-semibold text-gray-900 text-sm lg:text-base">Budi Santoso</h3>
-                                        <p class="text-xs lg:text-sm text-gray-600">Mahasiswa • 5 jam yang lalu</p>
-                                    </div>
-                                    <button class="text-gray-400 hover:text-gray-600">
-                                        <i class="ti ti-dots"></i>
-                                    </button>
-                                </div>
-                                <div class="mb-4">
-                                    <p class="text-gray-800 mb-3 text-sm lg:text-base">Ada yang bisa bantu untuk soal nomor 3 di latihan kemarin? Masih bingung dengan konsep OOP-nya 🤔</p>
-                                </div>
-                                <div class="flex items-center justify-between pt-4 border-t border-gray-100">
-                                    <div class="flex items-center space-x-4 lg:space-x-6">
-                                        <button class="flex items-center text-gray-600 hover:text-orange transition-colors text-sm lg:text-base">
-                                            <i class="ti ti-heart mr-1 lg:mr-2"></i>
-                                            <span>3</span>
-                                        </button>
-                                        <button class="flex items-center text-gray-600 hover:text-orange transition-colors text-sm lg:text-base">
-                                            <i class="ti ti-message-circle mr-1 lg:mr-2"></i>
-                                            <span>8</span>
-                                        </button>
-                                        <button class="flex items-center text-gray-600 hover:text-orange transition-colors text-sm lg:text-base">
-                                            <i class="ti ti-share mr-1 lg:mr-2"></i>
-                                            <span class="hidden sm:inline">Bagikan</span>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Post 3 -->
-                        <div class="bg-white rounded-lg shadow-sm">
-                            <div class="p-4 lg:p-6">
-                                <div class="flex items-start space-x-3 lg:space-x-4 mb-4">
-                                    <img src="https://images.unsplash.com/photo-1494790108755-2616b612b5e5?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=150&q=80" 
-                                         alt="Student" class="w-10 h-10 lg:w-12 lg:h-12 rounded-full">
-                                    <div class="flex-1">
-                                        <h3 class="font-semibold text-gray-900 text-sm lg:text-base">Sari Indah</h3>
-                                        <p class="text-xs lg:text-sm text-gray-600">Mahasiswa • 1 hari yang lalu</p>
-                                    </div>
-                                    <button class="text-gray-400 hover:text-gray-600">
-                                        <i class="ti ti-dots"></i>
-                                    </button>
-                                </div>
-                                <div class="mb-4">
-                                    <p class="text-gray-800 mb-3 text-sm lg:text-base">Sharing project website yang sudah jadi! Terima kasih buat pak dosen dan teman-teman yang sudah membantu 🙏</p>
-                                    <img src="https://images.unsplash.com/photo-1461749280684-dccba630e2f6?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80" 
-                                         alt="Project Screenshot" class="w-full rounded-lg">
-                                </div>
-                                <div class="flex items-center justify-between pt-4 border-t border-gray-100">
-                                    <div class="flex items-center space-x-4 lg:space-x-6">
-                                        <button class="flex items-center text-gray-600 hover:text-orange transition-colors text-sm lg:text-base">
-                                            <i class="ti ti-heart mr-1 lg:mr-2"></i>
-                                            <span>15</span>
-                                        </button>
-                                        <button class="flex items-center text-gray-600 hover:text-orange transition-colors text-sm lg:text-base">
-                                            <i class="ti ti-message-circle mr-1 lg:mr-2"></i>
-                                            <span>7</span>
-                                        </button>
-                                        <button class="flex items-center text-gray-600 hover:text-orange transition-colors text-sm lg:text-base">
-                                            <i class="ti ti-share mr-1 lg:mr-2"></i>
-                                            <span class="hidden sm:inline">Bagikan</span>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
+                    <div id="postsContainer" class="space-y-6">
+                        <!-- Initial loading state -->
+                        <div class="text-center py-12 text-gray-500">
+                            <i class="ti ti-loader animate-spin text-4xl mb-4"></i>
+                            <p class="text-lg font-medium">Memuat postingan...</p>
+                            <p class="text-sm text-gray-400 mt-1">Mohon tunggu sebentar</p>
                         </div>
                     </div>
                 </div>
@@ -265,7 +164,6 @@ $jumlahSiswa = count($siswaKelas);
                 <!-- Right Column - Class Details -->
                 <div class="lg:w-1/3">
                     <div class="sticky top-6">
-                        <!-- Class Stats -->
                         <div class="bg-white rounded-lg p-4 lg:p-6 shadow-sm mb-6">
                             <h3 class="text-lg font-semibold text-gray-900 mb-4">Detail Kelas</h3>
                             <div class="space-y-4">
@@ -280,24 +178,17 @@ $jumlahSiswa = count($siswaKelas);
                                 </div>
                                 <div class="flex items-center">
                                     <div class="w-10 h-10 bg-orange-tipis rounded-lg flex items-center justify-center mr-3">
-                                        <i class="ti ti-book text-orange"></i>
+                                        <i class="ti ti-message-circle text-orange"></i>
                                     </div>
                                     <div>
-                                        <p class="text-xl font-bold text-gray-900"><?php echo htmlspecialchars($detailKelas['mataPelajaran']); ?></p>
-                                        <p class="text-sm text-gray-600">Mata Pelajaran</p>
-                                    </div>
-                                </div>
-                                <div class="flex items-center">
-                                    <div class="w-10 h-10 bg-orange-tipis rounded-lg flex items-center justify-center mr-3">
-                                        <i class="ti ti-key text-orange"></i>
-                                    </div>
-                                    <div>
-                                        <p class="text-xl font-bold text-gray-900"><?php echo htmlspecialchars($detailKelas['kodeKelas']); ?></p>
-                                        <p class="text-sm text-gray-600">Kode Kelas</p>
+                                        <p class="text-xl font-bold text-gray-900"><?php echo $statistikPostingan['totalPostingan'] ?? 0; ?></p>
+                                        <p class="text-sm text-gray-600">Postingan</p>
                                     </div>
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Class Stats -->
 
                         <!-- Recent Assignments -->
                         <div class="bg-white rounded-lg p-4 lg:p-6 shadow-sm mb-6">
@@ -346,6 +237,18 @@ $jumlahSiswa = count($siswaKelas);
         </div>
     </div>
 
+    <!-- Include Modal Components -->
+    <?php require '../component/modal-delete-post.php'; ?>
+
     <script src="../script/menu-bar-script.js"></script>
+    <script src="../script/kelas-posting-stable.js"></script>
+    <script>
+        // Initialize posting system when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            const kelasId = <?php echo $kelas_id; ?>;
+            window.kelasPosting = new KelasPosting(kelasId);
+        });
+    </script>
 </body>
+
 </html>
