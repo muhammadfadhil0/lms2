@@ -239,6 +239,7 @@ $statistikPostingan = $postinganLogic->getStatistikPostingan($kelas_id);
 
     <!-- Include Modal Components -->
     <?php require '../component/modal-delete-post.php'; ?>
+    <?php require '../component/modal-comments.php'; ?>
 
     <script src="../script/menu-bar-script.js"></script>
     <script src="../script/kelas-posting-stable.js"></script>

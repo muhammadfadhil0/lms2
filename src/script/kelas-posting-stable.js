@@ -47,6 +47,26 @@ class KelasPosting {
                 this.toggleLike(postId);
             }
         });
+        
+        // Comment button handler
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('comment-btn') || e.target.closest('.comment-btn')) {
+                e.preventDefault();
+                const btn = e.target.closest('.comment-btn');
+                const postId = btn.getAttribute('data-post-id');
+                this.toggleQuickComment(postId);
+            }
+        });
+        
+        // View all comments button handler
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('view-all-comments') || e.target.closest('.view-all-comments')) {
+                e.preventDefault();
+                const btn = e.target.closest('.view-all-comments');
+                const postId = btn.getAttribute('data-post-id');
+                this.openCommentsModal(postId);
+            }
+        });
     }
     
     initializeDeleteModal() {
@@ -367,21 +387,52 @@ class KelasPosting {
                             <i class="ti ti-heart mr-1 lg:mr-2"></i>
                             <span class="like-count">${post.jumlahLike || 0}</span>
                         </button>
-                        <button class="flex items-center text-gray-600 hover:text-orange transition-colors text-sm lg:text-base" onclick="toggleComments(${post.id})">
+                        <button class="comment-btn flex items-center text-gray-600 hover:text-orange transition-colors text-sm lg:text-base" data-post-id="${post.id}">
                             <i class="ti ti-message-circle mr-1 lg:mr-2"></i>
-                            <span>${post.jumlahKomentar || 0}</span>
+                            <span class="comment-count">${post.jumlahKomentar || 0}</span>
                         </button>
                         <button class="flex items-center text-gray-600 hover:text-orange transition-colors text-sm lg:text-base">
                             <i class="ti ti-share mr-1 lg:mr-2"></i>
                             <span class="hidden sm:inline">Bagikan</span>
                         </button>
                     </div>
+                    <button class="view-all-comments text-orange text-sm hover:text-orange-600 transition-colors" data-post-id="${post.id}" style="display: none;">
+                        Lihat komentar lainnya
+                    </button>
+                </div>
+                <!-- Comments Preview - Always visible if there are comments -->
+                <div id="comments-preview-${post.id}" class="mt-4 pt-4 border-t border-gray-100" style="display: none;">
+                    <!-- Preview comments (max 3) will be loaded here -->
+                </div>
+                <!-- Quick Comment Input -->
+                <div id="quick-comment-${post.id}" class="hidden mt-4 pt-4 border-t border-gray-100">
+                    <form class="flex space-x-3" onsubmit="addQuickComment(event, ${post.id})">
+                        <div class="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center flex-shrink-0">
+                            <i class="ti ti-user text-white text-sm"></i>
+                        </div>
+                        <div class="flex-1">
+                            <textarea placeholder="Tulis komentar... (tekan Enter untuk mengirim)" 
+                                rows="2"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-sm"
+                                onkeydown="handleCommentKeydown(event, ${post.id})"
+                                required></textarea>
+                            <div class="flex justify-end mt-2">
+                                <button type="button" class="text-gray-500 text-sm mr-3" onclick="hideQuickComment(${post.id})">Batal</button>
+                                <button type="submit" class="bg-orange-600 text-white px-4 py-1.5 rounded-lg hover:bg-orange-700 text-sm">Kirim</button>
+                            </div>
+                        </div>
+                    </form>
                 </div>
                 <div id="comments-${post.id}" class="hidden mt-4 pt-4 border-t border-gray-100">
                     <!-- Comments will be loaded here -->
                 </div>
             </div>
         `;
+        
+        // Auto-load comments preview after element is created
+        setTimeout(() => {
+            this.loadCommentsPreview(post.id);
+        }, 100);
         
         return postElement;
     }
@@ -613,6 +664,216 @@ class KelasPosting {
             }, 300);
         }, 3000);
     }
+    
+    // Comment related methods
+    toggleQuickComment(postId) {
+        const quickCommentDiv = document.getElementById(`quick-comment-${postId}`);
+        
+        if (quickCommentDiv.classList.contains('hidden')) {
+            // Show quick comment input
+            quickCommentDiv.classList.remove('hidden');
+            
+            // Focus on textarea
+            const textarea = quickCommentDiv.querySelector('textarea');
+            setTimeout(() => textarea.focus(), 100);
+        } else {
+            // Hide quick comment input
+            quickCommentDiv.classList.add('hidden');
+        }
+    }
+    
+    hideQuickComment(postId) {
+        const quickCommentDiv = document.getElementById(`quick-comment-${postId}`);
+        quickCommentDiv.classList.add('hidden');
+    }
+    
+    async loadCommentsPreview(postId) {
+        try {
+            const formData = new FormData();
+            formData.append('action', 'get_comments');
+            formData.append('postingan_id', postId);
+            
+            const response = await fetch('../logic/handle-comment.php', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                this.displayCommentsPreview(postId, result.comments);
+            }
+        } catch (error) {
+            console.error('Error loading comments preview:', error);
+        }
+    }
+    
+    displayCommentsPreview(postId, comments) {
+        const previewDiv = document.getElementById(`comments-preview-${postId}`);
+        const viewAllBtn = document.querySelector(`[data-post-id="${postId}"].view-all-comments`);
+        
+        if (comments.length === 0) {
+            previewDiv.style.display = 'none';
+        } else {
+            // Show max 3 comments
+            const displayComments = comments.slice(0, 3);
+            const commentsHtml = displayComments.map(comment => this.createCommentElement(comment, true)).join('');
+            previewDiv.innerHTML = commentsHtml;
+            previewDiv.style.display = 'block';
+            
+            // Show "view all" button if there are more than 3 comments
+            if (comments.length > 3) {
+                viewAllBtn.style.display = 'block';
+                viewAllBtn.textContent = `Lihat ${comments.length - 3} komentar lainnya`;
+            } else {
+                viewAllBtn.style.display = 'none';
+            }
+        }
+        
+        previewDiv.setAttribute('data-loaded', 'true');
+    }
+    
+    createCommentElement(comment, isPreview = false) {
+        const commentDate = new Date(comment.dibuat);
+        const timeAgo = this.getTimeAgo(commentDate);
+        
+        return `
+            <div class="flex space-x-3 ${isPreview ? 'py-2' : 'py-3'}">
+                <div class="w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center flex-shrink-0">
+                    <i class="ti ti-user text-white text-xs"></i>
+                </div>
+                <div class="flex-1 ${isPreview ? 'text-sm' : ''}">
+                    <div class="bg-gray-100 rounded-lg px-3 py-2">
+                        <p class="font-medium text-gray-900 text-xs">${this.escapeHtml(comment.namaKomentator)}</p>
+                        <p class="text-gray-800 ${isPreview ? 'text-xs' : 'text-sm'}">${this.escapeHtml(comment.komentar)}</p>
+                    </div>
+                    <div class="flex items-center mt-1 space-x-2 text-xs text-gray-500">
+                        <span>${timeAgo}</span>
+                        <span>•</span>
+                        <span>${comment.role === 'guru' ? 'Guru' : 'Siswa'}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    async openCommentsModal(postId) {
+        const modal = document.getElementById('comments-modal');
+        const postIdInput = document.getElementById('modal-post-id');
+        const commentsList = document.getElementById('modal-comments-list');
+        
+        postIdInput.value = postId;
+        
+        // Show loading state
+        commentsList.innerHTML = `
+            <div class="text-center py-8 text-gray-500">
+                <i class="ti ti-loader animate-spin text-2xl mb-2"></i>
+                <p>Memuat komentar...</p>
+            </div>
+        `;
+        
+        // Open modal
+        modal.showModal();
+        
+        // Load all comments
+        await this.loadAllComments(postId);
+    }
+    
+    async loadAllComments(postId) {
+        try {
+            const formData = new FormData();
+            formData.append('action', 'get_comments');
+            formData.append('postingan_id', postId);
+            
+            const response = await fetch('../logic/handle-comment.php', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const result = await response.json();
+            const commentsList = document.getElementById('modal-comments-list');
+            
+            if (result.success) {
+                if (result.comments.length === 0) {
+                    commentsList.innerHTML = `
+                        <div class="text-center py-8 text-gray-500">
+                            <i class="ti ti-message-circle text-3xl mb-2"></i>
+                            <p>Belum ada komentar</p>
+                            <p class="text-sm mt-1">Jadilah yang pertama berkomentar!</p>
+                        </div>
+                    `;
+                } else {
+                    const commentsHtml = result.comments.map(comment => this.createCommentElement(comment, false)).join('');
+                    commentsList.innerHTML = commentsHtml;
+                }
+            } else {
+                commentsList.innerHTML = `
+                    <div class="text-center py-8 text-red-500">
+                        <i class="ti ti-alert-circle text-3xl mb-2"></i>
+                        <p>Gagal memuat komentar</p>
+                    </div>
+                `;
+            }
+        } catch (error) {
+            console.error('Error loading all comments:', error);
+            const commentsList = document.getElementById('modal-comments-list');
+            commentsList.innerHTML = `
+                <div class="text-center py-8 text-red-500">
+                    <i class="ti ti-alert-circle text-3xl mb-2"></i>
+                    <p>Terjadi kesalahan</p>
+                </div>
+            `;
+        }
+    }
+    
+    async addComment(postId, comment, isModal = false) {
+        try {
+            const formData = new FormData();
+            formData.append('action', 'add_comment');
+            formData.append('postingan_id', postId);
+            formData.append('komentar', comment);
+            
+            const response = await fetch('../logic/handle-comment.php', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                // Update comment count
+                this.updateCommentCount(postId, 1);
+                
+                if (isModal) {
+                    // Reload all comments in modal
+                    await this.loadAllComments(postId);
+                } else {
+                    // Reload preview comments
+                    const previewDiv = document.getElementById(`comments-preview-${postId}`);
+                    previewDiv.removeAttribute('data-loaded');
+                    await this.loadCommentsPreview(postId);
+                }
+                
+                this.showAlert('Komentar berhasil ditambahkan', 'success');
+                return true;
+            } else {
+                this.showAlert(result.message || 'Gagal menambahkan komentar', 'error');
+                return false;
+            }
+        } catch (error) {
+            console.error('Error adding comment:', error);
+            this.showAlert('Terjadi kesalahan saat menambahkan komentar', 'error');
+            return false;
+        }
+    }
+    
+    updateCommentCount(postId, delta) {
+        const commentBtn = document.querySelector(`[data-post-id="${postId}"].comment-btn .comment-count`);
+        if (commentBtn) {
+            const currentCount = parseInt(commentBtn.textContent) || 0;
+            commentBtn.textContent = Math.max(0, currentCount + delta);
+        }
+    }
 }
 
 // Global functions for dropdown and actions
@@ -650,3 +911,94 @@ function toggleComments(postId) {
         commentsDiv.setAttribute('data-loaded', 'true');
     }
 }
+
+// Comment related global functions
+function handleCommentKeydown(event, postId) {
+    if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
+        const form = event.target.closest('form');
+        if (form) {
+            form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+        }
+    }
+}
+
+async function addQuickComment(event, postId) {
+    event.preventDefault();
+    
+    const form = event.target;
+    const textarea = form.querySelector('textarea');
+    const comment = textarea.value.trim();
+    
+    if (!comment) {
+        return;
+    }
+    
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalText = submitBtn.textContent;
+    submitBtn.textContent = 'Mengirim...';
+    submitBtn.disabled = true;
+    
+    const success = await window.kelasPosting.addComment(postId, comment, false);
+    
+    if (success) {
+        textarea.value = '';
+    }
+    
+    submitBtn.textContent = originalText;
+    submitBtn.disabled = false;
+}
+
+function hideQuickComment(postId) {
+    if (window.kelasPosting) {
+        window.kelasPosting.hideQuickComment(postId);
+    }
+}
+
+function closeCommentsModal() {
+    const modal = document.getElementById('comments-modal');
+    modal.close();
+}
+
+// Modal comment form handler
+document.addEventListener('DOMContentLoaded', function() {
+    const modalCommentForm = document.getElementById('modal-comment-form');
+    if (modalCommentForm) {
+        modalCommentForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const postId = document.getElementById('modal-post-id').value;
+            const textarea = document.getElementById('modal-comment-input');
+            const comment = textarea.value.trim();
+            
+            if (!comment) {
+                return;
+            }
+            
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.textContent;
+            submitBtn.textContent = 'Mengirim...';
+            submitBtn.disabled = true;
+            
+            const success = await window.kelasPosting.addComment(postId, comment, true);
+            
+            if (success) {
+                textarea.value = '';
+            }
+            
+            submitBtn.textContent = originalText;
+            submitBtn.disabled = false;
+        });
+        
+        // Add Enter key support for modal textarea
+        const modalTextarea = document.getElementById('modal-comment-input');
+        if (modalTextarea) {
+            modalTextarea.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    modalCommentForm.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+                }
+            });
+        }
+    }
+});

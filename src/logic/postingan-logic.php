@@ -220,6 +220,56 @@ class PostinganLogic {
         }
     }
     
+    // Mendapatkan komentar berdasarkan ID
+    public function getKomentarById($komentar_id) {
+        try {
+            $sql = "SELECT k.*, u.namaLengkap as namaKomentator, u.role
+                    FROM komentar_postingan k
+                    JOIN users u ON k.user_id = u.id
+                    WHERE k.id = ?";
+            
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bind_param("i", $komentar_id);
+            $stmt->execute();
+            
+            return $stmt->get_result()->fetch_assoc();
+        } catch (Exception $e) {
+            return null;
+        }
+    }
+    
+    // Hapus komentar
+    public function hapusKomentar($komentar_id, $user_id) {
+        try {
+            // Cek ownership
+            $sql = "SELECT user_id FROM komentar_postingan WHERE id = ?";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bind_param("i", $komentar_id);
+            $stmt->execute();
+            $result = $stmt->get_result()->fetch_assoc();
+            
+            if (!$result) {
+                return ['success' => false, 'message' => 'Komentar tidak ditemukan'];
+            }
+            
+            if ($result['user_id'] != $user_id) {
+                return ['success' => false, 'message' => 'Anda tidak memiliki izin untuk menghapus komentar ini'];
+            }
+            
+            $sql = "DELETE FROM komentar_postingan WHERE id = ?";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bind_param("i", $komentar_id);
+            
+            if ($stmt->execute()) {
+                return ['success' => true, 'message' => 'Komentar berhasil dihapus'];
+            } else {
+                return ['success' => false, 'message' => 'Gagal menghapus komentar'];
+            }
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => 'Error: ' . $e->getMessage()];
+        }
+    }
+
     // Mendapatkan statistik postingan
     public function getStatistikPostingan($kelas_id) {
         try {
