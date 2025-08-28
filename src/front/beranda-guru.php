@@ -109,7 +109,7 @@
                                     </span>
                                 </div>
                                 <div class="flex items-center justify-between gap-2">
-                                    <a href="kelas-guru.php" class="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors text-sm md:font-medium text-center">
+                                    <a href="kelas-user.php" class="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors text-sm md:font-medium text-center">
                                         Masuk
                                     </a>
                                     <div class="relative">
@@ -246,6 +246,6 @@
         <script src="../script/menu-bar-script.js"></script>
         <script src="../script/dropdown-beranda-guru.js"></script>
 
-    <link rel="stylesheet" href="../css/dropdown-beranda-guru.css">
+    <style src></style>
     </body>
     </html>

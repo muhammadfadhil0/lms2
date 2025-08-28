@@ -1,0 +1,29 @@
+/* Quick Actions Styling */
+.quick-action-card {
+    transition: all 0.3s ease;
+}
+
+.quick-action-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.quick-action-icon {
+    transition: all 0.3s ease;
+}
+
+.quick-action-card:hover .quick-action-icon {
+    transform: scale(1.1);
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+    .quick-action-card {
+        padding: 1rem;
+    }
+    
+    .quick-action-icon {
+        width: 3rem;
+        height: 3rem;
+    }
+}

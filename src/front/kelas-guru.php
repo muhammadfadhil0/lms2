@@ -5,25 +5,27 @@
 <?php require '../component/menu-bar-mobile.php'; ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <?php require '../../assets/head.php'; ?>
     <title>Kelas - Pemrograman Web</title>
 </head>
+
 <body class="bg-gray-50">
     <!-- Main Content -->
     <div class="md:ml-64 min-h-screen transition-all duration-300 ease-in-out" data-main-content>
         <!-- Jumbotron -->
         <div class="relative h-60 lg:h-80 bg-gradient-to-r from-blue-500 to-purple-600 overflow-hidden">
-            <img src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1471&q=80" 
-                 alt="Class Cover" class="w-full h-full object-cover">
+            <img src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1471&q=80"
+                alt="Class Cover" class="w-full h-full object-cover">
             <div class="absolute inset-0 bg-black bg-opacity-40"></div>
             <div class="absolute bottom-4 lg:bottom-6 left-4 lg:left-6 text-white">
                 <h1 class="text-2xl lg:text-4xl font-bold mb-2">Pemrograman Web</h1>
                 <div class="flex items-center space-x-3 lg:space-x-4">
-                    <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=150&q=80" 
-                         alt="Instructor" class="w-10 h-10 lg:w-12 lg:h-12 rounded-full">
+                    <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=150&q=80"
+                        alt="Instructor" class="w-10 h-10 lg:w-12 lg:h-12 rounded-full">
                     <div>
                         <p class="text-base lg:text-lg font-medium">Dr. Ahmad Fulan, M.Kom</p>
                         <p class="text-xs lg:text-sm opacity-90">Dosen Pengampu</p>
@@ -40,12 +42,12 @@
                     <!-- Create Post -->
                     <div class="bg-white rounded-lg p-4 lg:p-6 shadow-sm mb-6">
                         <div class="flex items-start space-x-3 lg:space-x-4">
-                            <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=150&q=80" 
-                                 alt="Your Avatar" class="w-8 h-8 lg:w-10 lg:h-10 rounded-full">
+                            <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=150&q=80"
+                                alt="Your Avatar" class="w-8 h-8 lg:w-10 lg:h-10 rounded-full">
                             <div class="flex-1">
-                                <textarea placeholder="Bagikan sesuatu dengan kelas..." 
-                                          class="w-full p-3 rounded-lg resize-none focus:ring-2 focus:ring-orange-500 focus:outline-none bg-gray-50" 
-                                          rows="3"></textarea>
+                                <textarea placeholder="Bagikan sesuatu dengan kelas..."
+                                    class="w-full p-3 rounded-lg resize-none focus:ring-2 focus:ring-orange-500 focus:outline-none bg-gray-50"
+                                    rows="3"></textarea>
                                 <div class="flex items-center justify-between mt-4">
                                     <div class="flex space-x-2 lg:space-x-4">
                                         <button class="flex items-center text-gray-600 hover:text-orange transition-colors text-sm lg:text-base">
@@ -75,8 +77,8 @@
                         <div class="bg-white rounded-lg shadow-sm">
                             <div class="p-4 lg:p-6">
                                 <div class="flex items-start space-x-3 lg:space-x-4 mb-4">
-                                    <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=150&q=80" 
-                                         alt="Instructor" class="w-10 h-10 lg:w-12 lg:h-12 rounded-full">
+                                    <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=150&q=80"
+                                        alt="Instructor" class="w-10 h-10 lg:w-12 lg:h-12 rounded-full">
                                     <div class="flex-1">
                                         <h3 class="font-semibold text-gray-900 text-sm lg:text-base">Dr. Ahmad Fulan, M.Kom</h3>
                                         <p class="text-xs lg:text-sm text-gray-600">Dosen • 2 jam yang lalu</p>
@@ -120,8 +122,8 @@
                         <div class="bg-white rounded-lg shadow-sm">
                             <div class="p-4 lg:p-6">
                                 <div class="flex items-start space-x-3 lg:space-x-4 mb-4">
-                                    <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=150&q=80" 
-                                         alt="Student" class="w-10 h-10 lg:w-12 lg:h-12 rounded-full">
+                                    <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=150&q=80"
+                                        alt="Student" class="w-10 h-10 lg:w-12 lg:h-12 rounded-full">
                                     <div class="flex-1">
                                         <h3 class="font-semibold text-gray-900 text-sm lg:text-base">Budi Santoso</h3>
                                         <p class="text-xs lg:text-sm text-gray-600">Mahasiswa • 5 jam yang lalu</p>
@@ -156,8 +158,8 @@
                         <div class="bg-white rounded-lg shadow-sm">
                             <div class="p-4 lg:p-6">
                                 <div class="flex items-start space-x-3 lg:space-x-4 mb-4">
-                                    <img src="https://images.unsplash.com/photo-1494790108755-2616b612b5e5?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=150&q=80" 
-                                         alt="Student" class="w-10 h-10 lg:w-12 lg:h-12 rounded-full">
+                                    <img src="https://images.unsplash.com/photo-1494790108755-2616b612b5e5?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=150&q=80"
+                                        alt="Student" class="w-10 h-10 lg:w-12 lg:h-12 rounded-full">
                                     <div class="flex-1">
                                         <h3 class="font-semibold text-gray-900 text-sm lg:text-base">Sari Indah</h3>
                                         <p class="text-xs lg:text-sm text-gray-600">Mahasiswa • 1 hari yang lalu</p>
@@ -168,8 +170,8 @@
                                 </div>
                                 <div class="mb-4">
                                     <p class="text-gray-800 mb-3 text-sm lg:text-base">Sharing project website yang sudah jadi! Terima kasih buat pak dosen dan teman-teman yang sudah membantu 🙏</p>
-                                    <img src="https://images.unsplash.com/photo-1461749280684-dccba630e2f6?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80" 
-                                         alt="Project Screenshot" class="w-full rounded-lg">
+                                    <img src="https://images.unsplash.com/photo-1461749280684-dccba630e2f6?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80"
+                                        alt="Project Screenshot" class="w-full rounded-lg">
                                 </div>
                                 <div class="flex items-center justify-between pt-4 border-t border-gray-100">
                                     <div class="flex items-center space-x-4 lg:space-x-6">
@@ -195,6 +197,32 @@
                 <!-- Right Column - Class Details -->
                 <div class="lg:w-1/3">
                     <div class="sticky top-6">
+
+
+                        <!-- Quick Actions -->
+                        <div class="bg-white rounded-lg p-4 lg:p-6 shadow-sm mb-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Aksi Cepat</h3>
+                            <div class="space-y-2">
+                                <button class="w-full flex items-center p-3 text-left hover:bg-orange-50 rounded-lg transition-colors border border-transparent hover:border-orange-200">
+                                    <i class="ti ti-file-plus mr-3 text-orange"></i>
+                                    <span class="text-sm text-gray-700 font-medium">Buat Tugas</span>
+                                </button>
+                                <button class="w-full flex items-center p-3 text-left hover:bg-orange-50 rounded-lg transition-colors border border-transparent hover:border-orange-200">
+                                    <i class="ti ti-users mr-3 text-orange"></i>
+                                    <span class="text-sm text-gray-700 font-medium">Atur Siswa</span>
+                                </button>
+                                <button class="w-full flex items-center p-3 text-left hover:bg-orange-50 rounded-lg transition-colors border border-transparent hover:border-orange-200">
+                                    <i class="ti ti-calendar-plus mr-3 text-orange"></i>
+                                    <span class="text-sm text-gray-700 font-medium">Upload Jadwal Kelas</span>
+                                </button>
+                                <button class="w-full flex items-center p-3 text-left hover:bg-orange-50 rounded-lg transition-colors border border-transparent hover:border-orange-200">
+                                    <i class="ti ti-upload mr-3 text-orange"></i>
+                                    <span class="text-sm text-gray-700 font-medium">Upload Materi Pelajaran</span>
+                                </button>
+                            </div>
+                        </div>
+
+
                         <!-- Class Stats -->
                         <div class="bg-white rounded-lg p-4 lg:p-6 shadow-sm mb-6">
                             <h3 class="text-lg font-semibold text-gray-900 mb-4">Detail Kelas</h3>
@@ -228,48 +256,6 @@
                                 </div>
                             </div>
                         </div>
-
-                        <!-- Recent Assignments -->
-                        <div class="bg-white rounded-lg p-4 lg:p-6 shadow-sm mb-6">
-                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Tugas Terbaru</h3>
-                            <div class="space-y-3">
-                                <div class="p-3 bg-orange-tipis rounded-lg">
-                                    <h4 class="font-medium text-gray-900 text-sm">Tugas UTS</h4>
-                                    <p class="text-xs text-gray-600">Deadline: 23 Nov 2024</p>
-                                </div>
-                                <div class="p-3 bg-gray-50 rounded-lg">
-                                    <h4 class="font-medium text-gray-900 text-sm">Project Website</h4>
-                                    <p class="text-xs text-gray-600">Deadline: 30 Nov 2024</p>
-                                </div>
-                                <div class="p-3 bg-gray-50 rounded-lg">
-                                    <h4 class="font-medium text-gray-900 text-sm">Quiz JavaScript</h4>
-                                    <p class="text-xs text-gray-600">Deadline: 5 Des 2024</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Quick Actions -->
-                        <div class="bg-white rounded-lg p-4 lg:p-6 shadow-sm">
-                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Aksi Cepat</h3>
-                            <div class="space-y-2">
-                                <button class="w-full flex items-center p-3 text-left hover:bg-gray-50 rounded-lg transition-colors">
-                                    <i class="ti ti-users mr-3 text-gray-600"></i>
-                                    <span class="text-sm text-gray-700">Lihat Teman Sekelas</span>
-                                </button>
-                                <button class="w-full flex items-center p-3 text-left hover:bg-gray-50 rounded-lg transition-colors">
-                                    <i class="ti ti-calendar mr-3 text-gray-600"></i>
-                                    <span class="text-sm text-gray-700">Jadwal Kelas</span>
-                                </button>
-                                <button class="w-full flex items-center p-3 text-left hover:bg-gray-50 rounded-lg transition-colors">
-                                    <i class="ti ti-book mr-3 text-gray-600"></i>
-                                    <span class="text-sm text-gray-700">Materi Pembelajaran</span>
-                                </button>
-                                <button class="w-full flex items-center p-3 text-left hover:bg-gray-50 rounded-lg transition-colors">
-                                    <i class="ti ti-star mr-3 text-gray-600"></i>
-                                    <span class="text-sm text-gray-700">Nilai & Rapor</span>
-                                </button>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -278,4 +264,5 @@
 
     <script src="../script/menu-bar-script.js"></script>
 </body>
+
 </html>
