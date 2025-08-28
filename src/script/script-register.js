@@ -44,17 +44,24 @@
         const checkIcon = document.getElementById('check-icon-password');
         const xIcon = document.getElementById('x-icon-password');
         const statusText = document.getElementById('password-status-text');
-        const registerBtn = document.getElementById('register-btn');
         
         if (confirmPassword.length === 0) {
             statusDiv.style.display = 'none';
             passwordMatch = false;
+            updateRegisterButton();
             return;
         }
         
         statusDiv.style.display = 'flex';
         
-        if (password === confirmPassword) {
+        // Check password length first
+        if (password.length < 6) {
+            checkIcon.style.display = 'none';
+            xIcon.style.display = 'block';
+            statusText.textContent = 'Password minimal 6 karakter';
+            statusText.className = 'text-red-500';
+            passwordMatch = false;
+        } else if (password === confirmPassword) {
             checkIcon.style.display = 'block';
             xIcon.style.display = 'none';
             statusText.textContent = 'Password sesuai';
@@ -75,19 +82,46 @@
     function updateRegisterButton() {
         const registerBtn = document.getElementById('register-btn');
         const username = document.getElementById('username').value.trim();
+        const namaLengkap = document.getElementById('namaLengkap').value.trim();
+        const email = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value;
+        const confirmPassword = document.getElementById('confirm_password').value;
         
-        if (username.length >= 3 && !usernameAvailable) {
-            registerBtn.disabled = true;
-        } else if (!passwordMatch && document.getElementById('confirm_password').value.length > 0) {
-            registerBtn.disabled = true;
-        } else {
-            registerBtn.disabled = false;
+        // Check all required conditions
+        let shouldDisable = false;
+        
+        // Check if all fields are filled
+        if (!namaLengkap || !email || !username || !password || !confirmPassword) {
+            shouldDisable = true;
         }
+        
+        // Check username availability (only if username is long enough)
+        if (username.length >= 3 && !usernameAvailable) {
+            shouldDisable = true;
+        }
+        
+        // Check password match (only if confirm password is filled)
+        if (confirmPassword.length > 0 && !passwordMatch) {
+            shouldDisable = true;
+        }
+        
+        // Check minimum password length
+        if (password.length > 0 && password.length < 6) {
+            shouldDisable = true;
+        }
+        
+        registerBtn.disabled = shouldDisable;
     }
     
     // Add event listeners for password validation
     document.getElementById('password').addEventListener('input', checkPasswordMatch);
     document.getElementById('confirm_password').addEventListener('input', checkPasswordMatch);
+    
+    // Add event listeners for all form fields to update register button
+    document.getElementById('namaLengkap').addEventListener('input', updateRegisterButton);
+    document.getElementById('email').addEventListener('input', updateRegisterButton);
+    document.getElementById('password').addEventListener('input', updateRegisterButton);
+    document.getElementById('confirm_password').addEventListener('input', updateRegisterButton);
     
     document.getElementById('username').addEventListener('input', function() {
         const username = this.value.trim();
@@ -142,15 +176,21 @@
                     statusText.className = 'text-red-500';
                     usernameAvailable = false;
                 } else {
-                    statusDiv.style.display = 'none';
+                    // Handle error cases
+                    xIcon.style.display = 'block';
+                    statusText.textContent = 'Error checking username';
+                    statusText.className = 'text-red-500';
+                    usernameAvailable = false;
                 }
                 
                 updateRegisterButton();
             })
             .catch(error => {
                 loadingIcon.style.display = 'none';
-                statusDiv.style.display = 'none';
-                console.error('Error:', error);
+                xIcon.style.display = 'block';
+                statusText.textContent = 'Error checking username';
+                statusText.className = 'text-red-500';
+                usernameAvailable = false;
                 updateRegisterButton();
             });
         }, 1000);
@@ -172,3 +212,6 @@
             return;
         }
     });
+
+    // Initialize register button state on page load
+    updateRegisterButton();

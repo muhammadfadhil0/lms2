@@ -5,6 +5,8 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
 <link rel="preconnect" href="https://rsms.me/">
 <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+<!-- Role-based Sidebar Styles -->
+<link rel="stylesheet" href="../css/sidebar-roles.css">
 <style>
     body {
         font-family: 'Inter', sans-serif;

@@ -42,6 +42,16 @@
                     echo 'Username atau password salah!';
                 } elseif ($_GET['error'] == 'empty') {
                     echo 'Harap isi semua field!';
+                } elseif ($_GET['error'] == 'user_not_found') {
+                    echo 'Username atau email tidak ditemukan!';
+                } elseif ($_GET['error'] == 'wrong_password') {
+                    echo 'Password yang Anda masukkan salah!';
+                } elseif ($_GET['error'] == 'account_inactive') {
+                    echo 'Akun Anda belum aktif atau diblokir. Hubungi administrator.';
+                } elseif ($_GET['error'] == 'login_failed') {
+                    echo 'Login gagal. Silakan coba lagi.';
+                } else {
+                    echo 'Terjadi kesalahan. Silakan coba lagi.';
                 }
                 echo '<button type="button" class="absolute top-2 right-2 text-red-700 hover:text-red-900" onclick="document.getElementById(\'error-alert\').style.display=\'none\'">';
                 echo '<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">';

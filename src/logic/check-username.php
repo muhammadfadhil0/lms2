@@ -13,7 +13,7 @@ if (isset($_POST['username'])) {
     }
     
     try {
-        $stmt = $koneksi->prepare("SELECT id FROM user WHERE username = ?");
+        $stmt = $koneksi->prepare("SELECT id FROM users WHERE username = ?");
         $stmt->bind_param("s", $username);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -26,9 +26,9 @@ if (isset($_POST['username'])) {
         $stmt->close();
         
     } catch (Exception $e) {
-        echo json_encode(['status' => 'error']);
+        echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
     }
 } else {
-    echo json_encode(['status' => 'error']);
+    echo json_encode(['status' => 'error', 'message' => 'No username parameter']);
 }
 ?>

@@ -1,5 +1,14 @@
 <!-- cek sekarang ada di halaman apa -->
-<?php $currentPage = 'ujian'; ?>
+<?php 
+session_start();
+$currentPage = 'ujian'; 
+
+// Check if user is logged in and is a siswa
+if (!isset($_SESSION['user']) || $_SESSION['user']['role'] != 'siswa') {
+    header("Location: ../../index.php");
+    exit();
+}
+?>
 <!-- includes -->
 <?php require '../component/sidebar.php'; ?>
 <?php require '../component/menu-bar-mobile.php'; ?>

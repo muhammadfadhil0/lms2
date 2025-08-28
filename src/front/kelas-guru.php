@@ -1,5 +1,40 @@
 <!-- cek sekarang ada di halaman apa -->
-<?php $currentPage = 'kelas'; ?>
+<?php 
+session_start();
+$currentPage = 'kelas'; 
+
+// Check if user is logged in and is a guru
+if (!isset($_SESSION['user']) || $_SESSION['user']['role'] != 'guru') {
+    header("Location: ../../index.php");
+    exit();
+}
+
+// Include logic files
+require_once '../logic/kelas-logic.php';
+
+// Check if kelas ID is provided
+if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
+    header("Location: beranda-guru.php");
+    exit();
+}
+
+$kelasLogic = new KelasLogic();
+$kelas_id = intval($_GET['id']);
+$guru_id = $_SESSION['user']['id'];
+
+// Get class details
+$detailKelas = $kelasLogic->getDetailKelas($kelas_id);
+
+// Check if class exists and belongs to this guru
+if (!$detailKelas || $detailKelas['guru_id'] != $guru_id) {
+    header("Location: beranda-guru.php");
+    exit();
+}
+
+// Get class students
+$siswaKelas = $kelasLogic->getSiswaKelas($kelas_id);
+$jumlahSiswa = count($siswaKelas);
+?>
 <!-- includes -->
 <?php require '../component/sidebar.php'; ?>
 <?php require '../component/menu-bar-mobile.php'; ?>
@@ -10,26 +45,59 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <?php require '../../assets/head.php'; ?>
-    <title>Kelas - Pemrograman Web</title>
+    <title><?php echo htmlspecialchars($detailKelas['namaKelas']); ?> - Kelola Kelas</title>
 </head>
 
 <body class="bg-gray-50">
     <!-- Main Content -->
     <div class="md:ml-64 min-h-screen transition-all duration-300 ease-in-out" data-main-content>
+        <!-- Breadcrumb -->
+        <div class="bg-white border-b border-gray-200 p-4">
+            <div class="flex items-center space-x-2 text-sm">
+                <a href="beranda-guru.php" class="text-orange-600 hover:text-orange-800 flex items-center">
+                    <i class="ti ti-arrow-left mr-1"></i>
+                    Kembali ke Beranda
+                </a>
+                <span class="text-gray-400">/</span>
+                <span class="text-gray-600"><?php echo htmlspecialchars($detailKelas['namaKelas']); ?></span>
+            </div>
+        </div>
+        
         <!-- Jumbotron -->
-        <div class="relative h-60 lg:h-80 bg-gradient-to-r from-blue-500 to-purple-600 overflow-hidden">
-            <img src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1471&q=80"
-                alt="Class Cover" class="w-full h-full object-cover">
-            <div class="absolute inset-0 bg-black bg-opacity-40"></div>
+        <div class="relative h-60 lg:h-80 bg-gradient-to-r from-orange-500 to-orange-600 overflow-hidden">
+            <?php if (!empty($detailKelas['gambarKover'])): ?>
+                <img src="<?php echo htmlspecialchars($detailKelas['gambarKover']); ?>" 
+                     alt="<?php echo htmlspecialchars($detailKelas['namaKelas']); ?>" 
+                     class="w-full h-full object-cover">
+                <div class="absolute inset-0 bg-black bg-opacity-40"></div>
+            <?php else: ?>
+                <div class="w-full h-full bg-gradient-to-r from-orange-500 to-orange-600 flex items-center justify-center">
+                    <i class="ti ti-book text-white text-8xl opacity-20"></i>
+                </div>
+            <?php endif; ?>
             <div class="absolute bottom-4 lg:bottom-6 left-4 lg:left-6 text-white">
-                <h1 class="text-2xl lg:text-4xl font-bold mb-2">Pemrograman Web</h1>
-                <div class="flex items-center space-x-3 lg:space-x-4">
-                    <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=150&q=80"
-                        alt="Instructor" class="w-10 h-10 lg:w-12 lg:h-12 rounded-full">
-                    <div>
-                        <p class="text-base lg:text-lg font-medium">Dr. Ahmad Fulan, M.Kom</p>
-                        <p class="text-xs lg:text-sm opacity-90">Dosen Pengampu</p>
+                <h1 class="text-2xl lg:text-4xl font-bold mb-2"><?php echo htmlspecialchars($detailKelas['namaKelas']); ?></h1>
+                <div class="flex items-center space-x-3 lg:space-x-4 mb-3">
+                    <div class="w-10 h-10 lg:w-12 lg:h-12 rounded-full bg-orange-600 flex items-center justify-center">
+                        <i class="ti ti-user text-white text-lg lg:text-xl"></i>
                     </div>
+                    <div>
+                        <p class="text-base lg:text-lg font-medium"><?php echo htmlspecialchars($detailKelas['namaGuru']); ?></p>
+                        <p class="text-xs lg:text-sm opacity-90">Guru Pengampu</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4 text-sm lg:text-base">
+                    <span class="bg-orange-600 bg-opacity-80 px-3 py-1 rounded-full">
+                        <?php echo htmlspecialchars($detailKelas['mataPelajaran']); ?>
+                    </span>
+                    <span class="flex items-center">
+                        <i class="ti ti-users mr-1"></i>
+                        <?php echo $jumlahSiswa; ?> Siswa
+                    </span>
+                    <span class="flex items-center">
+                        <i class="ti ti-key mr-1"></i>
+                        <?php echo htmlspecialchars($detailKelas['kodeKelas']); ?>
+                    </span>
                 </div>
             </div>
         </div>

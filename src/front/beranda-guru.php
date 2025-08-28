@@ -1,5 +1,27 @@
-    <!-- cek sekarang ada di halaman apa -->
-    <?php $currentPage = 'beranda'; ?>
+<?php 
+// cek sekarang ada di halaman apa
+session_start();
+$currentPage = 'beranda'; 
+
+// Check if user is logged in and is a guru
+    if (!isset($_SESSION['user']) || $_SESSION['user']['role'] != 'guru') {
+        header("Location: ../../index.php");
+        exit();
+    }
+    
+    // Include logic files
+    require_once '../logic/dashboard-logic.php';
+    require_once '../logic/kelas-logic.php';
+    
+    // Get dashboard data
+    $dashboardLogic = new DashboardLogic();
+    $kelasLogic = new KelasLogic();
+    $guru_id = $_SESSION['user']['id'];
+    $dashboardData = $dashboardLogic->getDashboardGuru($guru_id);
+    
+    // Check if there's a new class to highlight
+    $newClassId = isset($_GET['new_class']) ? intval($_GET['new_class']) : null;
+    ?>
     <!-- includes -->
     <?php require '../component/sidebar.php'; ?>
     <?php require '../component/menu-bar-mobile.php'; ?>
@@ -21,6 +43,7 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <h1 class="text-xl md:text-2xl font-bold text-gray-800">Beranda</h1>
+                        <p class="text-gray-600">Selamat datang, <?php echo htmlspecialchars($_SESSION['user']['namaLengkap']); ?>!</p>
                     </div>
                     <div class="flex items-center space-x-2 md:space-x-4">
                         <button command="show-modal" commandfor="add-class-modal" class="p-2 border rounded-full text-gray-400 hover:text-orange-600 transition-colors flex items-center">
@@ -48,29 +71,29 @@
                             </div>
                             <div class="ml-3 md:ml-4">
                                 <p class="text-xs md:text-sm text-gray-600">Total Kelas</p>
-                                <p class="text-xl md:text-2xl font-bold text-gray-800">12</p>
+                                <p class="text-xl md:text-2xl font-bold text-gray-800"><?php echo $dashboardData['totalKelas'] ?? 0; ?></p>
                             </div>
                         </div>
                     </div>
                     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6">
                         <div class="flex items-center">
                             <div class="p-2 md:p-3 bg-orange-tipis rounded-lg">
-                                <i class="ti ti-clipboard-check text-orange-600 text-lg md:text-xl"></i>
+                                <i class="ti ti-users text-orange-600 text-lg md:text-xl"></i>
                             </div>
                             <div class="ml-3 md:ml-4">
-                                <p class="text-xs md:text-sm text-gray-600">Ujian Selesai</p>
-                                <p class="text-xl md:text-2xl font-bold text-gray-800">8</p>
+                                <p class="text-xs md:text-sm text-gray-600">Total Siswa</p>
+                                <p class="text-xl md:text-2xl font-bold text-gray-800"><?php echo $dashboardData['totalSiswa'] ?? 0; ?></p>
                             </div>
                         </div>
                     </div>
                     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6 sm:col-span-2 md:col-span-1">
                         <div class="flex items-center">
                             <div class="p-2 md:p-3 bg-orange-tipis rounded-lg">
-                                <i class="ti ti-clock text-orange-600 text-lg md:text-xl"></i>
+                                <i class="ti ti-clipboard-check text-orange-600 text-lg md:text-xl"></i>
                             </div>
                             <div class="ml-3 md:ml-4">
-                                <p class="text-xs md:text-sm text-gray-600">Tugas Berjalan</p>
-                                <p class="text-xl md:text-2xl font-bold text-gray-800">4</p>
+                                <p class="text-xs md:text-sm text-gray-600">Ujian Aktif</p>
+                                <p class="text-xl md:text-2xl font-bold text-gray-800"><?php echo $dashboardData['ujianAktif'] ?? 0; ?></p>
                             </div>
                         </div>
                     </div>
@@ -80,164 +103,90 @@
                 <div class="mb-6">
                     <h2 class="text-lg md:text-xl font-bold text-gray-800 mb-4">Kelas Tersedia</h2>
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-                        <!-- Class Card 1 -->
-                        <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
-                            <div class="h-32 sm:h-40 md:h-48 bg-gradient-to-br from-blue-400 to-blue-600 relative">
-                                <img src="https://via.placeholder.com/400x200?text=Matematika" alt="Matematika" class="w-full h-full object-cover">
-                                <div class="absolute top-2 md:top-4 right-2 md:right-4">
-                                    <span class="bg-white bg-opacity-90 text-blue-600 text-xs font-medium px-2 py-1 rounded-full">
-                                        Matematika
-                                    </span>
-                                </div>
-                            </div>
-                            <div class="p-4 md:p-6">
-                                <div class="flex items-center mb-3 md:mb-4">
-                                    <img src="https://via.placeholder.com/40?text=GP" alt="Guru" class="w-8 h-8 md:w-10 md:h-10 rounded-full">
-                                    <div class="ml-2 md:ml-3">
-                                        <p class="text-sm md:font-medium text-gray-800">Pak Ahmad</p>
-                                        <p class="text-xs md:text-sm text-gray-500">Guru Matematika</p>
-                                    </div>
-                                </div>
-                                <div class="flex items-center justify-between text-xs md:text-sm text-gray-600 mb-3 md:mb-4">
-                                    <span class="flex items-center">
-                                        <i class="ti ti-users mr-1"></i>
-                                        35 siswa
-                                    </span>
-                                    <span class="flex items-center">
-                                        <i class="ti ti-clock mr-1"></i>
-                                        2 jam/minggu
-                                    </span>
-                                </div>
-                                <div class="flex items-center justify-between gap-2">
-                                    <a href="kelas-user.php" class="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors text-sm md:font-medium text-center">
-                                        Masuk
-                                    </a>
-                                    <div class="relative">
-                                        <button onclick="toggleDropdown('dropdown-1')" class="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors">
-                                            <i class="ti ti-dots-vertical text-lg"></i>
-                                        </button>
-                                        <div id="dropdown-1" class="hidden fixed w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
-                                            <div class="py-1">
-                                                <a href="#" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                                    <i class="ti ti-eye mr-2"></i>
-                                                    Detail
-                                                </a>
-                                                <a href="#" class="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50">
-                                                    <i class="ti ti-trash mr-2"></i>
-                                                    Hapus
-                                                </a>
-                                            </div>
+                        <?php if ($newClassId): ?>
+                            <div class="col-span-full mb-4">
+                                <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                                    <div class="flex items-center">
+                                        <i class="ti ti-check-circle text-green-600 text-xl mr-3"></i>
+                                        <div>
+                                            <h3 class="text-green-800 font-medium">Kelas Berhasil Dibuat!</h3>
+                                            <p class="text-green-700 text-sm">Kelas baru Anda sudah siap digunakan. Lihat kelas yang diberi highlight di bawah.</p>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-
-                        <!-- Class Card 2 -->
-                        <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
-                            <div class="h-32 sm:h-40 md:h-48 bg-gradient-to-br from-green-400 to-green-600 relative">
-                                <img src="https://via.placeholder.com/400x200?text=Bahasa+Indonesia" alt="Bahasa Indonesia" class="w-full h-full object-cover">
-                                <div class="absolute top-2 md:top-4 right-2 md:right-4">
-                                    <span class="bg-white bg-opacity-90 text-green-600 text-xs font-medium px-2 py-1 rounded-full">
-                                        Bahasa Indonesia
-                                    </span>
-                                </div>
-                            </div>
-                            <div class="p-4 md:p-6">
-                                <div class="flex items-center mb-3 md:mb-4">
-                                    <img src="https://via.placeholder.com/40?text=IB" alt="Guru" class="w-8 h-8 md:w-10 md:h-10 rounded-full">
-                                    <div class="ml-2 md:ml-3">
-                                        <p class="text-sm md:font-medium text-gray-800">Bu Sari</p>
-                                        <p class="text-xs md:text-sm text-gray-500">Guru Bahasa Indonesia</p>
+                        <?php endif; ?>
+                        <?php if (!empty($dashboardData['kelasTerbaru'])): ?>
+                            <?php foreach ($dashboardData['kelasTerbaru'] as $kelas): ?>
+                                <?php $isNewClass = ($newClassId && $kelas['id'] == $newClassId); ?>
+                                <div class="bg-white rounded-lg shadow-sm border <?php echo $isNewClass ? 'border-orange-300 ring-2 ring-orange-200' : 'border-gray-200'; ?> overflow-hidden hover:shadow-md transition-all <?php echo $isNewClass ? 'animate-pulse' : ''; ?>">
+                                    <div class="h-32 sm:h-40 md:h-48 bg-gradient-to-br from-orange-400 to-orange-600 relative">
+                                        <?php if (!empty($kelas['gambarKover'])): ?>
+                                            <img src="<?php echo htmlspecialchars($kelas['gambarKover']); ?>" alt="<?php echo htmlspecialchars($kelas['namaKelas']); ?>" class="w-full h-full object-cover">
+                                        <?php else: ?>
+                                            <div class="w-full h-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center">
+                                                <i class="ti ti-book text-white text-4xl"></i>
+                                            </div>
+                                        <?php endif; ?>
+                                        <div class="absolute top-2 md:top-4 right-2 md:right-4">
+                                            <span class="bg-white bg-opacity-90 text-orange-600 text-xs font-medium px-2 py-1 rounded-full">
+                                                <?php echo htmlspecialchars($kelas['mataPelajaran']); ?>
+                                            </span>
+                                        </div>
                                     </div>
-                                </div>
-                                <div class="flex items-center justify-between text-xs md:text-sm text-gray-600 mb-3 md:mb-4">
-                                    <span class="flex items-center">
-                                        <i class="ti ti-users mr-1"></i>
-                                        32 siswa
-                                    </span>
-                                    <span class="flex items-center">
-                                        <i class="ti ti-clock mr-1"></i>
-                                        3 jam/minggu
-                                    </span>
-                                </div>
-                                <div class="flex items-center justify-between gap-2">
-                                    <button class="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors text-sm md:font-medium">
-                                        Masuk
-                                    </button>
-                                    <div class="relative">
-                                        <button onclick="toggleDropdown('dropdown-2')" class="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors">
-                                            <i class="ti ti-dots-vertical text-lg"></i>
-                                        </button>
-                                        <div id="dropdown-2" class="hidden fixed w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
-                                            <div class="py-1">
-                                                <a href="#" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                                    <i class="ti ti-eye mr-2"></i>
-                                                    Detail
-                                                </a>
-                                                <a href="#" class="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50">
-                                                    <i class="ti ti-trash mr-2"></i>
-                                                    Hapus
-                                                </a>
+                                    <div class="p-4 md:p-6">
+                                        <h3 class="font-semibold text-gray-800 mb-2"><?php echo htmlspecialchars($kelas['namaKelas']); ?></h3>
+                                        <p class="text-sm text-gray-600 mb-3"><?php echo htmlspecialchars($kelas['mataPelajaran']); ?></p>
+                                        <div class="flex items-center justify-between text-xs md:text-sm text-gray-600 mb-3 md:mb-4">
+                                            <span class="flex items-center">
+                                                <i class="ti ti-users mr-1"></i>
+                                                <?php echo $kelas['jumlahSiswa'] ?? 0; ?> siswa
+                                            </span>
+                                            <span class="flex items-center">
+                                                <i class="ti ti-clipboard-check mr-1"></i>
+                                                <?php echo $kelas['jumlahUjian'] ?? 0; ?> ujian
+                                            </span>
+                                        </div>
+                                        <div class="flex items-center justify-between gap-2">
+                                            <a href="kelas-guru.php?id=<?php echo $kelas['id']; ?>" class="flex-1 bg-orange-600 text-white py-2 px-4 rounded-lg hover:bg-orange-700 transition-colors text-sm md:font-medium text-center">
+                                                <?php echo $isNewClass ? 'Masuk Kelas Baru' : 'Kelola'; ?>
+                                            </a>
+                                            <div class="relative">
+                                                <button onclick="toggleDropdown('dropdown-<?php echo $kelas['id']; ?>')" class="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors">
+                                                    <i class="ti ti-dots-vertical text-lg"></i>
+                                                </button>
+                                                <div id="dropdown-<?php echo $kelas['id']; ?>" class="hidden fixed w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                                                    <div class="py-1">
+                                                        <a href="kelas-guru.php?id=<?php echo $kelas['id']; ?>" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                                            <i class="ti ti-eye mr-2"></i>
+                                                            Detail
+                                                        </a>
+                                                        <a href="#" onclick="editKelas(<?php echo $kelas['id']; ?>)" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                                            <i class="ti ti-edit mr-2"></i>
+                                                            Edit
+                                                        </a>
+                                                        <a href="#" onclick="hapusKelas(<?php echo $kelas['id']; ?>)" class="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+                                                            <i class="ti ti-trash mr-2"></i>
+                                                            Hapus
+                                                        </a>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <div class="col-span-full text-center py-12">
+                                <i class="ti ti-book-off text-6xl text-gray-300 mb-4"></i>
+                                <h3 class="text-lg font-medium text-gray-900 mb-2">Belum ada kelas</h3>
+                                <p class="text-gray-500 mb-4">Mulai dengan membuat kelas pertama Anda</p>
+                                <button command="show-modal" commandfor="add-class-modal" class="inline-flex items-center px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors">
+                                    <i class="ti ti-plus mr-2"></i>
+                                    Buat Kelas
+                                </button>
                             </div>
-                        </div>
-
-                        <!-- Class Card 3 -->
-                        <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
-                            <div class="h-32 sm:h-40 md:h-48 bg-gradient-to-br from-purple-400 to-purple-600 relative">
-                                <img src="https://via.placeholder.com/400x200?text=Fisika" alt="Fisika" class="w-full h-full object-cover">
-                                <div class="absolute top-2 md:top-4 right-2 md:right-4">
-                                    <span class="bg-white bg-opacity-90 text-purple-600 text-xs font-medium px-2 py-1 rounded-full">
-                                        Fisika
-                                    </span>
-                                </div>
-                            </div>
-                            <div class="p-4 md:p-6">
-                                <div class="flex items-center mb-3 md:mb-4">
-                                    <img src="https://via.placeholder.com/40?text=BU" alt="Guru" class="w-8 h-8 md:w-10 md:h-10 rounded-full">
-                                    <div class="ml-2 md:ml-3">
-                                        <p class="text-sm md:font-medium text-gray-800">Pak Budi</p>
-                                        <p class="text-xs md:text-sm text-gray-500">Guru Fisika</p>
-                                    </div>
-                                </div>
-                                <div class="flex items-center justify-between text-xs md:text-sm text-gray-600 mb-3 md:mb-4">
-                                    <span class="flex items-center">
-                                        <i class="ti ti-users mr-1"></i>
-                                        28 siswa
-                                    </span>
-                                    <span class="flex items-center">
-                                        <i class="ti ti-clock mr-1"></i>
-                                        2 jam/minggu
-                                    </span>
-                                </div>
-                                <div class="flex items-center justify-between gap-2">
-                                    <button class="flex-1 bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 transition-colors text-sm md:font-medium">
-                                        Masuk
-                                    </button>
-                                    <div class="relative">
-                                        <button onclick="toggleDropdown('dropdown-3')" class="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors">
-                                            <i class="ti ti-dots-vertical text-lg"></i>
-                                        </button>
-                                        <div id="dropdown-3" class="hidden fixed w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
-                                            <div class="py-1">
-                                                <a href="#" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                                    <i class="ti ti-eye mr-2"></i>
-                                                    Detail
-                                                </a>
-                                                <a href="#" class="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50">
-                                                    <i class="ti ti-trash mr-2"></i>
-                                                    Hapus
-                                                </a>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        <?php endif; ?>
                     </div>
                 </div>
             </main>
@@ -245,6 +194,7 @@
 
         <script src="../script/menu-bar-script.js"></script>
         <script src="../script/dropdown-beranda-guru.js"></script>
+        <script src="../script/kelas-management.js"></script>
 
     <style src></style>
     </body>

@@ -1,5 +1,14 @@
 <!-- cek sekarang ada di halaman apa -->
-<?php $currentPage = 'settings'; ?>
+<?php 
+session_start();
+$currentPage = 'settings'; 
+
+// Check if user is logged in
+if (!isset($_SESSION['user'])) {
+    header("Location: ../../index.php");
+    exit();
+}
+?>
 <!-- includes -->
 <?php require '../component/sidebar.php'; ?>
 <?php require '../component/menu-bar-mobile.php'; ?>

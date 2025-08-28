@@ -1,81 +1,62 @@
 <?php
+session_start();
 
 // debug 
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
-// Include database connection
-require "koneksi.php"; // Adjust path as needed
+// Include UserLogic
+require_once "user-logic.php";
 
 if (isset($_POST['register'])) {
+    $userLogic = new UserLogic();
+    
     $email = trim($_POST['email']);
     $username = trim($_POST['username']);
+    $namaLengkap = trim($_POST['namaLengkap'] ?? $_POST['full_name'] ?? '');
     $password = $_POST['password'];
     $confirm_password = $_POST['confirm_password'];
-    
+    $role = $_POST['role'] ?? 'siswa'; // Default role siswa
 
     // Validate empty fields
-    if (empty($email) || empty($username) || empty($password) || empty($confirm_password)) {
-        header("Location: ../../src/front/register.php?error=empty");
+    if (empty($email) || empty($username) || empty($password) || empty($confirm_password) || empty($namaLengkap)) {
+        header("Location: ../front/register.php?error=empty");
         exit();
     }
     
     // Validate password match
     if ($password !== $confirm_password) {
-        header("Location: ../../src/front/register.php?error=password_mismatch");
+        header("Location: ../front/register.php?error=password_mismatch");
         exit();
     }
     
-    try {
-        // Check if username already exists
-        $stmt = $koneksi->prepare("SELECT id FROM user WHERE username = ?");
-        $stmt->bind_param("s", $username);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        if ($result->num_rows > 0) {
-            header("Location: ../../src/front/register.php?error=username_exists");
-            exit();
-        }
-        $stmt->close();
-        
-        // Check if email already exists
-        $stmt = $koneksi->prepare("SELECT id FROM user WHERE email = ?");
-        $stmt->bind_param("s", $email);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        if ($result->num_rows > 0) {
-            header("Location: ../../src/front/register.php?error=email_exists");
-            exit();
-        }
-        $stmt->close();
-        
-        // Hash password
-        $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-        
-        // Insert new user
-        $stmt = $koneksi->prepare("INSERT INTO user (username, email, password) VALUES (?, ?, ?)");
-        $stmt->bind_param("sss", $username, $email, $hashed_password);
-        $result = $stmt->execute();
-        
-        if ($result) {
-            header("Location: ../../index.php?success=registration");
-            exit();
+    // Validate password length
+    if (strlen($password) < 6) {
+        header("Location: ../front/register.php?error=password_short");
+        exit();
+    }
+    
+    // Register user using UserLogic
+    $result = $userLogic->register($username, $email, $password, $namaLengkap, $role);
+    
+    if ($result['success']) {
+        header("Location: ../front/register.php?success=1");
+        exit();
+    } else {
+        // Parse error message for specific redirects
+        if (strpos($result['message'], 'Username') !== false) {
+            header("Location: ../front/register.php?error=username_exists");
+        } elseif (strpos($result['message'], 'Email') !== false) {
+            header("Location: ../front/register.php?error=email_exists");
         } else {
-            header("Location: ../../src/front/register.php?error=registration_failed");
-            exit();
+            header("Location: ../front/register.php?error=registration_failed");
         }
-        $stmt->close();
-        
-    } catch (Exception $e) {
-        // Log error and redirect
-        error_log("Registration error: " . $e->getMessage());
-        header("Location: ../../src/front/register.php?error=registration_failed");
         exit();
     }
 } else {
     // Redirect if accessed without POST
-    header("Location: ../../src/front/register.php");
+    header("Location: ../front/register.php");
     exit();
 }
 ?>

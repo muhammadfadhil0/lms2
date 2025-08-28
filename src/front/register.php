@@ -24,12 +24,16 @@
                     echo 'Harap isi semua field!';
                 } elseif ($_GET['error'] == 'password_mismatch') {
                     echo 'Konfirmasi password tidak cocok!';
+                } elseif ($_GET['error'] == 'password_short') {
+                    echo 'Password minimal 6 karakter!';
                 } elseif ($_GET['error'] == 'username_exists') {
                     echo 'Username sudah digunakan!';
                 } elseif ($_GET['error'] == 'email_exists') {
                     echo 'Email sudah terdaftar!';
                 } elseif ($_GET['error'] == 'registration_failed') {
                     echo 'Pendaftaran gagal, silakan coba lagi!';
+                } else {
+                    echo 'Terjadi kesalahan. Silakan coba lagi.';
                 }
                 echo '<button type="button" class="absolute top-2 right-2 text-red-700 hover:text-red-900" onclick="document.getElementById(\'error-alert\').style.display=\'none\'">';
                 echo '<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">';
@@ -51,6 +55,13 @@
             }
             ?>
             <form action="../logic/back-register.php" method="POST" class="space-y-6">
+                <div>
+                    <label for="namaLengkap" class="block text-sm/6 font-medium text-gray-900">Nama Lengkap</label>
+                    <div class="mt-2">
+                        <input id="namaLengkap" type="text" name="namaLengkap" required autocomplete="name" class="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6" placeholder="Masukkan nama lengkap Anda" />
+                    </div>
+                </div>
+
                 <div>
                     <label for="email" class="block text-sm/6 font-medium text-gray-900">Email</label>
                     <div class="mt-2">

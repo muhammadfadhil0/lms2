@@ -1,0 +1,137 @@
+/* Role-based Sidebar Styles */
+
+/* Role Badge Colors */
+.role-admin {
+    background-color: #fef2f2;
+    color: #dc2626;
+}
+
+.role-guru {
+    background-color: #eff6ff;
+    color: #2563eb;
+}
+
+.role-siswa {
+    background-color: #f0fdf4;
+    color: #16a34a;
+}
+
+/* Profile Avatar Colors */
+.avatar-admin {
+    background-color: #fee2e2;
+    color: #dc2626;
+}
+
+.avatar-guru {
+    background-color: #dbeafe;
+    color: #2563eb;
+}
+
+.avatar-siswa {
+    background-color: #dcfce7;
+    color: #16a34a;
+}
+
+/* Sidebar Navigation Enhancements */
+.sidebar-nav-item {
+    transition: all 0.2s ease-in-out;
+}
+
+.sidebar-nav-item:hover {
+    transform: translateX(2px);
+}
+
+/* Active state improvements */
+.sidebar-nav-active {
+    background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* Profile dropdown animations */
+.profile-dropdown {
+    animation: slideUp 0.2s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Role indicators */
+.role-indicator {
+    position: relative;
+}
+
+.role-indicator::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.role-indicator.admin::before {
+    background-color: #dc2626;
+}
+
+.role-indicator.guru::before {
+    background-color: #2563eb;
+}
+
+.role-indicator.siswa::before {
+    background-color: #16a34a;
+}
+
+/* Quick access buttons for admin */
+.admin-quick-action {
+    background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+    border-left: 4px solid #dc2626;
+}
+
+.admin-quick-action:hover {
+    background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%);
+}
+
+/* Guru specific styling */
+.guru-nav-item {
+    border-left: 3px solid transparent;
+    transition: border-color 0.2s ease;
+}
+
+.guru-nav-item:hover {
+    border-left-color: #2563eb;
+}
+
+.guru-nav-item.active {
+    border-left-color: #1d4ed8;
+}
+
+/* Student specific styling */
+.siswa-nav-item {
+    position: relative;
+}
+
+.siswa-nav-item::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 0;
+    background-color: #16a34a;
+    transition: height 0.2s ease;
+}
+
+.siswa-nav-item:hover::after,
+.siswa-nav-item.active::after {
+    height: 24px;
+}

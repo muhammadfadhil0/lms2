@@ -4,54 +4,62 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
-require "koneksi.php";
+require_once "user-logic.php";
 
 if (isset($_POST['login'])) {
+    $userLogic = new UserLogic();
+    
     $username = trim($_POST['username']);
     $password = trim($_POST['password']);
     
     // Validasi input kosong
     if (empty($username) || empty($password)) {
-        header("Location: ../index.php?error=empty");
+        header("Location: ../../index.php?error=empty");
         exit();
     }
     
-    // Prepared statement untuk keamanan
-    $stmt = $koneksi->prepare("SELECT id, username, password FROM user WHERE username = ?");
-    $stmt->bind_param("s", $username);
-    $stmt->execute();
-    $result = $stmt->get_result();
+    // Login using UserLogic
+    $result = $userLogic->login($username, $password);
     
-    if ($result->num_rows == 1) {
-        $user = $result->fetch_assoc();
+    if ($result['success']) {
+        // Login berhasil - simpan data user ke session
+        $_SESSION['user'] = $result['user'];
+        $_SESSION['login_time'] = time();
         
-        // Verifikasi password (gunakan password_verify jika password di-hash)
-        if (password_verify($password, $user['password']) || $password == $user['password']) {
-            // Login berhasil
-            $_SESSION['user_id'] = $user['id'];
-            $_SESSION['username'] = $user['username'];
-            $_SESSION['logged_in'] = true;
-
-            // Redirect ke beranda
-            header("Location: ../front/beranda-user.php");
-            exit();
-        } else {
-            // Password salah
-            header("Location: ../../index.php?error=invalid");
-            exit();
+        // Redirect berdasarkan role
+        switch ($result['user']['role']) {
+            case 'admin':
+                header("Location: ../front/admin-dashboard.php");
+                break;
+            case 'guru':
+                header("Location: ../front/beranda-guru.php");
+                break;
+            case 'siswa':
+                header("Location: ../front/beranda-user.php");
+                break;
+            default:
+                header("Location: ../front/beranda-user.php");
         }
+        exit();
     } else {
-        // Username tidak ditemukan
-        header("Location: ../../index.php?error=invalid");
+        // Login gagal
+        if (strpos($result['message'], 'tidak ditemukan') !== false) {
+            header("Location: ../../index.php?error=user_not_found");
+        } elseif (strpos($result['message'], 'Password') !== false) {
+            header("Location: ../../index.php?error=wrong_password");
+        } elseif (strpos($result['message'], 'aktif') !== false) {
+            header("Location: ../../index.php?error=account_inactive");
+        } else {
+            header("Location: ../../index.php?error=login_failed");
+        }
         exit();
     }
-    
-    $stmt->close();
 } else {
-    // Akses langsung ke file auth.php
-    header("Location: ../index.php");
+    // Akses langsung ke file login.php
+    header("Location: ../../index.php");
     exit();
 }
+?>
 
 $koneksi->close();
 ?>

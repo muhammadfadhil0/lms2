@@ -17,49 +17,45 @@
                         </div>
                     </div>
                     
-                    <form id="add-class-form" class="mt-6">
+                    <form id="add-class-form" class="mt-6" onsubmit="createKelas(event)">
                         <div class="space-y-5">
                             <div>
-                                <label for="class-name" class="block text-base font-medium text-gray-700 mb-2">Nama Kelas</label>
-                                <input type="text" id="class-name" name="class_name" required
+                                <label for="namaKelas" class="block text-base font-medium text-gray-700 mb-2">Nama Kelas</label>
+                                <input type="text" id="namaKelas" name="namaKelas" required
                                     class="mt-1 block w-full px-3 py-3 rounded-md border-2 border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-base"
                                     placeholder="Contoh: Matematika Kelas X">
                             </div>
                             
                             <div>
-                                <label for="class-subject" class="block text-base font-medium text-gray-700 mb-2">Mata Pelajaran</label>
-                                <select id="class-subject" name="subject" required
+                                <label for="mataPelajaran" class="block text-base font-medium text-gray-700 mb-2">Mata Pelajaran</label>
+                                <select id="mataPelajaran" name="mataPelajaran" required
                                     class="mt-1 block w-full px-3 py-3 rounded-md border-2 border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-base">
                                     <option value="" disabled selected>Pilih Mata Pelajaran</option>
-                                    <option value="matematika">Matematika</option>
-                                    <option value="bahasa-indonesia">Bahasa Indonesia</option>
-                                    <option value="fisika">Fisika</option>
-                                    <option value="kimia">Kimia</option>
-                                    <option value="biologi">Biologi</option>
-                                    <option value="sejarah">Sejarah</option>
+                                    <option value="Matematika">Matematika</option>
+                                    <option value="Bahasa Indonesia">Bahasa Indonesia</option>
+                                    <option value="Informatika">Informatika</option>
+                                    <option value="Fisika">Fisika</option>
+                                    <option value="Kimia">Kimia</option>
+                                    <option value="Biologi">Biologi</option>
+                                    <option value="Sejarah">Sejarah</option>
+                                    <option value="Geografi">Geografi</option>
+                                    <option value="Bahasa Inggris">Bahasa Inggris</option>
+                                    <option value="Seni Budaya">Seni Budaya</option>
+                                    <option value="Olahraga">Olahraga</option>
                                 </select>
                             </div>
                             
                             <div>
-                                <label for="class-description" class="block text-base font-medium text-gray-700 mb-2">Deskripsi Kelas</label>
-                                <textarea id="class-description" name="description" rows="4"
+                                <label for="deskripsi" class="block text-base font-medium text-gray-700 mb-2">Deskripsi Kelas</label>
+                                <textarea id="deskripsi" name="deskripsi" rows="4"
                                     class="mt-1 block w-full px-3 py-3 rounded-md border-2 border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-base"
                                     placeholder="Deskripsi singkat tentang kelas ini"></textarea>
                             </div>
                             
-                            <div class="grid grid-cols-2 gap-6">
-                                <div>
-                                    <label for="class-duration" class="block text-base font-medium text-gray-700 mb-2">Durasi (jam/minggu)</label>
-                                    <input type="number" id="class-duration" name="duration" required min="1"
-                                        class="mt-1 block w-full px-3 py-3 rounded-md border-2 border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-base"
-                                        placeholder="2">
-                                </div>
-                                <div>
-                                    <label for="class-capacity" class="block text-base font-medium text-gray-700 mb-2">Kapasitas Siswa</label>
-                                    <input type="number" id="class-capacity" name="capacity" required min="1"
-                                        class="mt-1 block w-full px-3 py-3 rounded-md border-2 border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-base"
-                                        placeholder="30">
-                                </div>
+                            <div>
+                                <label for="maxSiswa" class="block text-base font-medium text-gray-700 mb-2">Maksimal Siswa</label>
+                                <input type="number" id="maxSiswa" name="maxSiswa" min="1" max="100" value="30"
+                                    class="mt-1 block w-full px-3 py-3 rounded-md border-2 border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-base">
                             </div>
                             
                             <div>
@@ -87,6 +83,4 @@
         </div>
     </dialog>
 </el-dialog>
-        </div>
-    </dialog>
-</el-dialog>
+
