@@ -268,12 +268,12 @@ $canComment = !isset($detailKelas['restrict_comments']) || !$detailKelas['restri
     <!-- Include Modal Components -->
     <?php require '../component/modal-delete-post.php'; ?>
     <?php require '../component/modal-comments.php'; ?>
-    <?php require '../component/modal-image-viewer.php'; ?>
+    <?php require '../component/photoswipe-modal.php'; ?>
     <?php require '../component/photoswipe-modal.php'; ?>
 
     <script src="../script/menu-bar-script.js"></script>
     <script src="../script/image-upload-manager.js"></script>
-    <script src="../script/photoswipe-viewer.js"></script>
+    <script src="../script/photoswipe-simple.js"></script>
     <script src="../script/kelas-posting-stable.js"></script>
     <script>
         // Initialize posting system when page loads

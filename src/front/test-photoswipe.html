@@ -5,12 +5,84 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PhotoSwipe Test - LMS</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="../css/image-upload.css">
     <link rel="stylesheet" href="../css/photoswipe-custom.css">
+    
+    <!-- Debug styles -->
+    <style>
+        .post-image {
+            cursor: pointer !important;
+            transition: transform 0.2s ease;
+        }
+        .post-image:hover {
+            transform: scale(1.02);
+        }
+        .debug-info {
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+    </style>
 </head>
 <body class="bg-gray-50 p-4">
     <div class="max-w-2xl mx-auto">
         <h1 class="text-2xl font-bold mb-6">PhotoSwipe Test Page</h1>
+        
+        <div class="debug-info">
+            <strong>Debug Info:</strong><br>
+            Click pada gambar untuk membuka PhotoSwipe gallery.<br>
+            Check console browser (F12) untuk melihat log.<br>
+            <button onclick="testPhotoSwipe()" class="bg-blue-500 text-white px-4 py-2 rounded mt-2">Test PhotoSwipe</button>
+            <button onclick="checkElements()" class="bg-green-500 text-white px-4 py-2 rounded mt-2 ml-2">Check Elements</button>
+            <button onclick="testSimpleViewer()" class="bg-purple-500 text-white px-4 py-2 rounded mt-2 ml-2">Test Simple Viewer</button>
+        </div>
+        
+        <script>
+        function testPhotoSwipe() {
+            console.log('=== PhotoSwipe Test ===');
+            console.log('PhotoSwipe loaded:', !!window.PhotoSwipe);
+            console.log('PhotoSwipe UI loaded:', !!window.PhotoSwipeUI_Default);
+            console.log('Simple viewer functions available:', {
+                openSimpleViewer: !!window.openSimpleViewer,
+                closeSimpleViewer: !!window.closeSimpleViewer,
+                navigateSimple: !!window.navigateSimple
+            });
+        }
+        
+        function checkElements() {
+            console.log('=== Element Check ===');
+            const postImages = document.querySelectorAll('.post-image');
+            console.log('Found post images:', postImages.length);
+            postImages.forEach((img, i) => {
+                console.log(`Image ${i}:`, img.src, 'Index:', img.dataset.imageIndex);
+            });
+            
+            const posts = document.querySelectorAll('[data-post-id]');
+            console.log('Found posts:', posts.length);
+            posts.forEach((post, i) => {
+                console.log(`Post ${i}:`, post.dataset.postId);
+            });
+            
+            const pswpElement = document.querySelector('.pswp');
+            console.log('PhotoSwipe element found:', !!pswpElement);
+        }
+        
+        function testSimpleViewer() {
+            const testImages = [
+                'https://via.placeholder.com/800x600/3b82f6/ffffff?text=Test+Image+1',
+                'https://via.placeholder.com/800x600/10b981/ffffff?text=Test+Image+2',
+                'https://via.placeholder.com/800x600/8b5cf6/ffffff?text=Test+Image+3'
+            ];
+            if (window.openSimpleViewer) {
+                window.openSimpleViewer(testImages, 0);
+            } else {
+                console.error('Simple viewer not available');
+            }
+        }
+        </script>
         
         <!-- Test Post 1 - Single Image -->
         <div class="bg-white rounded-lg shadow-sm border p-4 mb-6" data-post-id="test1">
@@ -207,6 +279,6 @@
         </div>
     </div>
     
-    <script src="../script/photoswipe-viewer.js"></script>
+    <script src="../script/photoswipe-simple.js"></script>
 </body>
 </html>
