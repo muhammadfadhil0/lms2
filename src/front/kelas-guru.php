@@ -51,6 +51,7 @@ $statistikPostingan = $postinganLogic->getStatistikPostingan($kelas_id);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <?php require '../../assets/head.php'; ?>
     <link rel="stylesheet" href="../css/kelas-posting.css">
+    <link rel="stylesheet" href="../css/class-settings.css">
     <title><?php echo htmlspecialchars($detailKelas['namaKelas']); ?> - Kelola Kelas</title>
 </head>
 
@@ -70,18 +71,15 @@ $statistikPostingan = $postinganLogic->getStatistikPostingan($kelas_id);
         </div>
 
         <!-- Jumbotron -->
-        <div class="relative h-60 lg:h-80 bg-gradient-to-r from-orange-500 to-orange-600 overflow-hidden">
+        <div class="relative h-60 lg:h-80 overflow-hidden" style="background: linear-gradient(45deg, #f97316, #ea580c);">
             <?php if (!empty($detailKelas['gambarKover'])): ?>
-                <img src="<?php echo htmlspecialchars($detailKelas['gambarKover']); ?>"
+                <img src="../../<?php echo htmlspecialchars($detailKelas['gambarKover']); ?>"
                     alt="<?php echo htmlspecialchars($detailKelas['namaKelas']); ?>"
-                    class="w-full h-full object-cover">
-                <div class="absolute inset-0 bg-black bg-opacity-40"></div>
-            <?php else: ?>
-                <div class="w-full h-full bg-gradient-to-r from-orange-500 to-orange-600 flex items-center justify-center">
-                    <i class="ti ti-book text-white text-8xl opacity-20"></i>
-                </div>
+                    class="w-full h-full object-cover absolute inset-0"
+                    style="z-index: 1;">
+                <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-black/20" style="z-index: 2;"></div>
             <?php endif; ?>
-            <div class="absolute bottom-4 lg:bottom-6 left-4 lg:left-6 text-white">
+            <div class="absolute bottom-4 lg:bottom-6 left-4 lg:left-6 text-white" style="z-index: 3;">
                 <h1 class="text-2xl lg:text-4xl font-bold mb-2"><?php echo htmlspecialchars($detailKelas['namaKelas']); ?></h1>
                 <div class="flex items-center space-x-3 lg:space-x-4 mb-3">
                     <div class="w-10 h-10 lg:w-12 lg:h-12 rounded-full bg-orange-600 flex items-center justify-center">
@@ -168,6 +166,10 @@ $statistikPostingan = $postinganLogic->getStatistikPostingan($kelas_id);
                         <div class="bg-white rounded-lg p-4 lg:p-6 shadow-sm mb-6">
                             <h3 class="text-lg font-semibold text-gray-900 mb-4">Aksi Cepat</h3>
                             <div class="space-y-2">
+                                <button onclick="openClassSettings()" class="w-full flex items-center p-3 text-left hover:bg-orange-50 rounded-lg transition-colors border border-transparent hover:border-orange-200">
+                                    <i class="ti ti-settings mr-3 text-orange"></i>
+                                    <span class="text-sm text-gray-700 font-medium">Pengaturan Kelas</span>
+                                </button>
                                 <button class="w-full flex items-center p-3 text-left hover:bg-orange-50 rounded-lg transition-colors border border-transparent hover:border-orange-200">
                                     <i class="ti ti-file-plus mr-3 text-orange"></i>
                                     <span class="text-sm text-gray-700 font-medium">Buat Tugas</span>
@@ -240,14 +242,25 @@ $statistikPostingan = $postinganLogic->getStatistikPostingan($kelas_id);
     <!-- Include Modal Components -->
     <?php require '../component/modal-delete-post.php'; ?>
     <?php require '../component/modal-comments.php'; ?>
+    <?php require '../component/modal-class-settings.php'; ?>
+    <?php require '../component/modal-class-background.php'; ?>
+    <?php require '../component/modal-edit-class.php'; ?>
+    <?php require '../component/modal-manage-students.php'; ?>
+    <?php require '../component/modal-class-permissions.php'; ?>
 
     <script src="../script/menu-bar-script.js"></script>
+    <script src="../script/class-settings-manager.js"></script>
     <script src="../script/kelas-posting-stable.js"></script>
     <script>
         // Initialize posting system when page loads
         document.addEventListener('DOMContentLoaded', function() {
             const kelasId = <?php echo $kelas_id; ?>;
-            window.kelasPosting = new KelasPosting(kelasId);
+            const permissions = {
+                canPost: true,
+                canComment: true
+            };
+            window.kelasPosting = new KelasPosting(kelasId, permissions);
+            window.classSettings = new ClassSettingsManager(kelasId);
         });
     </script>
 </body>

@@ -92,8 +92,8 @@ class KelasLogic {
     // Join kelas dengan kode
     public function joinKelas($siswa_id, $kodeKelas) {
         try {
-            // Cek apakah kelas ada
-            $sql = "SELECT id, maxSiswa FROM kelas WHERE kodeKelas = ? AND status = 'aktif'";
+            // Cek apakah kelas ada dan tidak dikunci
+            $sql = "SELECT id, maxSiswa, lock_class FROM kelas WHERE kodeKelas = ? AND status = 'aktif'";
             $stmt = $this->conn->prepare($sql);
             $stmt->bind_param("s", $kodeKelas);
             $stmt->execute();
@@ -105,6 +105,11 @@ class KelasLogic {
             
             $kelas = $result->fetch_assoc();
             $kelas_id = $kelas['id'];
+            
+            // Cek apakah kelas dikunci
+            if (isset($kelas['lock_class']) && $kelas['lock_class'] == 1) {
+                return ['success' => false, 'message' => 'Kelas ini telah dikunci dan tidak menerima mahasiswa baru'];
+            }
             
             // Cek apakah sudah join
             $sql = "SELECT id FROM kelas_siswa WHERE kelas_id = ? AND siswa_id = ?";
@@ -213,6 +218,213 @@ class KelasLogic {
         } catch (Exception $e) {
             return ['success' => false, 'message' => 'Error: ' . $e->getMessage()];
         }
+    }
+
+    // Update background kelas
+    public function updateBackground($kelas_id, $gambarKover = null, $removeBackground = false) {
+        try {
+            if ($removeBackground) {
+                $sql = "UPDATE kelas SET gambarKover = NULL WHERE id = ?";
+                $stmt = $this->conn->prepare($sql);
+                $stmt->bind_param("i", $kelas_id);
+            } else if ($gambarKover) {
+                $sql = "UPDATE kelas SET gambarKover = ? WHERE id = ?";
+                $stmt = $this->conn->prepare($sql);
+                $stmt->bind_param("si", $gambarKover, $kelas_id);
+            } else {
+                return ['success' => false, 'message' => 'Tidak ada perubahan yang dilakukan'];
+            }
+            
+            if ($stmt->execute()) {
+                return ['success' => true, 'message' => 'Latar belakang berhasil diperbarui'];
+            } else {
+                return ['success' => false, 'message' => 'Gagal memperbarui latar belakang'];
+            }
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => 'Error: ' . $e->getMessage()];
+        }
+    }
+
+    // Update permissions kelas
+    public function updatePermissions($kelas_id, $permissions) {
+        try {
+            $restrict_posting = $permissions['restrict_posting'] ? 1 : 0;
+            $restrict_comments = $permissions['restrict_comments'] ? 1 : 0;
+            $lock_class = $permissions['lock_class'] ? 1 : 0;
+            
+            // First check if columns exist, if not add them
+            $this->addPermissionColumns();
+            
+            $sql = "UPDATE kelas SET 
+                    restrict_posting = ?, 
+                    restrict_comments = ?, 
+                    lock_class = ?
+                    WHERE id = ?";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bind_param("iiii", $restrict_posting, $restrict_comments, $lock_class, $kelas_id);
+            
+            if ($stmt->execute()) {
+                return ['success' => true, 'message' => 'Pengaturan perizinan berhasil diperbarui'];
+            } else {
+                return ['success' => false, 'message' => 'Gagal memperbarui pengaturan'];
+            }
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => 'Error: ' . $e->getMessage()];
+        }
+    }
+
+    // Helper function to add permission columns if they don't exist
+    private function addPermissionColumns() {
+        try {
+            $columns = [
+                'restrict_posting' => 'TINYINT(1) DEFAULT 0',
+                'restrict_comments' => 'TINYINT(1) DEFAULT 0', 
+                'lock_class' => 'TINYINT(1) DEFAULT 0'
+            ];
+
+            foreach ($columns as $column => $definition) {
+                $sql = "SHOW COLUMNS FROM kelas LIKE '$column'";
+                $result = $this->conn->query($sql);
+                
+                if ($result->num_rows == 0) {
+                    $sql = "ALTER TABLE kelas ADD COLUMN $column $definition";
+                    $this->conn->query($sql);
+                }
+            }
+        } catch (Exception $e) {
+            // Log error but don't fail the operation
+            error_log("Error adding permission columns: " . $e->getMessage());
+        }
+    }
+
+    // Upload dan handle file gambar
+    public function handleImageUpload($file, $uploadDir = null) {
+        try {
+            // Set default upload directory relative to the logic folder
+            if ($uploadDir === null) {
+                $uploadDir = dirname(dirname(__DIR__)) . '/uploads/kelas/';
+            }
+            
+            // Create directory if it doesn't exist
+            if (!file_exists($uploadDir)) {
+                mkdir($uploadDir, 0777, true);
+            }
+
+            $allowedTypes = ['jpg', 'jpeg', 'png', 'gif'];
+            $maxSize = 5 * 1024 * 1024; // 5MB
+
+            $fileName = $file['name'];
+            $fileSize = $file['size'];
+            $fileTmp = $file['tmp_name'];
+            $fileError = $file['error'];
+
+            if ($fileError !== UPLOAD_ERR_OK) {
+                return ['success' => false, 'message' => 'Error uploading file: ' . $fileError];
+            }
+
+            if ($fileSize > $maxSize) {
+                return ['success' => false, 'message' => 'File terlalu besar (maksimal 5MB)'];
+            }
+
+            $fileExt = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+            if (!in_array($fileExt, $allowedTypes)) {
+                return ['success' => false, 'message' => 'Format file tidak didukung. Gunakan: ' . implode(', ', $allowedTypes)];
+            }
+
+            $newFileName = uniqid() . '.' . $fileExt;
+            $destination = $uploadDir . $newFileName;
+
+            // Debug logging
+            error_log("Upload destination: " . $destination);
+            error_log("Temp file: " . $fileTmp);
+            error_log("Upload dir exists: " . (file_exists($uploadDir) ? 'yes' : 'no'));
+            error_log("Upload dir writable: " . (is_writable($uploadDir) ? 'yes' : 'no'));
+
+            if (move_uploaded_file($fileTmp, $destination)) {
+                // Return relative path from web root
+                return ['success' => true, 'filePath' => 'uploads/kelas/' . $newFileName];
+            } else {
+                return ['success' => false, 'message' => 'Gagal menyimpan file. Periksa permissions folder uploads.'];
+            }
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => 'Error: ' . $e->getMessage()];
+        }
+    }
+}
+
+// Handle AJAX requests
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+    session_start();
+    
+    // Check if user is logged in and is a guru
+    if (!isset($_SESSION['user']) || $_SESSION['user']['role'] != 'guru') {
+        echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+        exit();
+    }
+
+    $kelasLogic = new KelasLogic();
+    $action = $_POST['action'];
+    $kelas_id = isset($_POST['kelas_id']) ? intval($_POST['kelas_id']) : 0;
+
+    switch ($action) {
+        case 'update_background':
+            $removeBackground = isset($_POST['remove_background']);
+            $gambarKover = null;
+            
+            if (!$removeBackground && isset($_FILES['background_image']) && $_FILES['background_image']['error'] === UPLOAD_ERR_OK) {
+                $uploadResult = $kelasLogic->handleImageUpload($_FILES['background_image']);
+                if ($uploadResult['success']) {
+                    $gambarKover = $uploadResult['filePath'];
+                } else {
+                    echo json_encode($uploadResult);
+                    exit();
+                }
+            }
+            
+            echo json_encode($kelasLogic->updateBackground($kelas_id, $gambarKover, $removeBackground));
+            break;
+
+        case 'update_class':
+            $namaKelas = $_POST['namaKelas'] ?? '';
+            $mataPelajaran = $_POST['mataPelajaran'] ?? '';
+            $deskripsi = $_POST['deskripsi'] ?? '';
+            $maxSiswa = isset($_POST['maxSiswa']) ? intval($_POST['maxSiswa']) : 30;
+            
+            echo json_encode($kelasLogic->updateKelas($kelas_id, $namaKelas, $deskripsi, $mataPelajaran, $maxSiswa));
+            break;
+
+        case 'remove_student':
+            $student_id = isset($_POST['student_id']) ? intval($_POST['student_id']) : 0;
+            echo json_encode($kelasLogic->hapusSiswaKelas($kelas_id, $student_id));
+            break;
+
+        case 'update_permissions':
+            // Debug logging
+            error_log("Received permissions data: " . print_r($_POST, true));
+            
+            $permissions = [
+                'restrict_posting' => isset($_POST['restrict_posting']) ? ($_POST['restrict_posting'] === 'on' || $_POST['restrict_posting'] === 'true' || $_POST['restrict_posting'] === true) : false,
+                'restrict_comments' => isset($_POST['restrict_comments']) ? ($_POST['restrict_comments'] === 'on' || $_POST['restrict_comments'] === 'true' || $_POST['restrict_comments'] === true) : false,
+                'lock_class' => isset($_POST['lock_class']) ? ($_POST['lock_class'] === 'on' || $_POST['lock_class'] === 'true' || $_POST['lock_class'] === true) : false
+            ];
+            
+            error_log("Processed permissions: " . print_r($permissions, true));
+            
+            echo json_encode($kelasLogic->updatePermissions($kelas_id, $permissions));
+            break;
+
+        case 'get_class_details':
+            $detail = $kelasLogic->getDetailKelas($kelas_id);
+            if ($detail) {
+                echo json_encode(['success' => true, 'data' => $detail]);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Kelas tidak ditemukan']);
+            }
+            break;
+
+        default:
+            echo json_encode(['success' => false, 'message' => 'Invalid action']);
+            break;
     }
 }
 ?>

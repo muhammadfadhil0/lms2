@@ -5,6 +5,9 @@
         <div tabindex="0" class="flex min-h-full items-end justify-center p-6 text-center focus:outline-none sm:items-center sm:p-0">
             <el-dialog-panel class="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all data-closed:translate-y-4 data-closed:opacity-0 data-enter:duration-300 data-enter:ease-out data-leave:duration-200 data-leave:ease-in sm:my-8 sm:w-full sm:max-w-md data-closed:sm:translate-y-0 data-closed:sm:scale-95">
                 <div class="bg-white px-5 pt-6 pb-5 sm:p-7 sm:pb-5">
+                    <!-- Modal Alert Component -->
+                    <?php include 'modal-alert.php'; ?>
+                    
                     <div class="sm:flex sm:items-start">
                         <div class="mx-auto flex size-14 bg-orange-100 shrink-0 items-center justify-center rounded-full sm:mx-0 sm:size-12">
                             <span class="ti ti-user-plus text-xl text-orange-600"></span>

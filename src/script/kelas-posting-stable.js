@@ -1,7 +1,11 @@
 // Kelas Posting System - Stable Version
 class KelasPosting {
-    constructor(kelasId) {
+    constructor(kelasId, permissions = null) {
         this.kelasId = kelasId;
+        this.permissions = permissions || {
+            canPost: true,
+            canComment: true
+        };
         this.currentOffset = 0;
         this.limit = 10;
         this.isLoading = false;
@@ -51,6 +55,7 @@ class KelasPosting {
         // Comment button handler
         document.addEventListener('click', (e) => {
             if (e.target.classList.contains('comment-btn') || e.target.closest('.comment-btn')) {
+                if (!this.permissions.canComment) return;
                 e.preventDefault();
                 const btn = e.target.closest('.comment-btn');
                 const postId = btn.getAttribute('data-post-id');
@@ -61,6 +66,7 @@ class KelasPosting {
         // View all comments button handler
         document.addEventListener('click', (e) => {
             if (e.target.classList.contains('view-all-comments') || e.target.closest('.view-all-comments')) {
+                if (!this.permissions.canComment) return;
                 e.preventDefault();
                 const btn = e.target.closest('.view-all-comments');
                 const postId = btn.getAttribute('data-post-id');
@@ -387,19 +393,24 @@ class KelasPosting {
                             <i class="ti ti-heart mr-1 lg:mr-2"></i>
                             <span class="like-count">${post.jumlahLike || 0}</span>
                         </button>
+                        ${this.permissions.canComment ? `
                         <button class="comment-btn flex items-center text-gray-600 hover:text-orange transition-colors text-sm lg:text-base" data-post-id="${post.id}">
                             <i class="ti ti-message-circle mr-1 lg:mr-2"></i>
                             <span class="comment-count">${post.jumlahKomentar || 0}</span>
                         </button>
+                        ` : ''}
                         <button class="flex items-center text-gray-600 hover:text-orange transition-colors text-sm lg:text-base">
                             <i class="ti ti-share mr-1 lg:mr-2"></i>
                             <span class="hidden sm:inline">Bagikan</span>
                         </button>
                     </div>
+                    ${this.permissions.canComment ? `
                     <button class="view-all-comments text-orange text-sm hover:text-orange-600 transition-colors" data-post-id="${post.id}" style="display: none;">
                         Lihat komentar lainnya
                     </button>
+                    ` : ''}
                 </div>
+                ${this.permissions.canComment ? `
                 <!-- Comments Preview - Always visible if there are comments -->
                 <div id="comments-preview-${post.id}" class="mt-4 pt-4 border-t border-gray-100" style="display: none;">
                     <!-- Preview comments (max 3) will be loaded here -->
@@ -426,12 +437,15 @@ class KelasPosting {
                 <div id="comments-${post.id}" class="hidden mt-4 pt-4 border-t border-gray-100">
                     <!-- Comments will be loaded here -->
                 </div>
+                ` : ''}
             </div>
         `;
         
-        // Auto-load comments preview after element is created
+        // Auto-load comments preview after element is created (only if comments are allowed)
         setTimeout(() => {
-            this.loadCommentsPreview(post.id);
+            if (this.permissions.canComment) {
+                this.loadCommentsPreview(post.id);
+            }
         }, 100);
         
         return postElement;
@@ -688,6 +702,11 @@ class KelasPosting {
     }
     
     async loadCommentsPreview(postId) {
+        // Don't load comments if commenting is restricted
+        if (!this.permissions.canComment) {
+            return;
+        }
+        
         try {
             const formData = new FormData();
             formData.append('action', 'get_comments');

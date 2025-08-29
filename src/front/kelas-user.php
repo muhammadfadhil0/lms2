@@ -54,6 +54,10 @@ $jumlahSiswa = count($siswaKelas);
 // Get class posts
 $postinganLogic = new PostinganLogic();
 $statistikPostingan = $postinganLogic->getStatistikPostingan($kelas_id);
+
+// Check class permissions
+$canPost = !isset($detailKelas['restrict_posting']) || !$detailKelas['restrict_posting'];
+$canComment = !isset($detailKelas['restrict_comments']) || !$detailKelas['restrict_comments'];
 ?>
 <!-- includes -->
 <?php require '../component/sidebar.php'; ?>
@@ -85,18 +89,15 @@ $statistikPostingan = $postinganLogic->getStatistikPostingan($kelas_id);
         </div>
 
         <!-- Jumbotron -->
-        <div class="relative h-60 lg:h-80 bg-gradient-to-r from-orange-500 to-orange-600 overflow-hidden">
+        <div class="relative h-60 lg:h-80 overflow-hidden" style="background: linear-gradient(45deg, #f97316, #ea580c);">
             <?php if (!empty($detailKelas['gambarKover'])): ?>
-                <img src="<?php echo htmlspecialchars($detailKelas['gambarKover']); ?>"
+                <img src="../../<?php echo htmlspecialchars($detailKelas['gambarKover']); ?>"
                     alt="<?php echo htmlspecialchars($detailKelas['namaKelas']); ?>"
-                    class="w-full h-full object-cover">
-                <div class="absolute inset-0 bg-black bg-opacity-40"></div>
-            <?php else: ?>
-                <div class="w-full h-full bg-gradient-to-r from-orange-500 to-orange-600 flex items-center justify-center">
-                    <i class="ti ti-book text-white text-8xl opacity-20"></i>
-                </div>
+                    class="w-full h-full object-cover absolute inset-0"
+                    style="z-index: 1;">
+                <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-black/20" style="z-index: 2;"></div>
             <?php endif; ?>
-            <div class="absolute bottom-4 lg:bottom-6 left-4 lg:left-6 text-white">
+            <div class="absolute bottom-4 lg:bottom-6 left-4 lg:left-6 text-white" style="z-index: 3;">
                 <h1 class="text-2xl lg:text-4xl font-bold mb-2"><?php echo htmlspecialchars($detailKelas['namaKelas']); ?></h1>
                 <div class="flex items-center space-x-3 lg:space-x-4">
                     <div class="w-10 h-10 lg:w-12 lg:h-12 rounded-full bg-orange-600 flex items-center justify-center">
@@ -115,7 +116,8 @@ $statistikPostingan = $postinganLogic->getStatistikPostingan($kelas_id);
             <div class="flex flex-col lg:flex-row gap-6">
                 <!-- Left Column - Posts -->
                 <div class="flex-1 lg:w-2/3">
-                    <!-- Create Post -->
+                    <!-- Create Post (only show if posting is allowed) -->
+                    <?php if ($canPost): ?>
                     <div class="bg-white rounded-lg p-4 lg:p-6 shadow-sm mb-6">
                         <form id="postForm">
                             <div class="flex items-start space-x-3 lg:space-x-4">
@@ -149,6 +151,20 @@ $statistikPostingan = $postinganLogic->getStatistikPostingan($kelas_id);
                             </div>
                         </form>
                     </div>
+                    <?php else: ?>
+                    <!-- Message when posting is restricted -->
+                    <div class="bg-orange-50 border border-orange-200 rounded-lg p-4 lg:p-6 mb-6">
+                        <div class="flex items-center">
+                            <div class="w-8 h-8 rounded-full bg-orange-200 flex items-center justify-center mr-3">
+                                <i class="ti ti-info-circle text-orange-600"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-medium text-orange-800">Posting Dibatasi</h4>
+                                <p class="text-sm text-orange-700 mt-1">Saat ini hanya dosen yang dapat membuat postingan baru di kelas ini.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <?php endif; ?>
 
                     <!-- Posts Feed -->
                     <div id="postsContainer" class="space-y-6">
@@ -247,7 +263,11 @@ $statistikPostingan = $postinganLogic->getStatistikPostingan($kelas_id);
         // Initialize posting system when page loads
         document.addEventListener('DOMContentLoaded', function() {
             const kelasId = <?php echo $kelas_id; ?>;
-            window.kelasPosting = new KelasPosting(kelasId);
+            const permissions = {
+                canPost: <?php echo $canPost ? 'true' : 'false'; ?>,
+                canComment: <?php echo $canComment ? 'true' : 'false'; ?>
+            };
+            window.kelasPosting = new KelasPosting(kelasId, permissions);
         });
     </script>
 </body>
