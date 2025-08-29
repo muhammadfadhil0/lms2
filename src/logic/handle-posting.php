@@ -154,16 +154,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     // Handle image uploads
     $uploadedImages = [];
     if (isset($_FILES['images']) && !empty($_FILES['images']['name'][0])) {
-        error_log("Processing image uploads. Files count: " . count($_FILES['images']['name']));
         $uploadedImages = handleImageUploads($_FILES['images'], $kelas_id, $user_id);
         if (isset($uploadedImages['error'])) {
-            error_log("Image upload error: " . $uploadedImages['error']);
             echo json_encode(['success' => false, 'message' => $uploadedImages['error']]);
             exit();
         }
-        error_log("Successfully processed " . count($uploadedImages) . " images");
-    } else {
-        error_log("No images to process");
     }
     
     // Create post

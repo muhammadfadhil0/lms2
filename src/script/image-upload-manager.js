@@ -196,9 +196,14 @@ class ImageUploadManager {
         // Image viewer will be handled by a separate class
         document.addEventListener('click', (e) => {
             if (e.target.matches('.post-image')) {
-                const postId = e.target.closest('.post-item').dataset.postId;
-                const imageIndex = parseInt(e.target.dataset.imageIndex) || 0;
-                this.openImageViewer(postId, imageIndex);
+                const postElement = e.target.closest('[data-post-id]');
+                if (postElement) {
+                    const postId = postElement.dataset.postId;
+                    const imageIndex = parseInt(e.target.dataset.imageIndex) || 0;
+                    this.openImageViewer(postId, imageIndex);
+                } else {
+                    console.warn('Post element not found for image viewer');
+                }
             }
         });
     }
@@ -282,12 +287,12 @@ class ImageViewer {
         this.currentIndex = Math.max(0, Math.min(imageIndex, this.currentImages.length - 1));
         
         // Get post data
-        const authorElement = postElement.querySelector('.post-author-name');
-        const dateElement = postElement.querySelector('.post-date');
+        const authorElement = postElement.querySelector('h3.font-semibold');
+        const dateElement = postElement.querySelector('p.text-xs');
         
         this.postData = {
             author: authorElement?.textContent || 'Unknown',
-            date: dateElement?.textContent || ''
+            date: this.extractTimeFromText(dateElement?.textContent || '')
         };
         
         this.updateViewer();
@@ -358,6 +363,12 @@ class ImageViewer {
     isOpen() {
         const modal = document.getElementById('imageViewerModal');
         return modal && !modal.classList.contains('hidden');
+    }
+    
+    extractTimeFromText(text) {
+        // Extract time info from text like "Guru • 5 menit yang lalu"
+        const matches = text.match(/•\s*(.+?)(?:\s*•|$)/);
+        return matches ? matches[1].trim() : text;
     }
 }
 
