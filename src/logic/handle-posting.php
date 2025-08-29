@@ -4,6 +4,68 @@ require_once 'postingan-logic.php';
 
 header('Content-Type: application/json');
 
+/**
+ * Handle multiple image uploads for postingan
+ */
+function handleImageUploads($files, $kelas_id, $user_id) {
+    $uploadedImages = [];
+    $maxFiles = 4;
+    $maxFileSize = 5 * 1024 * 1024; // 5MB per file
+    $allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+    
+    // Create upload directory if it doesn't exist
+    $uploadDir = '../../uploads/postingan/' . $kelas_id . '/';
+    if (!file_exists($uploadDir)) {
+        if (!mkdir($uploadDir, 0755, true)) {
+            return ['error' => 'Gagal membuat direktori upload'];
+        }
+    }
+    
+    $fileCount = count($files['name']);
+    if ($fileCount > $maxFiles) {
+        return ['error' => 'Maksimal 4 gambar yang dapat diunggah'];
+    }
+    
+    for ($i = 0; $i < $fileCount; $i++) {
+        if ($files['error'][$i] === UPLOAD_ERR_OK) {
+            // Validate file size
+            if ($files['size'][$i] > $maxFileSize) {
+                return ['error' => 'Ukuran file maksimal 5MB'];
+            }
+            
+            // Validate file type
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            $mimeType = finfo_file($finfo, $files['tmp_name'][$i]);
+            finfo_close($finfo);
+            
+            if (!in_array($mimeType, $allowedTypes)) {
+                return ['error' => 'Tipe file tidak didukung. Gunakan JPG, PNG, atau GIF'];
+            }
+            
+            // Generate unique filename
+            $extension = pathinfo($files['name'][$i], PATHINFO_EXTENSION);
+            $filename = uniqid() . '_' . time() . '.' . $extension;
+            $filePath = $uploadDir . $filename;
+            
+            if (move_uploaded_file($files['tmp_name'][$i], $filePath)) {
+                $uploadedImages[] = [
+                    'nama_file' => $files['name'][$i],
+                    'path_gambar' => 'uploads/postingan/' . $kelas_id . '/' . $filename,
+                    'ukuran_file' => $files['size'][$i],
+                    'tipe_file' => $mimeType,
+                    'urutan' => $i + 1
+                ];
+            } else {
+                return ['error' => 'Gagal mengunggah file: ' . $files['name'][$i]];
+            }
+        } else if ($files['error'][$i] !== UPLOAD_ERR_NO_FILE) {
+            return ['error' => 'Error upload: ' . $files['name'][$i]];
+        }
+    }
+    
+    return $uploadedImages;
+}
+
 // Check if user is logged in
 if (!isset($_SESSION['user'])) {
     echo json_encode(['success' => false, 'message' => 'Unauthorized access']);
@@ -87,8 +149,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
     }
     
+    // Handle image uploads
+    $uploadedImages = [];
+    if (isset($_FILES['images']) && !empty($_FILES['images']['name'][0])) {
+        $uploadedImages = handleImageUploads($_FILES['images'], $kelas_id, $user_id);
+        if (isset($uploadedImages['error'])) {
+            echo json_encode(['success' => false, 'message' => $uploadedImages['error']]);
+            exit();
+        }
+    }
+    
     // Create post
-    $result = $postinganLogic->buatPostingan($kelas_id, $user_id, $konten, $tipePost, $deadline);
+    $result = $postinganLogic->buatPostingan($kelas_id, $user_id, $konten, $tipePost, $deadline, $uploadedImages);
     
     echo json_encode($result);
 } else {

@@ -9,23 +9,36 @@ class PostinganLogic {
     }
     
     // Membuat postingan baru
-    public function buatPostingan($kelas_id, $user_id, $konten, $tipePost = 'umum', $deadline = null) {
+    public function buatPostingan($kelas_id, $user_id, $konten, $tipePost = 'umum', $deadline = null, $images = []) {
         try {
+            // Start transaction
+            $this->conn->begin_transaction();
+            
             $sql = "INSERT INTO postingan_kelas (kelas_id, user_id, konten, tipePost, deadline) 
                     VALUES (?, ?, ?, ?, ?)";
             $stmt = $this->conn->prepare($sql);
             $stmt->bind_param("iisss", $kelas_id, $user_id, $konten, $tipePost, $deadline);
             
             if ($stmt->execute()) {
+                $postingan_id = $this->conn->insert_id;
+                
+                // Save images if any
+                if (!empty($images)) {
+                    $this->simpanGambarPostingan($postingan_id, $images);
+                }
+                
+                $this->conn->commit();
                 return [
                     'success' => true, 
                     'message' => 'Postingan berhasil dibuat',
-                    'postingan_id' => $this->conn->insert_id
+                    'postingan_id' => $postingan_id
                 ];
             } else {
+                $this->conn->rollback();
                 return ['success' => false, 'message' => 'Gagal membuat postingan'];
             }
         } catch (Exception $e) {
+            $this->conn->rollback();
             return ['success' => false, 'message' => 'Error: ' . $e->getMessage()];
         }
     }
@@ -49,7 +62,14 @@ class PostinganLogic {
             $stmt->bind_param("iii", $kelas_id, $limit, $offset);
             $stmt->execute();
             
-            return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+            $postingan = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+            
+            // Get images for each post
+            foreach ($postingan as &$post) {
+                $post['gambar'] = $this->getGambarPostingan($post['id']);
+            }
+            
+            return $postingan;
         } catch (Exception $e) {
             return [];
         }
@@ -194,17 +214,20 @@ class PostinganLogic {
             
             $this->conn->begin_transaction();
             
+            // Hapus gambar postingan
+            $this->hapusGambarPostingan($postingan_id);
+            
             // Hapus like dan komentar
             $sql = "DELETE FROM like_postingan WHERE postingan_id = ?";
             $stmt = $this->conn->prepare($sql);
             $stmt->bind_param("i", $postingan_id);
             $stmt->execute();
-            
+
             $sql = "DELETE FROM komentar_postingan WHERE postingan_id = ?";
             $stmt = $this->conn->prepare($sql);
             $stmt->bind_param("i", $postingan_id);
             $stmt->execute();
-            
+
             // Hapus postingan
             $sql = "DELETE FROM postingan_kelas WHERE id = ?";
             $stmt = $this->conn->prepare($sql);
@@ -269,8 +292,70 @@ class PostinganLogic {
             return ['success' => false, 'message' => 'Error: ' . $e->getMessage()];
         }
     }
-
-    // Mendapatkan statistik postingan
+    
+    // Simpan gambar postingan
+    private function simpanGambarPostingan($postingan_id, $images) {
+        try {
+            foreach ($images as $image) {
+                $sql = "INSERT INTO postingan_gambar (postingan_id, nama_file, path_gambar, ukuran_file, tipe_file, urutan) 
+                        VALUES (?, ?, ?, ?, ?, ?)";
+                $stmt = $this->conn->prepare($sql);
+                $stmt->bind_param("issisi", 
+                    $postingan_id, 
+                    $image['nama_file'], 
+                    $image['path_gambar'], 
+                    $image['ukuran_file'], 
+                    $image['tipe_file'], 
+                    $image['urutan']
+                );
+                $stmt->execute();
+            }
+            return true;
+        } catch (Exception $e) {
+            throw new Exception('Gagal menyimpan gambar: ' . $e->getMessage());
+        }
+    }
+    
+    // Mendapatkan gambar postingan
+    public function getGambarPostingan($postingan_id) {
+        try {
+            $sql = "SELECT * FROM postingan_gambar WHERE postingan_id = ? ORDER BY urutan";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bind_param("i", $postingan_id);
+            $stmt->execute();
+            
+            return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        } catch (Exception $e) {
+            return [];
+        }
+    }
+    
+    // Hapus gambar postingan
+    public function hapusGambarPostingan($postingan_id) {
+        try {
+            // Get image paths first for file deletion
+            $images = $this->getGambarPostingan($postingan_id);
+            
+            // Delete from database
+            $sql = "DELETE FROM postingan_gambar WHERE postingan_id = ?";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bind_param("i", $postingan_id);
+            $stmt->execute();
+            
+            // Delete physical files
+            foreach ($images as $image) {
+                $filePath = '../../' . $image['path_gambar'];
+                if (file_exists($filePath)) {
+                    unlink($filePath);
+                }
+            }
+            
+            return true;
+        } catch (Exception $e) {
+            return false;
+        }
+    }
+    
     public function getStatistikPostingan($kelas_id) {
         try {
             $sql = "SELECT 

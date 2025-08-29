@@ -133,6 +133,14 @@ class KelasPosting {
         formData.append('konten', konten);
         formData.append('tipePost', 'umum');
         
+        // Add selected images if any
+        if (window.imageUpload && window.imageUpload.selectedFiles.length > 0) {
+            const selectedFiles = window.imageUpload.getSelectedFiles();
+            selectedFiles.forEach((file, index) => {
+                formData.append('images[]', file);
+            });
+        }
+        
         try {
             const response = await fetch('../logic/handle-posting.php', {
                 method: 'POST',
@@ -144,6 +152,12 @@ class KelasPosting {
             if (result.success) {
                 textarea.value = '';
                 this.autoResizeTextarea.call(textarea);
+                
+                // Clear selected images
+                if (window.imageUpload) {
+                    window.imageUpload.clearSelection();
+                }
+                
                 this.showAlert('Postingan berhasil dibuat!', 'success');
                 
                 // Wait longer then reload posts to avoid conflicts
@@ -386,6 +400,7 @@ class KelasPosting {
                             </div>
                         </div>
                     ` : ''}
+                    ${this.renderPostImages(post.gambar)}
                 </div>
                 <div class="flex items-center justify-between pt-4 border-t border-gray-100">
                     <div class="flex items-center space-x-4 lg:space-x-6">
@@ -892,6 +907,34 @@ class KelasPosting {
             const currentCount = parseInt(commentBtn.textContent) || 0;
             commentBtn.textContent = Math.max(0, currentCount + delta);
         }
+    }
+    
+    renderPostImages(images) {
+        if (!images || images.length === 0) {
+            return '';
+        }
+        
+        const imageCount = images.length;
+        const gridClass = `post-images-grid grid-${imageCount}`;
+        const imageClass = imageCount === 1 ? 'single' : 'multiple';
+        
+        let imagesHtml = images.map((image, index) => `
+            <div class="post-image-item ${imageClass}">
+                <img src="../../${image.path_gambar}" 
+                     alt="${this.escapeHtml(image.nama_file)}" 
+                     class="post-image" 
+                     data-image-index="${index}"
+                     onerror="this.style.display='none'">
+            </div>
+        `).join('');
+        
+        return `
+            <div class="post-images mt-3">
+                <div class="${gridClass}">
+                    ${imagesHtml}
+                </div>
+            </div>
+        `;
     }
 }
 

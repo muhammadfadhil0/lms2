@@ -52,6 +52,7 @@ $statistikPostingan = $postinganLogic->getStatistikPostingan($kelas_id);
     <?php require '../../assets/head.php'; ?>
     <link rel="stylesheet" href="../css/kelas-posting.css">
     <link rel="stylesheet" href="../css/class-settings.css">
+    <link rel="stylesheet" href="../css/image-upload.css">
     <title><?php echo htmlspecialchars($detailKelas['namaKelas']); ?> - Kelola Kelas</title>
 </head>
 
@@ -113,7 +114,7 @@ $statistikPostingan = $postinganLogic->getStatistikPostingan($kelas_id);
                 <div class="flex-1 lg:w-2/3">
                     <!-- Create Post -->
                     <div class="bg-white rounded-lg p-4 lg:p-6 shadow-sm mb-6">
-                        <form id="postForm">
+                        <form id="postForm" enctype="multipart/form-data">
                             <div class="flex items-start space-x-3 lg:space-x-4">
                                 <div class="w-8 h-8 lg:w-10 lg:h-10 rounded-full bg-orange-500 flex items-center justify-center">
                                     <i class="ti ti-user text-white"></i>
@@ -122,12 +123,22 @@ $statistikPostingan = $postinganLogic->getStatistikPostingan($kelas_id);
                                     <textarea id="postTextarea" name="konten" placeholder="Bagikan sesuatu dengan kelas..."
                                         class="w-full p-3 rounded-lg resize-none focus:ring-2 focus:ring-orange-500 focus:outline-none bg-gray-50"
                                         rows="3" required></textarea>
+                                    
+                                    <!-- Image Preview Container (will be populated by JavaScript) -->
+                                    <div class="image-preview-container hidden">
+                                        <div class="image-preview-grid"></div>
+                                        <div class="upload-message-container"></div>
+                                    </div>
+                                    
                                     <div class="flex items-center justify-between mt-4">
                                         <div class="flex space-x-2 lg:space-x-4">
-                                            <button type="button" class="flex items-center text-gray-600 hover:text-orange transition-colors text-sm lg:text-base">
-                                                <i class="ti ti-photo mr-1 lg:mr-2"></i>
-                                                <span class="hidden sm:inline">Foto</span>
-                                            </button>
+                                            <div class="image-upload-container">
+                                                <input type="file" id="imageInput" name="images[]" multiple accept="image/*" class="image-upload-input">
+                                                <label for="imageInput" class="image-upload-label flex items-center text-gray-600 hover:text-orange transition-colors text-sm lg:text-base cursor-pointer">
+                                                    <i class="ti ti-photo mr-1 lg:mr-2"></i>
+                                                    <span class="hidden sm:inline">Foto</span>
+                                                </label>
+                                            </div>
                                             <button type="button" class="flex items-center text-gray-600 hover:text-orange transition-colors text-sm lg:text-base">
                                                 <i class="ti ti-file mr-1 lg:mr-2"></i>
                                                 <span class="hidden sm:inline">File</span>
@@ -173,10 +184,6 @@ $statistikPostingan = $postinganLogic->getStatistikPostingan($kelas_id);
                                 <button class="w-full flex items-center p-3 text-left hover:bg-orange-50 rounded-lg transition-colors border border-transparent hover:border-orange-200">
                                     <i class="ti ti-file-plus mr-3 text-orange"></i>
                                     <span class="text-sm text-gray-700 font-medium">Buat Tugas</span>
-                                </button>
-                                <button class="w-full flex items-center p-3 text-left hover:bg-orange-50 rounded-lg transition-colors border border-transparent hover:border-orange-200">
-                                    <i class="ti ti-users mr-3 text-orange"></i>
-                                    <span class="text-sm text-gray-700 font-medium">Atur Siswa</span>
                                 </button>
                                 <button class="w-full flex items-center p-3 text-left hover:bg-orange-50 rounded-lg transition-colors border border-transparent hover:border-orange-200">
                                     <i class="ti ti-calendar-plus mr-3 text-orange"></i>
@@ -242,14 +249,17 @@ $statistikPostingan = $postinganLogic->getStatistikPostingan($kelas_id);
     <!-- Include Modal Components -->
     <?php require '../component/modal-delete-post.php'; ?>
     <?php require '../component/modal-comments.php'; ?>
+    <?php require '../component/modal-image-viewer.php'; ?>
     <?php require '../component/modal-class-settings.php'; ?>
     <?php require '../component/modal-class-background.php'; ?>
     <?php require '../component/modal-edit-class.php'; ?>
     <?php require '../component/modal-manage-students.php'; ?>
     <?php require '../component/modal-class-permissions.php'; ?>
+    <?php require '../component/modal-image-viewer.php'; ?>
 
     <script src="../script/menu-bar-script.js"></script>
     <script src="../script/class-settings-manager.js"></script>
+    <script src="../script/image-upload-manager.js"></script>
     <script src="../script/kelas-posting-stable.js"></script>
     <script>
         // Initialize posting system when page loads

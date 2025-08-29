@@ -70,6 +70,7 @@ $canComment = !isset($detailKelas['restrict_comments']) || !$detailKelas['restri
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <?php require '../../assets/head.php'; ?>
     <link rel="stylesheet" href="../css/kelas-posting.css">
+    <link rel="stylesheet" href="../css/image-upload.css">
     <title><?php echo htmlspecialchars($detailKelas['namaKelas']); ?> - Kelas</title>
 </head>
 
@@ -119,7 +120,7 @@ $canComment = !isset($detailKelas['restrict_comments']) || !$detailKelas['restri
                     <!-- Create Post (only show if posting is allowed) -->
                     <?php if ($canPost): ?>
                     <div class="bg-white rounded-lg p-4 lg:p-6 shadow-sm mb-6">
-                        <form id="postForm">
+                        <form id="postForm" enctype="multipart/form-data">
                             <div class="flex items-start space-x-3 lg:space-x-4">
                                 <div class="w-8 h-8 lg:w-10 lg:h-10 rounded-full bg-orange-500 flex items-center justify-center">
                                     <i class="ti ti-user text-white"></i>
@@ -128,12 +129,22 @@ $canComment = !isset($detailKelas['restrict_comments']) || !$detailKelas['restri
                                     <textarea id="postTextarea" name="konten" placeholder="Bagikan sesuatu dengan kelas..."
                                         class="w-full p-3 rounded-lg resize-none focus:ring-2 focus:ring-orange-500 focus:outline-none bg-gray-50"
                                         rows="3" required></textarea>
+                                    
+                                    <!-- Image Preview Container (will be populated by JavaScript) -->
+                                    <div class="image-preview-container hidden">
+                                        <div class="image-preview-grid"></div>
+                                        <div class="upload-message-container"></div>
+                                    </div>
+                                    
                                     <div class="flex items-center justify-between mt-4">
                                         <div class="flex space-x-2 lg:space-x-4">
-                                            <button type="button" class="flex items-center text-gray-600 hover:text-orange transition-colors text-sm lg:text-base">
-                                                <i class="ti ti-photo mr-1 lg:mr-2"></i>
-                                                <span class="hidden sm:inline">Foto</span>
-                                            </button>
+                                            <div class="image-upload-container">
+                                                <input type="file" id="imageInput" name="images[]" multiple accept="image/*" class="image-upload-input">
+                                                <label for="imageInput" class="image-upload-label flex items-center text-gray-600 hover:text-orange transition-colors text-sm lg:text-base cursor-pointer">
+                                                    <i class="ti ti-photo mr-1 lg:mr-2"></i>
+                                                    <span class="hidden sm:inline">Foto</span>
+                                                </label>
+                                            </div>
                                             <button type="button" class="flex items-center text-gray-600 hover:text-orange transition-colors text-sm lg:text-base">
                                                 <i class="ti ti-file mr-1 lg:mr-2"></i>
                                                 <span class="hidden sm:inline">File</span>
@@ -256,8 +267,10 @@ $canComment = !isset($detailKelas['restrict_comments']) || !$detailKelas['restri
     <!-- Include Modal Components -->
     <?php require '../component/modal-delete-post.php'; ?>
     <?php require '../component/modal-comments.php'; ?>
+    <?php require '../component/modal-image-viewer.php'; ?>
 
     <script src="../script/menu-bar-script.js"></script>
+    <script src="../script/image-upload-manager.js"></script>
     <script src="../script/kelas-posting-stable.js"></script>
     <script>
         // Initialize posting system when page loads
