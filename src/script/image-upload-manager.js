@@ -195,14 +195,12 @@ class ImageUploadManager {
     setupImageViewer() {
         // Image viewer will be handled by a separate class
         document.addEventListener('click', (e) => {
-            console.log('Click detected on:', e.target);
             if (e.target.matches('.post-image')) {
                 console.log('Post image clicked');
                 const postElement = e.target.closest('[data-post-id]');
                 if (postElement) {
                     const postId = postElement.dataset.postId;
                     const imageIndex = parseInt(e.target.dataset.imageIndex) || 0;
-                    console.log('Opening image viewer for post:', postId, 'index:', imageIndex);
                     this.openImageViewer(postId, imageIndex);
                 } else {
                     console.warn('Post element not found for image viewer');
@@ -227,6 +225,7 @@ class ImageViewer {
         this.currentImages = [];
         this.currentIndex = 0;
         this.postData = null;
+        this.isZoomed = false;
         
         this.init();
     }
@@ -236,18 +235,33 @@ class ImageViewer {
     }
     
     setupEventListeners() {
+        // Setup event listeners yang tidak bergantung pada DOM yang sudah ada
+        this.setupModalEventListeners();
+    }
+    
+    setupModalEventListeners() {
         // Close button
-        document.getElementById('closeImageViewer')?.addEventListener('click', () => {
-            this.close();
+        document.addEventListener('click', (e) => {
+            if (e.target.id === 'closeImageViewer') {
+                this.close();
+            }
         });
         
         // Navigation buttons
-        document.getElementById('prevImage')?.addEventListener('click', () => {
-            this.navigate(-1);
+        document.addEventListener('click', (e) => {
+            if (e.target.id === 'prevImage' || e.target.closest('#prevImage')) {
+                this.navigate(-1);
+            } else if (e.target.id === 'nextImage' || e.target.closest('#nextImage')) {
+                this.navigate(1);
+            }
         });
         
-        document.getElementById('nextImage')?.addEventListener('click', () => {
-            this.navigate(1);
+        // Image zoom on click
+        document.addEventListener('click', (e) => {
+            if (e.target.id === 'viewerImage') {
+                e.stopPropagation(); // Prevent modal from closing
+                this.toggleZoom();
+            }
         });
         
         // Keyboard navigation
@@ -268,8 +282,13 @@ class ImageViewer {
         });
         
         // Close on background click
-        document.getElementById('imageViewerModal')?.addEventListener('click', (e) => {
-            if (e.target.id === 'imageViewerModal') {
+        document.addEventListener('click', (e) => {
+            if (!this.isOpen()) return;
+            
+            // Check if clicked element is the modal background (not the content)
+            if (e.target.id === 'imageViewerModal' || 
+                e.target.classList.contains('modal-container') ||
+                (e.target.classList.contains('modal-overlay') && !e.target.closest('.image-viewer-content'))) {
                 this.close();
             }
         });
@@ -309,16 +328,19 @@ class ImageViewer {
         
         console.log('Post data:', this.postData);
         
+        this.resetZoom(); // Reset zoom when opening new image
         this.updateViewer();
         this.show();
     }
     
     close() {
+        console.log('Closing image viewer modal');
         const modal = document.getElementById('imageViewerModal');
         if (modal) {
             modal.classList.add('hidden');
         }
         document.body.style.overflow = '';
+        this.resetZoom(); // Reset zoom when closing
     }
     
     show() {
@@ -336,6 +358,9 @@ class ImageViewer {
     navigate(direction) {
         if (this.currentImages.length <= 1) return;
         
+        // Reset zoom when navigating
+        this.resetZoom();
+        
         this.currentIndex += direction;
         
         if (this.currentIndex < 0) {
@@ -345,6 +370,27 @@ class ImageViewer {
         }
         
         this.updateViewer();
+    }
+    
+    toggleZoom() {
+        const image = document.getElementById('viewerImage');
+        if (!image) return;
+        
+        this.isZoomed = !this.isZoomed;
+        
+        if (this.isZoomed) {
+            image.classList.add('zoomed');
+        } else {
+            image.classList.remove('zoomed');
+        }
+    }
+    
+    resetZoom() {
+        const image = document.getElementById('viewerImage');
+        if (image) {
+            image.classList.remove('zoomed');
+            this.isZoomed = false;
+        }
     }
     
     updateViewer() {

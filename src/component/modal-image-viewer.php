@@ -169,13 +169,25 @@
     justify-content: center;
     height: 100%;
     min-height: 300px;
+    overflow: hidden;
+    position: relative;
 }
 
 .viewer-image {
     max-width: 100%;
     max-height: 100%;
+    width: auto;
+    height: auto;
     object-fit: contain;
     border-radius: 4px;
+    cursor: zoom-in;
+    transition: transform 0.3s ease;
+}
+
+.viewer-image.zoomed {
+    cursor: zoom-out;
+    transform: scale(2);
+    object-fit: none;
 }
 
 .image-viewer-footer {
@@ -279,6 +291,11 @@
     
     .image-counter {
         font-size: 13px;
+    }
+    
+    /* Mobile zoom adjustments */
+    .viewer-image.zoomed {
+        transform: scale(1.5); /* Less zoom on mobile */
     }
 }
 
