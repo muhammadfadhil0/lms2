@@ -136,9 +136,13 @@ class KelasPosting {
         // Add selected images if any
         if (window.imageUpload && window.imageUpload.selectedFiles.length > 0) {
             const selectedFiles = window.imageUpload.getSelectedFiles();
+            console.log('Adding', selectedFiles.length, 'files to form data');
             selectedFiles.forEach((file, index) => {
+                console.log('Adding file:', file.name, 'size:', file.size);
                 formData.append('images[]', file);
             });
+        } else {
+            console.log('No images selected for upload');
         }
         
         try {
@@ -165,10 +169,11 @@ class KelasPosting {
                     this.refreshPosts();
                 }, 1000);
             } else {
+                console.error('Post submission failed:', result);
                 this.showAlert(result.message || 'Gagal membuat postingan', 'error');
             }
         } catch (error) {
-            console.error('Error:', error);
+            console.error('Error submitting post:', error);
             this.showAlert('Terjadi kesalahan saat membuat postingan', 'error');
         } finally {
             this.submitInProgress = false;

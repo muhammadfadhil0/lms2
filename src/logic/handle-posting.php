@@ -15,10 +15,12 @@ function handleImageUploads($files, $kelas_id, $user_id) {
     
     // Create upload directory if it doesn't exist
     $uploadDir = '../../uploads/postingan/' . $kelas_id . '/';
+    
     if (!file_exists($uploadDir)) {
-        if (!mkdir($uploadDir, 0755, true)) {
-            return ['error' => 'Gagal membuat direktori upload'];
+        if (!mkdir($uploadDir, 0777, true)) {
+            return ['error' => 'Gagal membuat direktori upload. Periksa permisi direktori.'];
         }
+        chmod($uploadDir, 0777); // Ensure proper permissions
     }
     
     $fileCount = count($files['name']);
@@ -152,11 +154,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     // Handle image uploads
     $uploadedImages = [];
     if (isset($_FILES['images']) && !empty($_FILES['images']['name'][0])) {
+        error_log("Processing image uploads. Files count: " . count($_FILES['images']['name']));
         $uploadedImages = handleImageUploads($_FILES['images'], $kelas_id, $user_id);
         if (isset($uploadedImages['error'])) {
+            error_log("Image upload error: " . $uploadedImages['error']);
             echo json_encode(['success' => false, 'message' => $uploadedImages['error']]);
             exit();
         }
+        error_log("Successfully processed " . count($uploadedImages) . " images");
+    } else {
+        error_log("No images to process");
     }
     
     // Create post
