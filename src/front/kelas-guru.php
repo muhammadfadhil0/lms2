@@ -255,7 +255,6 @@ $statistikPostingan = $postinganLogic->getStatistikPostingan($kelas_id);
     <?php require '../component/modal-edit-class.php'; ?>
     <?php require '../component/modal-manage-students.php'; ?>
     <?php require '../component/modal-class-permissions.php'; ?>
-    <?php require '../component/modal-image-viewer.php'; ?>
 
     <script src="../script/menu-bar-script.js"></script>
     <script src="../script/class-settings-manager.js"></script>

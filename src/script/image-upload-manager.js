@@ -195,11 +195,14 @@ class ImageUploadManager {
     setupImageViewer() {
         // Image viewer will be handled by a separate class
         document.addEventListener('click', (e) => {
+            console.log('Click detected on:', e.target);
             if (e.target.matches('.post-image')) {
+                console.log('Post image clicked');
                 const postElement = e.target.closest('[data-post-id]');
                 if (postElement) {
                     const postId = postElement.dataset.postId;
                     const imageIndex = parseInt(e.target.dataset.imageIndex) || 0;
+                    console.log('Opening image viewer for post:', postId, 'index:', imageIndex);
                     this.openImageViewer(postId, imageIndex);
                 } else {
                     console.warn('Post element not found for image viewer');
@@ -273,11 +276,20 @@ class ImageViewer {
     }
     
     open(postId, imageIndex = 0) {
+        console.log('Opening image viewer for post:', postId);
         const postElement = document.querySelector(`[data-post-id="${postId}"]`);
-        if (!postElement) return;
+        if (!postElement) {
+            console.error('Post element not found for ID:', postId);
+            return;
+        }
         
         const images = postElement.querySelectorAll('.post-image');
-        if (images.length === 0) return;
+        if (images.length === 0) {
+            console.error('No images found in post:', postId);
+            return;
+        }
+        
+        console.log('Found', images.length, 'images in post');
         
         this.currentImages = Array.from(images).map(img => ({
             src: img.src,
@@ -295,6 +307,8 @@ class ImageViewer {
             date: this.extractTimeFromText(dateElement?.textContent || '')
         };
         
+        console.log('Post data:', this.postData);
+        
         this.updateViewer();
         this.show();
     }
@@ -308,9 +322,13 @@ class ImageViewer {
     }
     
     show() {
+        console.log('Showing image viewer modal');
         const modal = document.getElementById('imageViewerModal');
         if (modal) {
             modal.classList.remove('hidden');
+            console.log('Modal classes after show:', modal.className);
+        } else {
+            console.error('Image viewer modal not found!');
         }
         document.body.style.overflow = 'hidden';
     }
