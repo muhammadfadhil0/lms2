@@ -53,6 +53,7 @@ $statistikPostingan = $postinganLogic->getStatistikPostingan($kelas_id);
     <link rel="stylesheet" href="../css/kelas-posting.css">
     <link rel="stylesheet" href="../css/class-settings.css">
     <link rel="stylesheet" href="../css/image-upload.css">
+    <link rel="stylesheet" href="../css/photoswipe-custom.css">
     <title><?php echo htmlspecialchars($detailKelas['namaKelas']); ?> - Kelola Kelas</title>
 </head>
 
@@ -250,6 +251,7 @@ $statistikPostingan = $postinganLogic->getStatistikPostingan($kelas_id);
     <?php require '../component/modal-delete-post.php'; ?>
     <?php require '../component/modal-comments.php'; ?>
     <?php require '../component/modal-image-viewer.php'; ?>
+    <?php require '../component/photoswipe-modal.php'; ?>
     <?php require '../component/modal-class-settings.php'; ?>
     <?php require '../component/modal-class-background.php'; ?>
     <?php require '../component/modal-edit-class.php'; ?>
@@ -259,6 +261,7 @@ $statistikPostingan = $postinganLogic->getStatistikPostingan($kelas_id);
     <script src="../script/menu-bar-script.js"></script>
     <script src="../script/class-settings-manager.js"></script>
     <script src="../script/image-upload-manager.js"></script>
+    <script src="../script/photoswipe-viewer.js"></script>
     <script src="../script/kelas-posting-stable.js"></script>
     <script>
         // Initialize posting system when page loads

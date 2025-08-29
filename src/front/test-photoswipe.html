@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PhotoSwipe Test - LMS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="../css/image-upload.css">
+    <link rel="stylesheet" href="../css/photoswipe-custom.css">
+</head>
+<body class="bg-gray-50 p-4">
+    <div class="max-w-2xl mx-auto">
+        <h1 class="text-2xl font-bold mb-6">PhotoSwipe Test Page</h1>
+        
+        <!-- Test Post 1 - Single Image -->
+        <div class="bg-white rounded-lg shadow-sm border p-4 mb-6" data-post-id="test1">
+            <div class="flex items-center mb-3">
+                <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
+                    JD
+                </div>
+                <div class="ml-3">
+                    <h3 class="font-semibold text-gray-900">John Doe</h3>
+                    <p class="text-xs text-gray-500">Guru • 5 menit yang lalu</p>
+                </div>
+            </div>
+            <p class="text-gray-800 mb-3">Test post dengan satu gambar</p>
+            
+            <!-- Single Image -->
+            <div class="post-images mt-3">
+                <div class="post-images-grid grid-1">
+                    <div class="post-image-item single">
+                        <img src="../../uploads/kelas/68b19aeb1cce3.jpg" 
+                             alt="Test Image 1" 
+                             class="post-image" 
+                             data-image-index="0"
+                             style="cursor: pointer;"
+                             onerror="this.src='https://via.placeholder.com/400x300/3b82f6/ffffff?text=Image+1'">
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Test Post 2 - Two Images -->
+        <div class="bg-white rounded-lg shadow-sm border p-4 mb-6" data-post-id="test2">
+            <div class="flex items-center mb-3">
+                <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
+                    JS
+                </div>
+                <div class="ml-3">
+                    <h3 class="font-semibold text-gray-900">Jane Smith</h3>
+                    <p class="text-xs text-gray-500">Siswa • 10 menit yang lalu</p>
+                </div>
+            </div>
+            <p class="text-gray-800 mb-3">Test post dengan dua gambar</p>
+            
+            <!-- Two Images -->
+            <div class="post-images mt-3">
+                <div class="post-images-grid grid-2">
+                    <div class="post-image-item multiple">
+                        <img src="../../uploads/kelas/68b0de03979e8_logo.png" 
+                             alt="Test Image 1" 
+                             class="post-image" 
+                             data-image-index="0"
+                             style="cursor: pointer;"
+                             onerror="this.src='https://via.placeholder.com/400x300/10b981/ffffff?text=Image+1'">
+                    </div>
+                    <div class="post-image-item multiple">
+                        <img src="../../uploads/kelas/68b19aeb1cce3.jpg" 
+                             alt="Test Image 2" 
+                             class="post-image" 
+                             data-image-index="1"
+                             style="cursor: pointer;"
+                             onerror="this.src='https://via.placeholder.com/400x300/10b981/ffffff?text=Image+2'">
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Test Post 3 - Three Images -->
+        <div class="bg-white rounded-lg shadow-sm border p-4 mb-6" data-post-id="test3">
+            <div class="flex items-center mb-3">
+                <div class="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
+                    MS
+                </div>
+                <div class="ml-3">
+                    <h3 class="font-semibold text-gray-900">Mike Student</h3>
+                    <p class="text-xs text-gray-500">Siswa • 15 menit yang lalu</p>
+                </div>
+            </div>
+            <p class="text-gray-800 mb-3">Test post dengan tiga gambar</p>
+            
+            <!-- Three Images -->
+            <div class="post-images mt-3">
+                <div class="post-images-grid grid-3">
+                    <div class="post-image-item multiple">
+                        <img src="https://via.placeholder.com/400x300/8b5cf6/ffffff?text=Image+1" 
+                             alt="Test Image 1" 
+                             class="post-image" 
+                             data-image-index="0"
+                             style="cursor: pointer;">
+                    </div>
+                    <div class="post-image-item multiple">
+                        <img src="https://via.placeholder.com/400x300/8b5cf6/ffffff?text=Image+2" 
+                             alt="Test Image 2" 
+                             class="post-image" 
+                             data-image-index="1"
+                             style="cursor: pointer;">
+                    </div>
+                    <div class="post-image-item multiple">
+                        <img src="https://via.placeholder.com/400x300/8b5cf6/ffffff?text=Image+3" 
+                             alt="Test Image 3" 
+                             class="post-image" 
+                             data-image-index="2"
+                             style="cursor: pointer;">
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Test Post 4 - Four Images -->
+        <div class="bg-white rounded-lg shadow-sm border p-4 mb-6" data-post-id="test4">
+            <div class="flex items-center mb-3">
+                <div class="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
+                    AS
+                </div>
+                <div class="ml-3">
+                    <h3 class="font-semibold text-gray-900">Alice Student</h3>
+                    <p class="text-xs text-gray-500">Siswa • 20 menit yang lalu</p>
+                </div>
+            </div>
+            <p class="text-gray-800 mb-3">Test post dengan empat gambar (maksimal)</p>
+            
+            <!-- Four Images -->
+            <div class="post-images mt-3">
+                <div class="post-images-grid grid-4">
+                    <div class="post-image-item multiple">
+                        <img src="https://via.placeholder.com/400x300/ef4444/ffffff?text=Image+1" 
+                             alt="Test Image 1" 
+                             class="post-image" 
+                             data-image-index="0"
+                             style="cursor: pointer;">
+                    </div>
+                    <div class="post-image-item multiple">
+                        <img src="https://via.placeholder.com/400x300/ef4444/ffffff?text=Image+2" 
+                             alt="Test Image 2" 
+                             class="post-image" 
+                             data-image-index="1"
+                             style="cursor: pointer;">
+                    </div>
+                    <div class="post-image-item multiple">
+                        <img src="https://via.placeholder.com/400x300/ef4444/ffffff?text=Image+3" 
+                             alt="Test Image 3" 
+                             class="post-image" 
+                             data-image-index="2"
+                             style="cursor: pointer;">
+                    </div>
+                    <div class="post-image-item multiple">
+                        <img src="https://via.placeholder.com/400x300/ef4444/ffffff?text=Image+4" 
+                             alt="Test Image 4" 
+                             class="post-image" 
+                             data-image-index="3"
+                             style="cursor: pointer;">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- PhotoSwipe Modal -->
+    <div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="pswp__bg"></div>
+        <div class="pswp__scroll-wrap">
+            <div class="pswp__container">
+                <div class="pswp__item"></div>
+                <div class="pswp__item"></div>
+                <div class="pswp__item"></div>
+            </div>
+            
+            <div class="pswp__ui pswp__ui--hidden">
+                <div class="pswp__top-bar">
+                    <div class="pswp__counter"></div>
+                    <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+                    <button class="pswp__button pswp__button--share" title="Share"></button>
+                    <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+                    <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+                    
+                    <div class="pswp__preloader">
+                        <div class="pswp__preloader__icn">
+                            <div class="pswp__preloader__cut">
+                                <div class="pswp__preloader__donut"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                    <div class="pswp__share-tooltip"></div>
+                </div>
+                
+                <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)"></button>
+                <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)"></button>
+                
+                <div class="pswp__caption">
+                    <div class="pswp__caption__center"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="../script/photoswipe-viewer.js"></script>
+</body>
+</html>

@@ -929,6 +929,7 @@ class KelasPosting {
                      alt="${this.escapeHtml(image.nama_file)}" 
                      class="post-image" 
                      data-image-index="${index}"
+                     style="cursor: pointer;"
                      onerror="this.style.display='none'">
             </div>
         `).join('');
