@@ -260,7 +260,21 @@ class ImageViewer {
         document.addEventListener('click', (e) => {
             if (e.target.id === 'viewerImage') {
                 e.stopPropagation(); // Prevent modal from closing
-                this.toggleZoom();
+                this.toggleZoom(e); // Pass event untuk posisi cursor
+            }
+        });
+        
+        // Touch support for mobile zoom
+        document.addEventListener('touchend', (e) => {
+            if (e.target.id === 'viewerImage' && e.touches.length === 0) {
+                e.stopPropagation();
+                // Convert touch to click-like event
+                const touch = e.changedTouches[0];
+                const clickEvent = {
+                    clientX: touch.clientX,
+                    clientY: touch.clientY
+                };
+                this.toggleZoom(clickEvent);
             }
         });
         
@@ -372,16 +386,33 @@ class ImageViewer {
         this.updateViewer();
     }
     
-    toggleZoom() {
+    toggleZoom(event) {
         const image = document.getElementById('viewerImage');
         if (!image) return;
         
         this.isZoomed = !this.isZoomed;
         
-        if (this.isZoomed) {
+        if (this.isZoomed && event) {
+            // Calculate zoom position based on cursor position
+            const rect = image.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+            
+            // Convert to percentage of image dimensions
+            const xPercent = (x / rect.width) * 100;
+            const yPercent = (y / rect.height) * 100;
+            
+            // Set transform origin to cursor position
+            image.style.transformOrigin = `${xPercent}% ${yPercent}%`;
+            image.classList.add('zoomed');
+        } else if (this.isZoomed) {
+            // Zoom in to center if no event provided
+            image.style.transformOrigin = 'center center';
             image.classList.add('zoomed');
         } else {
+            // Zoom out
             image.classList.remove('zoomed');
+            image.style.transformOrigin = 'center center';
         }
     }
     
@@ -389,6 +420,7 @@ class ImageViewer {
         const image = document.getElementById('viewerImage');
         if (image) {
             image.classList.remove('zoomed');
+            image.style.transformOrigin = 'center center';
             this.isZoomed = false;
         }
     }

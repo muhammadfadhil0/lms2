@@ -169,25 +169,29 @@
     justify-content: center;
     height: 100%;
     min-height: 300px;
-    overflow: hidden;
+    overflow: auto;
     position: relative;
+    padding: 20px;
 }
 
 .viewer-image {
-    max-width: 100%;
-    max-height: 100%;
+    max-width: calc(100% - 40px);
+    max-height: calc(100% - 40px);
     width: auto;
     height: auto;
     object-fit: contain;
     border-radius: 4px;
     cursor: zoom-in;
     transition: transform 0.3s ease;
+    transform-origin: center center;
+    display: block;
 }
 
 .viewer-image.zoomed {
     cursor: zoom-out;
     transform: scale(2);
-    object-fit: none;
+    max-width: none;
+    max-height: none;
 }
 
 .image-viewer-footer {
@@ -244,6 +248,15 @@
     .image-viewer-content {
         max-width: 95vw;
         max-height: 95vh;
+    }
+    
+    .image-container {
+        padding: 10px;
+    }
+    
+    .viewer-image {
+        max-width: calc(100% - 20px);
+        max-height: calc(100% - 20px);
     }
     
     .image-viewer-header {
