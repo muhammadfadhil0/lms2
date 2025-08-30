@@ -139,6 +139,10 @@ $statistikPostingan = $postinganLogic->getStatistikPostingan($kelas_id);
                                                     <span class="hidden sm:inline">Foto</span>
                                                 </label>
                                             </div>
+                                            <button type="button" onclick="openCreateAssignmentModal()" class="flex items-center text-gray-600 hover:text-blue-600 transition-colors text-sm lg:text-base">
+                                                <i class="ti ti-clipboard-list mr-1 lg:mr-2"></i>
+                                                <span class="hidden sm:inline">Tugas</span>
+                                            </button>
                                             <button type="button" class="flex items-center text-gray-600 hover:text-orange transition-colors text-sm lg:text-base">
                                                 <i class="ti ti-file mr-1 lg:mr-2"></i>
                                                 <span class="hidden sm:inline">File</span>
@@ -180,6 +184,10 @@ $statistikPostingan = $postinganLogic->getStatistikPostingan($kelas_id);
                                 <button onclick="openClassSettings()" class="w-full flex items-center p-3 text-left hover:bg-orange-50 rounded-lg transition-colors border border-transparent hover:border-orange-200">
                                     <i class="ti ti-settings mr-3 text-orange"></i>
                                     <span class="text-sm text-gray-700 font-medium">Pengaturan Kelas</span>
+                                </button>
+                                <button onclick="openAssignmentReports()" class="w-full flex items-center p-3 text-left hover:bg-blue-50 rounded-lg transition-colors border border-transparent hover:border-blue-200">
+                                    <i class="ti ti-clipboard-check mr-3 text-blue-600"></i>
+                                    <span class="text-sm text-gray-700 font-medium">Laporan Tugas Siswa</span>
                                 </button>
                                 <button class="w-full flex items-center p-3 text-left hover:bg-orange-50 rounded-lg transition-colors border border-transparent hover:border-orange-200">
                                     <i class="ti ti-file-plus mr-3 text-orange"></i>
@@ -255,13 +263,15 @@ $statistikPostingan = $postinganLogic->getStatistikPostingan($kelas_id);
     <?php require '../component/modal-edit-class.php'; ?>
     <?php require '../component/modal-manage-students.php'; ?>
     <?php require '../component/modal-class-permissions.php'; ?>
+    <?php require '../component/modal-create-assignment.php'; ?>
 
     <script src="../script/menu-bar-script.js"></script>
     <script src="../script/class-settings-manager.js"></script>
     <script src="../script/image-upload-manager.js"></script>
     <script src="../script/photoswipe-simple.js"></script>
     <script src="../script/edit-post-modal.js"></script>
-    <script src="../script/kelas-posting-stable.js"></script>
+    <script src="../script/assignment-manager.js"></script>
+    <script src="../script/kelas-posting-stable.js?v=<?php echo time(); ?>"></script>
     <script>
         // Initialize global variables
         window.currentUserId = <?php echo $_SESSION['user']['id']; ?>;
@@ -276,6 +286,7 @@ $statistikPostingan = $postinganLogic->getStatistikPostingan($kelas_id);
             };
             window.kelasPosting = new KelasPosting(kelasId, permissions);
             window.classSettings = new ClassSettingsManager(kelasId);
+            window.assignmentManager = new AssignmentManager(kelasId, '<?php echo $_SESSION['user']['role']; ?>');
         });
     </script>
 </body>

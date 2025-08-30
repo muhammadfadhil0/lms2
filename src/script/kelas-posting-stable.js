@@ -397,7 +397,6 @@ class KelasPosting {
                     ` : ''}
                 </div>
                 <div class="mb-4">
-                    <p class="text-gray-800 text-sm lg:text-base whitespace-pre-wrap">${this.escapeHtml(post.konten)}</p>
                     ${post.deadline ? `
                         <div class="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                             <div class="flex items-center">
@@ -406,6 +405,7 @@ class KelasPosting {
                             </div>
                         </div>
                     ` : ''}
+                    ${this.renderAssignmentContent(post)}
                     ${this.renderPostImages(post.gambar)}
                 </div>
                 <div class="flex items-center justify-between pt-4 border-t border-gray-100">
@@ -972,6 +972,351 @@ class KelasPosting {
             console.error('Error refreshing post:', error);
         }
     }
+
+    renderAssignmentContent(post) {
+        if (post.tipe_postingan !== 'assignment' || !post.assignment_id) {
+            return '';
+        }
+
+        const currentUserRole = window.currentUserRole;
+        console.log('🎯 renderAssignmentContent:', {
+            postId: post.id,
+            assignmentId: post.assignment_id,
+            currentUserRole,
+            submissionStatus: post.student_submission_status
+        });
+        
+        const isDeadlinePassed = post.assignment_deadline && new Date(post.assignment_deadline) < new Date();
+        
+        // Format deadline
+        const formatDeadline = (deadline) => {
+            if (!deadline) return '';
+            const date = new Date(deadline);
+            return date.toLocaleDateString('id-ID', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        };
+
+        // Format deadline for mobile (shorter)
+        const formatDeadlineMobile = (deadline) => {
+            if (!deadline) return '';
+            const date = new Date(deadline);
+            return date.toLocaleDateString('id-ID', {
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        };
+
+        // Get file icon based on extension
+        const getFileIcon = (filename) => {
+            if (!filename) return 'ti ti-file';
+            const ext = filename.toLowerCase().split('.').pop();
+            switch (ext) {
+                case 'pdf': return 'ti ti-file-type-pdf';
+                case 'doc':
+                case 'docx': return 'ti ti-file-type-doc';
+                case 'xls':
+                case 'xlsx': return 'ti ti-file-type-xls';
+                case 'ppt':
+                case 'pptx': return 'ti ti-file-type-ppt';
+                case 'jpg':
+                case 'jpeg':
+                case 'png':
+                case 'gif': return 'ti ti-photo';
+                case 'mp4':
+                case 'avi':
+                case 'mov': return 'ti ti-video';
+                case 'mp3':
+                case 'wav': return 'ti ti-music';
+                case 'zip':
+                case 'rar': return 'ti ti-file-zip';
+                default: return 'ti ti-file';
+            }
+        };
+
+        // Assignment header with info
+        let assignmentHeader = `
+            <div class="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-lg p-4 mt-3">
+                <div class="flex items-start space-x-3">
+                    <div class="flex-shrink-0">
+                        <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                            <i class="ti ti-clipboard-text text-purple-600 text-lg"></i>
+                        </div>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">${this.escapeHtml(post.assignment_title)}</h3>
+                        
+                        ${post.assignment_description ? `
+                            <div class="text-sm text-gray-700 mb-3">
+                                <i class="ti ti-align-left mr-2"></i>${this.escapeHtml(post.assignment_description)}
+                            </div>
+                        ` : ''}
+                        
+                        <div class="flex flex-wrap gap-4 text-sm">
+                            ${post.assignment_deadline ? `
+                                <div class="flex items-center text-gray-600 min-w-0">
+                                    <i class="ti ti-calendar-due mr-2 text-red-500 flex-shrink-0"></i>
+                                    <span class="${isDeadlinePassed ? 'text-red-600 font-medium' : ''} truncate">
+                                        <span class="hidden sm:inline">${formatDeadline(post.assignment_deadline)}</span>
+                                        <span class="sm:hidden">${formatDeadlineMobile(post.assignment_deadline)}</span>
+                                    </span>
+                                </div>
+                            ` : ''}
+                            
+                            ${post.assignment_max_score ? `
+                                <div class="flex items-center text-gray-600 flex-shrink-0">
+                                    <i class="ti ti-trophy mr-2 text-yellow-500"></i>
+                                    <span class="whitespace-nowrap">Nilai Maks: ${post.assignment_max_score}</span>
+                                </div>
+                            ` : ''}
+                        </div>
+                        
+                        ${post.assignment_file_path ? `
+                            <div class="mt-3 p-3 bg-white rounded-lg border border-gray-200">
+                                <div class="flex items-center space-x-3">
+                                    <i class="${getFileIcon(post.assignment_file_path)} text-blue-600 text-lg flex-shrink-0"></i>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="text-sm font-medium text-gray-900">File Tugas</div>
+                                        <div class="text-xs text-gray-500 truncate">${post.assignment_file_path.split('/').pop()}</div>
+                                    </div>
+                                    <a href="/lms${post.assignment_file_path.startsWith('/') ? '' : '/'}${post.assignment_file_path}" target="_blank" 
+                                       class="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center flex-shrink-0">
+                                        <i class="ti ti-download"></i>
+                                        <span class="ml-1 hidden sm:inline">Download</span>
+                                    </a>
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        let assignmentActions = '';
+        
+        if (currentUserRole === 'siswa') {
+            if (isDeadlinePassed) {
+                assignmentActions = `
+                    <div class="bg-red-50 border border-red-200 rounded-lg p-3 mt-3">
+                        <div class="flex items-center">
+                            <i class="ti ti-clock-x text-red-600 mr-2"></i>
+                            <span class="text-sm text-red-800">Deadline telah terlewat</span>
+                        </div>
+                    </div>
+                `;
+            } else {
+                const submissionStatus = post.student_submission_status;
+                if (submissionStatus === 'dinilai') {
+                    assignmentActions = `
+                        <div class="bg-green-50 border border-green-200 rounded-lg p-4 mt-3">
+                            <div class="space-y-3">
+                                <!-- Header with status -->
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center">
+                                        <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-3">
+                                            <i class="ti ti-check text-green-600"></i>
+                                        </div>
+                                        <div>
+                                            <div class="font-medium text-green-800">Tugas telah dinilai</div>
+                                            <div class="text-sm text-green-600">Selamat! Tugas Anda sudah mendapat nilai</div>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="text-2xl font-bold text-green-600">${post.student_score}</div>
+                                        <div class="text-sm text-gray-500">dari ${post.assignment_max_score}</div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Progress indicators -->
+                                <div class="flex items-center space-x-4 text-sm">
+                                    <div class="flex items-center text-green-600">
+                                        <div class="w-4 h-4 bg-green-600 rounded-full mr-2"></div>
+                                        <span>Tugas terkirim</span>
+                                    </div>
+                                    <div class="flex items-center text-green-600">
+                                        <div class="w-4 h-4 bg-green-600 rounded-full mr-2"></div>
+                                        <span>Telah dinilai guru</span>
+                                    </div>
+                                </div>
+                                
+                                ${post.student_feedback ? `
+                                    <div class="bg-white border border-green-200 rounded-lg p-3">
+                                        <div class="flex items-start space-x-2">
+                                            <i class="ti ti-message-circle text-green-600 mt-1"></i>
+                                            <div>
+                                                <div class="font-medium text-green-800 mb-1">Komentar Guru:</div>
+                                                <div class="text-sm text-gray-700">${this.escapeHtml(post.student_feedback)}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ` : ''}
+                                
+                                <button onclick="showSubmissionForm(${post.assignment_id})" 
+                                        class="text-sm text-blue-600 hover:text-blue-800 font-medium">
+                                    <i class="ti ti-refresh mr-1"></i>Kumpulkan Ulang
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                } else if (submissionStatus === 'dikumpulkan') {
+                    assignmentActions = `
+                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mt-3">
+                            <div class="space-y-3">
+                                <!-- Header with status -->
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center">
+                                        <div class="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center mr-3">
+                                            <i class="ti ti-clock text-yellow-600"></i>
+                                        </div>
+                                        <div>
+                                            <div class="font-medium text-yellow-800">Tugas telah dikumpulkan</div>
+                                            <div class="text-sm text-yellow-600">Menunggu penilaian dari guru</div>
+                                        </div>
+                                    </div>
+                                    <div class="text-yellow-600">
+                                        <i class="ti ti-hourglass text-2xl"></i>
+                                    </div>
+                                </div>
+                                
+                                <!-- Progress indicators -->
+                                <div class="flex items-center space-x-4 text-sm">
+                                    <div class="flex items-center text-green-600">
+                                        <div class="w-4 h-4 bg-green-600 rounded-full mr-2"></div>
+                                        <span>Tugas terkirim</span>
+                                    </div>
+                                    <div class="flex items-center text-gray-400">
+                                        <div class="w-4 h-4 bg-gray-300 rounded-full mr-2"></div>
+                                        <span>Menunggu penilaian</span>
+                                    </div>
+                                </div>
+                                
+                                <button onclick="showSubmissionForm(${post.assignment_id})" 
+                                        class="text-sm text-blue-600 hover:text-blue-800 font-medium">
+                                    <i class="ti ti-refresh mr-1"></i>Kumpulkan Ulang
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    assignmentActions = `
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-3">
+                            <div class="assignment-submission-area" id="submission-area-${post.assignment_id}">
+                                <div class="flex items-center justify-between mb-3">
+                                    <div class="flex items-center">
+                                        <i class="ti ti-upload text-blue-600 mr-2"></i>
+                                        <span class="text-sm text-blue-800">Belum mengumpulkan tugas</span>
+                                    </div>
+                                    <button onclick="showSubmissionForm(${post.assignment_id})" 
+                                            class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
+                                        Kumpulkan Tugas
+                                    </button>
+                                </div>
+                                
+                                <!-- Hidden submission form -->
+                                <div id="submission-form-${post.assignment_id}" class="hidden mt-4 space-y-4">
+                                    <div class="border-t border-blue-200 pt-4">
+                                        <h4 class="font-medium text-gray-900 mb-3">Kumpulkan Tugas: ${this.escapeHtml(post.assignment_title)}</h4>
+                                        
+                                        <!-- File upload area -->
+                                        <div class="mb-4">
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Pilih File</label>
+                                            <div class="flex items-center space-x-3">
+                                                <input type="file" id="submission-file-${post.assignment_id}" 
+                                                       accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.jpg,.jpeg,.png,.gif"
+                                                       class="hidden" onchange="handleSubmissionFileSelect(${post.assignment_id}, this)">
+                                                <button onclick="document.getElementById('submission-file-${post.assignment_id}').click()" 
+                                                        class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg text-sm font-medium border border-gray-300">
+                                                    <i class="ti ti-paperclip mr-2"></i>Pilih File
+                                                </button>
+                                                <span class="text-sm text-gray-500">Format: PDF, DOC, PPT, gambar (Max 10MB)</span>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- File preview area -->
+                                        <div id="submission-preview-${post.assignment_id}" class="hidden mb-4">
+                                            <div class="bg-white border border-gray-200 rounded-lg p-3">
+                                                <div class="flex items-center justify-between">
+                                                    <div class="flex items-center space-x-3">
+                                                        <div id="file-icon-${post.assignment_id}" class="text-blue-600 text-lg">
+                                                            <i class="ti ti-file"></i>
+                                                        </div>
+                                                        <div>
+                                                            <div id="file-name-${post.assignment_id}" class="text-sm font-medium text-gray-900"></div>
+                                                            <div id="file-size-${post.assignment_id}" class="text-xs text-gray-500"></div>
+                                                        </div>
+                                                    </div>
+                                                    <button onclick="removeSubmissionFile(${post.assignment_id})" 
+                                                            class="text-red-600 hover:text-red-800 p-1 rounded">
+                                                        <i class="ti ti-x"></i>
+                                                    </button>
+                                                </div>
+                                                <!-- Image preview for images -->
+                                                <div id="image-preview-${post.assignment_id}" class="hidden mt-3">
+                                                    <img class="max-w-full h-48 object-cover rounded-lg">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Notes -->
+                                        <div class="mb-4">
+                                            <label for="submission-notes-${post.assignment_id}" class="block text-sm font-medium text-gray-700 mb-2">
+                                                Catatan (Opsional)
+                                            </label>
+                                            <textarea id="submission-notes-${post.assignment_id}" rows="3" 
+                                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                    placeholder="Tambahkan catatan untuk guru..."></textarea>
+                                        </div>
+                                        
+                                        <!-- Action buttons -->
+                                        <div class="flex justify-between items-center">
+                                            <button onclick="hideSubmissionForm(${post.assignment_id})" 
+                                                    class="text-gray-600 hover:text-gray-800 text-sm font-medium">
+                                                Batal
+                                            </button>
+                                            <button onclick="submitAssignment(${post.assignment_id})" 
+                                                    id="submit-btn-${post.assignment_id}"
+                                                    class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                                                <i class="ti ti-send mr-2"></i>Kumpulkan
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+        } else if (currentUserRole === 'guru') {
+            assignmentActions = `
+                <div class="bg-gray-50 border border-gray-200 rounded-lg p-3 mt-3">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-4">
+                            <div class="text-center">
+                                <div class="text-lg font-bold text-green-600">${post.assignment_submitted_count || 0}</div>
+                                <div class="text-xs text-gray-600">Terkumpul</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-lg font-bold text-blue-600">${post.assignment_graded_count || 0}</div>
+                                <div class="text-xs text-gray-600">Dinilai</div>
+                            </div>
+                        </div>
+                        <button onclick="openAssignmentReports(${post.assignment_id})" class="bg-gray-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-700 transition-colors">
+                            Lihat Laporan
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        return assignmentHeader + assignmentActions;
+    }
 }
 
 // Global functions for dropdown and actions
@@ -1100,3 +1445,185 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 });
+
+// Global function to open assignment reports
+function openAssignmentReports(assignmentId) {
+    const currentUrl = new URL(window.location.href);
+    const kelasId = currentUrl.searchParams.get('id');
+    
+    if (kelasId) {
+        const reportUrl = `assignment-reports.php?id=${kelasId}${assignmentId ? `&assignment_id=${assignmentId}` : ''}`;
+        window.location.href = reportUrl;
+    } else {
+        console.error('Kelas ID tidak ditemukan di URL');
+        alert('Gagal membuka laporan tugas');
+    }
+}
+
+// Assignment submission functions
+function showSubmissionForm(assignmentId) {
+    console.log('🎯 showSubmissionForm called with ID:', assignmentId);
+    const form = document.getElementById(`submission-form-${assignmentId}`);
+    const button = form?.previousElementSibling?.querySelector('button');
+    
+    if (form && button) {
+        form.classList.remove('hidden');
+        button.textContent = 'Batal';
+        button.onclick = () => hideSubmissionForm(assignmentId);
+        console.log('✅ Form expanded successfully');
+    } else {
+        console.error('❌ Form or button not found:', {
+            form: !!form,
+            button: !!button,
+            assignmentId
+        });
+    }
+}
+
+function hideSubmissionForm(assignmentId) {
+    const form = document.getElementById(`submission-form-${assignmentId}`);
+    const button = form.previousElementSibling.querySelector('button');
+    
+    if (form && button) {
+        form.classList.add('hidden');
+        button.textContent = 'Kumpulkan Tugas';
+        button.onclick = () => showSubmissionForm(assignmentId);
+        
+        // Reset form
+        removeSubmissionFile(assignmentId);
+        document.getElementById(`submission-notes-${assignmentId}`).value = '';
+    }
+}
+
+function handleSubmissionFileSelect(assignmentId, input) {
+    const file = input.files[0];
+    if (!file) return;
+    
+    // Validate file size (10MB)
+    const maxSize = 10 * 1024 * 1024;
+    if (file.size > maxSize) {
+        alert('Ukuran file terlalu besar. Maksimal 10MB');
+        input.value = '';
+        return;
+    }
+    
+    // Show preview
+    const preview = document.getElementById(`submission-preview-${assignmentId}`);
+    const fileIcon = document.getElementById(`file-icon-${assignmentId}`);
+    const fileName = document.getElementById(`file-name-${assignmentId}`);
+    const fileSize = document.getElementById(`file-size-${assignmentId}`);
+    const imagePreview = document.getElementById(`image-preview-${assignmentId}`);
+    
+    // Set file info
+    fileName.textContent = file.name;
+    fileSize.textContent = formatFileSize(file.size);
+    
+    // Set appropriate icon
+    const ext = file.name.toLowerCase().split('.').pop();
+    fileIcon.innerHTML = getFileIconHtml(ext);
+    
+    // Show image preview if it's an image
+    if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            imagePreview.querySelector('img').src = e.target.result;
+            imagePreview.classList.remove('hidden');
+        };
+        reader.readAsDataURL(file);
+    } else {
+        imagePreview.classList.add('hidden');
+    }
+    
+    preview.classList.remove('hidden');
+    
+    // Enable submit button
+    const submitBtn = document.getElementById(`submit-btn-${assignmentId}`);
+    submitBtn.disabled = false;
+}
+
+function removeSubmissionFile(assignmentId) {
+    const input = document.getElementById(`submission-file-${assignmentId}`);
+    const preview = document.getElementById(`submission-preview-${assignmentId}`);
+    const submitBtn = document.getElementById(`submit-btn-${assignmentId}`);
+    const imagePreview = document.getElementById(`image-preview-${assignmentId}`);
+    
+    input.value = '';
+    preview.classList.add('hidden');
+    imagePreview.classList.add('hidden');
+    submitBtn.disabled = true;
+}
+
+async function submitAssignment(assignmentId) {
+    const fileInput = document.getElementById(`submission-file-${assignmentId}`);
+    const notesInput = document.getElementById(`submission-notes-${assignmentId}`);
+    const submitBtn = document.getElementById(`submit-btn-${assignmentId}`);
+    
+    if (!fileInput.files[0]) {
+        alert('Silakan pilih file terlebih dahulu');
+        return;
+    }
+    
+    // Show loading
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="ti ti-loader animate-spin mr-2"></i>Mengirim...';
+    
+    try {
+        const formData = new FormData();
+        formData.append('assignment_id', assignmentId);
+        formData.append('submission_file', fileInput.files[0]);
+        formData.append('notes', notesInput.value);
+        
+        const response = await fetch('../logic/submit-assignment.php', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Show success and reload posts
+            alert('Tugas berhasil dikumpulkan!');
+            if (window.kelasPosting) {
+                window.kelasPosting.loadPostingan(true);
+            }
+        } else {
+            throw new Error(data.message || 'Gagal mengumpulkan tugas');
+        }
+        
+    } catch (error) {
+        console.error('Error submitting assignment:', error);
+        alert('Terjadi kesalahan: ' + error.message);
+        
+        // Reset button
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="ti ti-send mr-2"></i>Kumpulkan';
+    }
+}
+
+// Helper functions
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+function getFileIconHtml(extension) {
+    const iconMap = {
+        'pdf': '<i class="ti ti-file-type-pdf text-red-600"></i>',
+        'doc': '<i class="ti ti-file-type-doc text-blue-600"></i>',
+        'docx': '<i class="ti ti-file-type-doc text-blue-600"></i>',
+        'xls': '<i class="ti ti-file-type-xls text-green-600"></i>',
+        'xlsx': '<i class="ti ti-file-type-xls text-green-600"></i>',
+        'ppt': '<i class="ti ti-file-type-ppt text-orange-600"></i>',
+        'pptx': '<i class="ti ti-file-type-ppt text-orange-600"></i>',
+        'jpg': '<i class="ti ti-photo text-purple-600"></i>',
+        'jpeg': '<i class="ti ti-photo text-purple-600"></i>',
+        'png': '<i class="ti ti-photo text-purple-600"></i>',
+        'gif': '<i class="ti ti-photo text-purple-600"></i>',
+        'txt': '<i class="ti ti-file-text text-gray-600"></i>'
+    };
+    
+    return iconMap[extension] || '<i class="ti ti-file text-gray-600"></i>';
+}

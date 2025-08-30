@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Grading Process</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .debug-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        button { padding: 10px 20px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>Debug Assignment Grading Process</h1>
+    
+    <div class="debug-section info">
+        <h3>Step 1: Check Recent Submissions</h3>
+        <button onclick="checkSubmissions()">Check Submissions</button>
+        <div id="submissions-result"></div>
+    </div>
+    
+    <div class="debug-section info">
+        <h3>Step 2: Test Get Submission Details</h3>
+        <input type="number" id="submission-id" placeholder="Submission ID" style="padding: 5px; margin: 5px;">
+        <button onclick="testGetSubmissionDetails()">Test Get Details</button>
+        <div id="details-result"></div>
+    </div>
+    
+    <div class="debug-section info">
+        <h3>Step 3: Test Grade Submission</h3>
+        <input type="number" id="grade-submission-id" placeholder="Submission ID" style="padding: 5px; margin: 5px;">
+        <input type="number" id="grade-score" placeholder="Score" style="padding: 5px; margin: 5px;">
+        <input type="text" id="grade-feedback" placeholder="Feedback" style="padding: 5px; margin: 5px; width: 200px;">
+        <button onclick="testGradeSubmission()">Test Grade</button>
+        <div id="grade-result"></div>
+    </div>
+
+    <script>
+        async function checkSubmissions() {
+            try {
+                const response = await fetch('/lms/debug-submissions.php');
+                const data = await response.json();
+                document.getElementById('submissions-result').innerHTML = 
+                    '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                
+                // Auto-fill first submission ID if available
+                if (data.submissions && data.submissions.length > 0) {
+                    document.getElementById('submission-id').value = data.submissions[0].submission_id;
+                    document.getElementById('grade-submission-id').value = data.submissions[0].submission_id;
+                }
+            } catch (error) {
+                document.getElementById('submissions-result').innerHTML = 
+                    '<div class="error">Error: ' + error.message + '</div>';
+            }
+        }
+
+        async function testGetSubmissionDetails() {
+            const submissionId = document.getElementById('submission-id').value;
+            if (!submissionId) {
+                alert('Please enter submission ID');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/lms/src/logic/get-submission-details.php?submission_id=${submissionId}`);
+                const data = await response.json();
+                document.getElementById('details-result').innerHTML = 
+                    '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+            } catch (error) {
+                document.getElementById('details-result').innerHTML = 
+                    '<div class="error">Error: ' + error.message + '</div>';
+            }
+        }
+
+        async function testGradeSubmission() {
+            const submissionId = document.getElementById('grade-submission-id').value;
+            const score = document.getElementById('grade-score').value;
+            const feedback = document.getElementById('grade-feedback').value;
+            
+            if (!submissionId || !score) {
+                alert('Please enter submission ID and score');
+                return;
+            }
+
+            try {
+                const formData = new FormData();
+                formData.append('submission_id', submissionId);
+                formData.append('score', score);
+                formData.append('feedback', feedback);
+
+                const response = await fetch('/lms/src/logic/grade-submission.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                document.getElementById('grade-result').innerHTML = 
+                    '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+            } catch (error) {
+                document.getElementById('grade-result').innerHTML = 
+                    '<div class="error">Error: ' + error.message + '</div>';
+            }
+        }
+
+        // Auto-load submissions on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            checkSubmissions();
+        });
+    </script>
+</body>
+</html>

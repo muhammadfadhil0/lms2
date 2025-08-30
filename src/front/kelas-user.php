@@ -55,6 +55,32 @@ $jumlahSiswa = count($siswaKelas);
 $postinganLogic = new PostinganLogic();
 $statistikPostingan = $postinganLogic->getStatistikPostingan($kelas_id);
 
+// Get recent assignments for this class
+$recentAssignments = [];
+try {
+    require_once '../logic/koneksi.php';
+    $stmt = $pdo->prepare("
+        SELECT t.*, 
+               pt.status as student_status,
+               pt.nilai as student_score,
+               CASE 
+                   WHEN t.deadline < NOW() THEN 'expired'
+                   WHEN pt.status = 'dinilai' THEN 'graded'
+                   WHEN pt.status = 'dikumpulkan' THEN 'submitted'
+                   ELSE 'pending'
+               END as submission_status
+        FROM tugas t
+        LEFT JOIN pengumpulan_tugas pt ON t.id = pt.assignment_id AND pt.siswa_id = ?
+        WHERE t.kelas_id = ?
+        ORDER BY t.created_at DESC
+        LIMIT 5
+    ");
+    $stmt->execute([$user_id, $kelas_id]);
+    $recentAssignments = $stmt->fetchAll();
+} catch (Exception $e) {
+    $recentAssignments = [];
+}
+
 // Check class permissions
 $canPost = !isset($detailKelas['restrict_posting']) || !$detailKelas['restrict_posting'];
 $canComment = !isset($detailKelas['restrict_comments']) || !$detailKelas['restrict_comments'];
@@ -221,18 +247,70 @@ $canComment = !isset($detailKelas['restrict_comments']) || !$detailKelas['restri
                         <div class="bg-white rounded-lg p-4 lg:p-6 shadow-sm mb-6">
                             <h3 class="text-lg font-semibold text-gray-900 mb-4">Tugas Terbaru</h3>
                             <div class="space-y-3">
-                                <div class="p-3 bg-orange-tipis rounded-lg">
-                                    <h4 class="font-medium text-gray-900 text-sm">Tugas UTS</h4>
-                                    <p class="text-xs text-gray-600">Deadline: 23 Nov 2024</p>
-                                </div>
-                                <div class="p-3 bg-gray-50 rounded-lg">
-                                    <h4 class="font-medium text-gray-900 text-sm">Project Website</h4>
-                                    <p class="text-xs text-gray-600">Deadline: 30 Nov 2024</p>
-                                </div>
-                                <div class="p-3 bg-gray-50 rounded-lg">
-                                    <h4 class="font-medium text-gray-900 text-sm">Quiz JavaScript</h4>
-                                    <p class="text-xs text-gray-600">Deadline: 5 Des 2024</p>
-                                </div>
+                                <?php if (empty($recentAssignments)): ?>
+                                    <div class="text-center py-8">
+                                        <i class="ti ti-clipboard-off text-4xl text-gray-300 mb-2"></i>
+                                        <p class="text-sm text-gray-500">Tidak ada tugas terbaru</p>
+                                    </div>
+                                <?php else: ?>
+                                    <?php foreach ($recentAssignments as $assignment): ?>
+                                        <?php
+                                        $statusClass = '';
+                                        $statusIcon = '';
+                                        $statusText = '';
+                                        
+                                        switch ($assignment['submission_status']) {
+                                            case 'expired':
+                                                $statusClass = 'bg-red-50 border-red-200';
+                                                $statusIcon = 'ti ti-exclamation-circle text-red-600';
+                                                $statusText = 'Terlewat';
+                                                break;
+                                            case 'graded':
+                                                $statusClass = 'bg-green-50 border-green-200';
+                                                $statusIcon = 'ti ti-check text-green-600';
+                                                $statusText = 'Dinilai (' . $assignment['student_score'] . '/' . $assignment['nilai_maksimal'] . ')';
+                                                break;
+                                            case 'submitted':
+                                                $statusClass = 'bg-yellow-50 border-yellow-200';
+                                                $statusIcon = 'ti ti-clock text-yellow-600';
+                                                $statusText = 'Menunggu Penilaian';
+                                                break;
+                                            default:
+                                                $statusClass = 'bg-orange-50 border-orange-200';
+                                                $statusIcon = 'ti ti-exclamation-circle text-orange-600';
+                                                $statusText = 'Belum Dikumpulkan';
+                                        }
+                                        
+                                        $deadlineFormatted = date('j M Y', strtotime($assignment['deadline']));
+                                        $isDeadlineSoon = strtotime($assignment['deadline']) - time() < (24 * 60 * 60 * 3); // 3 days
+                                        ?>
+                                        <div class="p-3 <?php echo $statusClass; ?> border rounded-lg">
+                                            <div class="flex items-start justify-between">
+                                                <div class="flex-1">
+                                                    <h4 class="font-medium text-gray-900 text-sm"><?php echo htmlspecialchars($assignment['judul']); ?></h4>
+                                                    <p class="text-xs text-gray-600 mt-1">
+                                                        Deadline: <?php echo $deadlineFormatted; ?>
+                                                        <?php if ($isDeadlineSoon && $assignment['submission_status'] === 'pending'): ?>
+                                                            <span class="text-red-600 font-medium">(Segera!)</span>
+                                                        <?php endif; ?>
+                                                    </p>
+                                                </div>
+                                                <div class="flex flex-col items-end">
+                                                    <i class="<?php echo $statusIcon; ?> text-sm mb-1"></i>
+                                                    <span class="text-xs font-medium"><?php echo $statusText; ?></span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    <?php endforeach; ?>
+                                    
+                                    <?php if (count($recentAssignments) >= 5): ?>
+                                        <div class="text-center mt-3">
+                                            <button class="text-sm text-orange-600 hover:text-orange-800 font-medium">
+                                                Lihat Semua Tugas
+                                            </button>
+                                        </div>
+                                    <?php endif; ?>
+                                <?php endif; ?>
                             </div>
                         </div>
 
@@ -267,11 +345,16 @@ $canComment = !isset($detailKelas['restrict_comments']) || !$detailKelas['restri
     <!-- Include Modal Components -->
     <?php require '../component/modal-delete-post.php'; ?>
     <?php require '../component/modal-comments.php'; ?>
+    <?php require '../component/modal-submit-assignment.php'; ?>
     <script src="../script/menu-bar-script.js"></script>
     <script src="../script/image-upload-manager.js"></script>
     <script src="../script/photoswipe-simple.js"></script>
-    <script src="../script/kelas-posting-stable.js"></script>
+    <script src="../script/assignment-manager.js"></script>
+    <script src="../script/kelas-posting-stable.js?v=<?php echo time(); ?>"></script>
     <script>
+        // Define user role for JavaScript access
+        window.currentUserRole = '<?php echo $_SESSION['user']['role']; ?>';
+        
         // Initialize posting system when page loads
         document.addEventListener('DOMContentLoaded', function() {
             const kelasId = <?php echo $kelas_id; ?>;
@@ -280,6 +363,7 @@ $canComment = !isset($detailKelas['restrict_comments']) || !$detailKelas['restri
                 canComment: <?php echo $canComment ? 'true' : 'false'; ?>
             };
             window.kelasPosting = new KelasPosting(kelasId, permissions);
+            window.assignmentManager = new AssignmentManager(kelasId, 'siswa');
         });
     </script>
 </body>

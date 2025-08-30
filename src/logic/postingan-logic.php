@@ -48,11 +48,16 @@ class PostinganLogic {
         try {
             $sql = "SELECT p.*, u.namaLengkap as namaPenulis, u.role as rolePenulis,
                            COUNT(DISTINCT l.id) as jumlahLike,
-                           COUNT(DISTINCT k.id) as jumlahKomentar
+                           COUNT(DISTINCT k.id) as jumlahKomentar,
+                           t.id as assignment_id, t.judul as assignment_title, t.deskripsi as assignment_description,
+                           t.deadline as assignment_deadline, t.nilai_maksimal as assignment_max_score,
+                           t.file_path as assignment_file_path,
+                           COALESCE(p.tipe_postingan, 'regular') as tipe_postingan
                     FROM postingan_kelas p
                     JOIN users u ON p.user_id = u.id
                     LEFT JOIN like_postingan l ON p.id = l.postingan_id
                     LEFT JOIN komentar_postingan k ON p.id = k.postingan_id
+                    LEFT JOIN tugas t ON p.assignment_id = t.id
                     WHERE p.kelas_id = ?
                     GROUP BY p.id
                     ORDER BY p.dibuat DESC
@@ -64,9 +69,21 @@ class PostinganLogic {
             
             $postingan = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
             
-            // Get images for each post
+            // Get images for each post and assignment submission status if needed
             foreach ($postingan as &$post) {
                 $post['gambar'] = $this->getGambarPostingan($post['id']);
+                
+                // Convert assignment file path to URL if exists
+                if ($post['assignment_file_path']) {
+                    // Convert absolute path to relative URL for web access
+                    $webRoot = '/opt/lampp/htdocs';
+                    $post['assignment_file_path'] = str_replace($webRoot, '', $post['assignment_file_path']);
+                }
+                
+                // If this is an assignment post, get submission status for current user
+                if ($post['tipe_postingan'] === 'assignment' && $post['assignment_id']) {
+                    $post = $this->addAssignmentSubmissionStatus($post, $kelas_id);
+                }
             }
             
             return $postingan;
@@ -201,8 +218,8 @@ class PostinganLogic {
     // Hapus postingan
     public function hapusPostingan($postingan_id, $user_id) {
         try {
-            // Cek ownership
-            $sql = "SELECT user_id FROM postingan_kelas WHERE id = ?";
+            // Cek ownership dan assignment_id
+            $sql = "SELECT user_id, assignment_id FROM postingan_kelas WHERE id = ?";
             $stmt = $this->conn->prepare($sql);
             $stmt->bind_param("i", $postingan_id);
             $stmt->execute();
@@ -213,6 +230,11 @@ class PostinganLogic {
             }
             
             $this->conn->begin_transaction();
+            
+            // Jika ini postingan assignment, hapus data assignment terlebih dahulu
+            if ($result['assignment_id']) {
+                $this->deleteAssignmentData($result['assignment_id']);
+            }
             
             // Hapus gambar postingan
             $this->hapusGambarPostingan($postingan_id);
@@ -474,6 +496,112 @@ class PostinganLogic {
             }
         } catch (Exception $e) {
             // Log error if needed
+        }
+    }
+
+    private function addAssignmentSubmissionStatus($post, $kelas_id) {
+        try {
+            $assignment_id = $post['assignment_id'];
+            
+            // If user is a student, get their submission status
+            if (isset($_SESSION['user']) && $_SESSION['user']['role'] === 'siswa') {
+                $siswa_id = $_SESSION['user']['id'];
+                
+                $sql = "SELECT status, nilai, feedback, tanggal_pengumpulan 
+                        FROM pengumpulan_tugas 
+                        WHERE assignment_id = ? AND siswa_id = ?";
+                $stmt = $this->conn->prepare($sql);
+                $stmt->bind_param("ii", $assignment_id, $siswa_id);
+                $stmt->execute();
+                $result = $stmt->get_result()->fetch_assoc();
+                
+                if ($result) {
+                    $post['student_submission_status'] = $result['status'];
+                    $post['student_score'] = $result['nilai'];
+                    $post['student_feedback'] = $result['feedback'];
+                    $post['student_submission_date'] = $result['tanggal_pengumpulan'];
+                } else {
+                    $post['student_submission_status'] = 'belum_mengumpulkan';
+                }
+            }
+            
+            // If user is a teacher, get submission statistics
+            if (isset($_SESSION['user']) && $_SESSION['user']['role'] === 'guru') {
+                // Get total students in class
+                $sql = "SELECT COUNT(*) as total_students FROM kelas_siswa WHERE kelas_id = ?";
+                $stmt = $this->conn->prepare($sql);
+                $stmt->bind_param("i", $kelas_id);
+                $stmt->execute();
+                $total_students = $stmt->get_result()->fetch_assoc()['total_students'];
+                
+                // Get submitted count
+                $sql = "SELECT COUNT(*) as submitted_count FROM pengumpulan_tugas WHERE assignment_id = ?";
+                $stmt = $this->conn->prepare($sql);
+                $stmt->bind_param("i", $assignment_id);
+                $stmt->execute();
+                $submitted_count = $stmt->get_result()->fetch_assoc()['submitted_count'];
+                
+                // Get graded count
+                $sql = "SELECT COUNT(*) as graded_count FROM pengumpulan_tugas WHERE assignment_id = ? AND status = 'dinilai'";
+                $stmt = $this->conn->prepare($sql);
+                $stmt->bind_param("i", $assignment_id);
+                $stmt->execute();
+                $graded_count = $stmt->get_result()->fetch_assoc()['graded_count'];
+                
+                $post['assignment_total_students'] = $total_students;
+                $post['assignment_submitted_count'] = $submitted_count;
+                $post['assignment_graded_count'] = $graded_count;
+            }
+            
+            return $post;
+        } catch (Exception $e) {
+            return $post;
+        }
+    }
+    
+    // Hapus data assignment dan file terkait
+    private function deleteAssignmentData($assignment_id) {
+        try {
+            // Get assignment file path first
+            $sql = "SELECT file_path FROM tugas WHERE id = ?";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bind_param("i", $assignment_id);
+            $stmt->execute();
+            $result = $stmt->get_result()->fetch_assoc();
+            
+            // Delete assignment file if exists
+            if ($result && $result['file_path'] && file_exists($result['file_path'])) {
+                unlink($result['file_path']);
+            }
+            
+            // Get all submission files
+            $sql = "SELECT file_path FROM pengumpulan_tugas WHERE assignment_id = ?";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bind_param("i", $assignment_id);
+            $stmt->execute();
+            $submissions = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+            
+            // Delete submission files
+            foreach ($submissions as $submission) {
+                if ($submission['file_path'] && file_exists($submission['file_path'])) {
+                    unlink($submission['file_path']);
+                }
+            }
+            
+            // Delete submission records
+            $sql = "DELETE FROM pengumpulan_tugas WHERE assignment_id = ?";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bind_param("i", $assignment_id);
+            $stmt->execute();
+            
+            // Delete assignment record
+            $sql = "DELETE FROM tugas WHERE id = ?";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bind_param("i", $assignment_id);
+            $stmt->execute();
+            
+        } catch (Exception $e) {
+            error_log("Error deleting assignment data: " . $e->getMessage());
         }
     }
 }
