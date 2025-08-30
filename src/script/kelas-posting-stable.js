@@ -376,6 +376,7 @@ class KelasPosting {
                         <h3 class="font-semibold text-gray-900 text-sm lg:text-base">${this.escapeHtml(post.namaPenulis)}</h3>
                         <p class="text-xs lg:text-sm text-gray-600">
                             ${post.rolePenulis === 'guru' ? 'Guru' : 'Siswa'} • ${timeAgo}
+                            ${post.is_edited == 1 ? ' • <span class="text-gray-500 italic">(telah diedit)</span>' : ''}
                             ${post.tipePost !== 'umum' ? ` • <span class="px-2 py-1 bg-orange-100 text-orange-600 rounded text-xs">${post.tipePost}</span>` : ''}
                         </p>
                     </div>
@@ -385,7 +386,7 @@ class KelasPosting {
                                 <i class="ti ti-dots"></i>
                             </button>
                             <div class="dropdown-menu absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 hidden">
-                                <button onclick="editPost(${post.id})" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                <button onclick="openEditPostModal(${post.id})" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                     <i class="ti ti-edit mr-2"></i>Edit
                                 </button>
                                 <button onclick="deletePost(${post.id})" class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100">
@@ -941,6 +942,35 @@ class KelasPosting {
                 </div>
             </div>
         `;
+    }
+    
+    // Method to reload all posts (useful after edit/delete)
+    reloadPosts() {
+        this.currentOffset = 0;
+        this.hasMorePosts = true;
+        this.loadPostingan(true);
+    }
+    
+    // Method to refresh a single post
+    async refreshPost(postId) {
+        try {
+            const response = await fetch(`../logic/get-postingan.php?kelas_id=${this.kelasId}&postingan_id=${postId}`);
+            const data = await response.json();
+            
+            if (data.success && data.data && data.data.length > 0) {
+                const post = data.data[0];
+                const existingElement = document.querySelector(`[data-post-id="${postId}"]`);
+                if (existingElement) {
+                    const postContainer = existingElement.closest('.bg-white');
+                    if (postContainer) {
+                        const newElement = this.createPostElement(post, data.user_id, data.user_role);
+                        postContainer.replaceWith(newElement);
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error refreshing post:', error);
+        }
     }
 }
 

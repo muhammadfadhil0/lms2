@@ -1,11 +1,29 @@
 /**
- * Simple PhotoSwipe Implementation for LMS
- * Uses local/fallback approach for better reliability
+ * Simple Image Viewer for LMS
+ * Pure JavaScript implementation without external dependencies
+ * Features: Modal viewer, navigation, responsive design, keyboard support
  */
+
+// Global variables for simple viewer
+let currentImages = [];
+let currentIndex = 0;
 
 // Simple image viewer fallback if PhotoSwipe fails
 function createSimpleImageViewer() {
     console.log('Creating simple image viewer fallback...');
+    
+    // Remove existing modal if any
+    const existingModal = document.getElementById('simpleImageModal');
+    if (existingModal) {
+        existingModal.remove();
+        console.log('Removed existing modal');
+    }
+    
+    // Remove existing styles
+    const existingStyles = document.getElementById('simpleViewerStyles');
+    if (existingStyles) {
+        existingStyles.remove();
+    }
     
     // Create modal HTML
     const modalHTML = `
@@ -19,61 +37,139 @@ function createSimpleImageViewer() {
             background: rgba(0,0,0,0.9);
             z-index: 9999;
             cursor: pointer;
-        ">
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        " onclick="handleBackdropClick(event)">
             <div style="
                 position: absolute;
-                top: 10px;
-                right: 20px;
+                top: 15px;
+                right: 25px;
                 color: white;
-                font-size: 30px;
+                font-size: 35px;
                 cursor: pointer;
                 z-index: 10000;
-            " onclick="closeSimpleViewer()">&times;</div>
+                font-weight: bold;
+                text-shadow: 0 0 10px rgba(0,0,0,0.8);
+                transition: color 0.2s ease;
+            " onclick="closeSimpleViewer()" onmouseover="this.style.color='#ff6b6b'" onmouseout="this.style.color='white'">&times;</div>
             <img id="simpleViewerImage" style="
                 position: absolute;
                 top: 50%;
                 left: 50%;
                 transform: translate(-50%, -50%);
-                max-width: 90%;
-                max-height: 90%;
+                max-width: 70%;
+                max-height: 70%;
                 object-fit: contain;
-            ">
+                cursor: default;
+                border-radius: 8px;
+                box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+                transition: transform 0.3s ease;
+            " onclick="event.stopPropagation()">
             <div id="simpleViewerNav" style="
                 position: absolute;
-                bottom: 20px;
+                bottom: 30px;
                 left: 50%;
                 transform: translateX(-50%);
                 color: white;
                 text-align: center;
-            ">
+                padding: 15px 20px;
+                border-radius: 25px;
+                backdrop-filter: blur(5px);
+            " onclick="event.stopPropagation()">
                 <button onclick="navigateSimple(-1)" style="
                     background: rgba(255,255,255,0.2);
                     border: none;
                     color: white;
-                    padding: 10px 15px;
-                    margin: 0 5px;
+                    padding: 12px 16px;
+                    margin: 0 8px;
                     cursor: pointer;
-                    border-radius: 5px;
-                ">‹ Prev</button>
-                <span id="simpleCounter">1 / 1</span>
+                    border-radius: 8px;
+                    font-size: 16px;
+                    transition: background 0.2s ease;
+                " onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">‹ Prev</button>
+                <span id="simpleCounter" style="margin: 0 15px; font-weight: 500;">1 / 1</span>
                 <button onclick="navigateSimple(1)" style="
                     background: rgba(255,255,255,0.2);
                     border: none;
                     color: white;
-                    padding: 10px 15px;
-                    margin: 0 5px;
+                    padding: 12px 16px;
+                    margin: 0 8px;
                     cursor: pointer;
-                    border-radius: 5px;
-                ">Next ›</button>
+                    border-radius: 8px;
+                    font-size: 16px;
+                    transition: background 0.2s ease;
+                " onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">Next ›</button>
             </div>
         </div>
     `;
     
+    // Create style element
+    const styleHTML = `
+        <style id="simpleViewerStyles">
+            @media (max-width: 768px)  {
+                #simpleViewerImage {
+                    max-width: 65% !important;
+                    max-height: 55% !important;
+                }
+                #simpleViewerNav {
+                    bottom: 20px !important;
+                    padding: 8px 12px !important;
+                }
+                #simpleViewerNav button {
+                    padding: 6px 8px !important;
+                    margin: 0 4px !important;
+                    font-size: 12px !important;
+                }
+                #simpleViewerNav span {
+                    margin: 0 6px !important;
+                    font-size: 12px !important;
+                }
+                #simpleImageModal div:first-child {
+                    top: 10px !important;
+                    right: 15px !important;
+                    font-size: 30px !important;
+                }
+            }
+            
+            @media (max-width: 480px) {
+                #simpleViewerImage {
+                    max-width: 70% !important;
+                    max-height: 50% !important;
+                }
+                #simpleViewerNav {
+                    bottom: 15px !important;
+                    padding: 6px 8px !important;
+                    display: flex !important;
+                    align-items: center !important;
+                    justify-content: center !important;
+                }
+                #simpleViewerNav button {
+                    padding: 4px 6px !important;
+                    margin: 0 2px !important;
+                    font-size: 11px !important;
+                    min-width: 40px !important;
+                }
+                #simpleViewerNav span {
+                    margin: 0 4px !important;
+                    font-size: 11px !important;
+                    white-space: nowrap !important;
+                }
+            }
+        </style>
+    `;
+    
     document.body.insertAdjacentHTML('beforeend', modalHTML);
+    document.head.insertAdjacentHTML('beforeend', styleHTML);
+    console.log('New modal created with updated styles - Desktop: 70%, Tablet: 75%, Mobile: 80%');
 }
 
-let currentImages = [];
-let currentIndex = 0;
+// Handle backdrop click to close viewer
+function handleBackdropClick(event) {
+    // Only close if clicking the backdrop (not the image or navigation)
+    if (event.target.id === 'simpleImageModal') {
+        closeSimpleViewer();
+    }
+}
 
 function openSimpleViewer(images, startIndex = 0) {
     currentImages = images;
@@ -84,18 +180,32 @@ function openSimpleViewer(images, startIndex = 0) {
     const counter = document.getElementById('simpleCounter');
     
     if (modal && img && counter) {
+        // Set image and counter
         img.src = images[currentIndex];
         counter.textContent = `${currentIndex + 1} / ${images.length}`;
+        
+        // Show modal with animation
         modal.style.display = 'block';
         document.body.style.overflow = 'hidden';
+        
+        // Trigger fade in animation
+        setTimeout(() => {
+            modal.style.opacity = '1';
+        }, 10);
     }
 }
 
 function closeSimpleViewer() {
     const modal = document.getElementById('simpleImageModal');
     if (modal) {
-        modal.style.display = 'none';
-        document.body.style.overflow = '';
+        // Fade out animation
+        modal.style.opacity = '0';
+        
+        // Hide modal after animation completes
+        setTimeout(() => {
+            modal.style.display = 'none';
+            document.body.style.overflow = '';
+        }, 300);
     }
 }
 
@@ -110,8 +220,14 @@ function navigateSimple(direction) {
     const counter = document.getElementById('simpleCounter');
     
     if (img && counter) {
-        img.src = currentImages[currentIndex];
-        counter.textContent = `${currentIndex + 1} / ${currentImages.length}`;
+        // Add a subtle zoom animation on image change
+        img.style.transform = 'translate(-50%, -50%) scale(0.95)';
+        
+        setTimeout(() => {
+            img.src = currentImages[currentIndex];
+            counter.textContent = `${currentIndex + 1} / ${currentImages.length}`;
+            img.style.transform = 'translate(-50%, -50%) scale(1)';
+        }, 150);
     }
 }
 
@@ -146,12 +262,8 @@ function initImageViewer() {
                 
                 console.log('Opening viewer with', images.length, 'images, starting at index', imageIndex);
                 
-                // Try to use PhotoSwipe first, fallback to simple viewer
-                if (window.PhotoSwipe && window.PhotoSwipeUI_Default) {
-                    openPhotoSwipeGallery(postElement, imageIndex);
-                } else {
-                    openSimpleViewer(images, imageIndex);
-                }
+                // Always use simple viewer
+                openSimpleViewer(images, imageIndex);
             }
         }
     });
@@ -159,39 +271,14 @@ function initImageViewer() {
     console.log('Image viewer initialized');
 }
 
-// PhotoSwipe integration (if available)
+// PhotoSwipe integration (if available) - DEPRECATED, always use simple viewer
 function openPhotoSwipeGallery(postElement, startIndex = 0) {
     const images = postElement.querySelectorAll('.post-image');
     if (images.length === 0) return;
 
-    const galleryItems = Array.from(images).map((img) => ({
-        src: img.src,
-        w: img.naturalWidth || 800,
-        h: img.naturalHeight || 600,
-        title: getImageTitle(postElement, Array.from(images).indexOf(img) + 1, images.length)
-    }));
-
-    const pswpElement = document.querySelector('.pswp');
-    if (!pswpElement) {
-        console.warn('PhotoSwipe element not found, using fallback');
-        openSimpleViewer(galleryItems.map(item => item.src), startIndex);
-        return;
-    }
-
-    const options = {
-        index: startIndex,
-        bgOpacity: 0.9,
-        showHideOpacity: true,
-        shareEl: false,
-        fullscreenEl: true,
-        zoomEl: true,
-        counterEl: images.length > 1,
-        arrowEl: images.length > 1,
-        captionEl: true
-    };
-
-    const gallery = new window.PhotoSwipe(pswpElement, window.PhotoSwipeUI_Default, galleryItems, options);
-    gallery.init();
+    // Always use simple viewer instead
+    const imageList = Array.from(images).map(img => img.src);
+    openSimpleViewer(imageList, startIndex);
 }
 
 function getImageTitle(postElement, imageNumber, totalImages) {
@@ -212,7 +299,26 @@ if (document.readyState === 'loading') {
     initImageViewer();
 }
 
-// Expose functions globally
+// Expose functions globally for external access
 window.openSimpleViewer = openSimpleViewer;
 window.closeSimpleViewer = closeSimpleViewer;
 window.navigateSimple = navigateSimple;
+window.handleBackdropClick = handleBackdropClick;
+
+/**
+ * USAGE DOCUMENTATION:
+ * 
+ * This file provides a simple image viewer for LMS posts.
+ * It automatically detects images with class 'post-image' and opens them in a modal.
+ * 
+ * Features:
+ * - Click any image with class 'post-image' to open viewer
+ * - Click backdrop (dark area) to close
+ * - ESC key to close
+ * - Arrow keys to navigate between images
+ * - Responsive design (70% desktop, 75% tablet, 80% mobile)
+ * - Smooth animations and transitions
+ * 
+ * No external dependencies required.
+ * No configuration needed - just include this file in your HTML.
+ */

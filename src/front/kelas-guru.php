@@ -53,7 +53,6 @@ $statistikPostingan = $postinganLogic->getStatistikPostingan($kelas_id);
     <link rel="stylesheet" href="../css/kelas-posting.css">
     <link rel="stylesheet" href="../css/class-settings.css">
     <link rel="stylesheet" href="../css/image-upload.css">
-    <link rel="stylesheet" href="../css/photoswipe-custom.css">
     <title><?php echo htmlspecialchars($detailKelas['namaKelas']); ?> - Kelola Kelas</title>
 </head>
 
@@ -250,8 +249,7 @@ $statistikPostingan = $postinganLogic->getStatistikPostingan($kelas_id);
     <!-- Include Modal Components -->
     <?php require '../component/modal-delete-post.php'; ?>
     <?php require '../component/modal-comments.php'; ?>
-    <?php require '../component/photoswipe-modal.php'; ?>
-    <?php require '../component/photoswipe-modal.php'; ?>
+    <?php require '../component/modal-edit-post.php'; ?>
     <?php require '../component/modal-class-settings.php'; ?>
     <?php require '../component/modal-class-background.php'; ?>
     <?php require '../component/modal-edit-class.php'; ?>
@@ -262,8 +260,13 @@ $statistikPostingan = $postinganLogic->getStatistikPostingan($kelas_id);
     <script src="../script/class-settings-manager.js"></script>
     <script src="../script/image-upload-manager.js"></script>
     <script src="../script/photoswipe-simple.js"></script>
+    <script src="../script/edit-post-modal.js"></script>
     <script src="../script/kelas-posting-stable.js"></script>
     <script>
+        // Initialize global variables
+        window.currentUserId = <?php echo $_SESSION['user']['id']; ?>;
+        window.currentUserRole = '<?php echo $_SESSION['user']['role']; ?>';
+        
         // Initialize posting system when page loads
         document.addEventListener('DOMContentLoaded', function() {
             const kelasId = <?php echo $kelas_id; ?>;

@@ -375,5 +375,106 @@ class PostinganLogic {
             return null;
         }
     }
+
+    // Edit postingan
+    public function editPostingan($postingan_id, $user_id, $konten, $images_to_delete = [], $new_images = []) {
+        try {
+            // Cek ownership
+            $sql = "SELECT user_id, kelas_id FROM postingan_kelas WHERE id = ?";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bind_param("i", $postingan_id);
+            $stmt->execute();
+            $result = $stmt->get_result()->fetch_assoc();
+            
+            if (!$result || $result['user_id'] != $user_id) {
+                return ['success' => false, 'message' => 'Anda tidak memiliki izin untuk mengedit postingan ini'];
+            }
+            
+            $this->conn->begin_transaction();
+            
+            // Update konten postingan dan tandai sebagai edited
+            $sql = "UPDATE postingan_kelas SET konten = ?, diupdate = CURRENT_TIMESTAMP, is_edited = 1 WHERE id = ?";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bind_param("si", $konten, $postingan_id);
+            
+            if (!$stmt->execute()) {
+                $this->conn->rollback();
+                return ['success' => false, 'message' => 'Gagal mengupdate postingan'];
+            }
+            
+            // Hapus gambar yang dipilih untuk dihapus
+            if (!empty($images_to_delete)) {
+                foreach ($images_to_delete as $image_id) {
+                    $this->hapusGambarPostinganById($image_id);
+                }
+            }
+            
+            // Tambah gambar baru
+            if (!empty($new_images)) {
+                $this->simpanGambarPostingan($postingan_id, $new_images);
+            }
+            
+            $this->conn->commit();
+            return ['success' => true, 'message' => 'Postingan berhasil diupdate'];
+            
+        } catch (Exception $e) {
+            $this->conn->rollback();
+            return ['success' => false, 'message' => 'Error: ' . $e->getMessage()];
+        }
+    }
+
+    // Mendapatkan detail postingan untuk edit
+    public function getDetailPostinganForEdit($postingan_id, $user_id) {
+        try {
+            // Cek ownership
+            $sql = "SELECT p.*, u.namaLengkap as namaPenulis, u.role as rolePenulis
+                    FROM postingan_kelas p
+                    JOIN users u ON p.user_id = u.id
+                    WHERE p.id = ? AND p.user_id = ?";
+            
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bind_param("ii", $postingan_id, $user_id);
+            $stmt->execute();
+            
+            $postingan = $stmt->get_result()->fetch_assoc();
+            
+            if ($postingan) {
+                // Get images for this post
+                $postingan['gambar'] = $this->getGambarPostingan($postingan['id']);
+            }
+            
+            return $postingan;
+        } catch (Exception $e) {
+            return null;
+        }
+    }
+
+    // Hapus gambar postingan berdasarkan ID
+    private function hapusGambarPostinganById($image_id) {
+        try {
+            // Get image info first
+            $sql = "SELECT * FROM postingan_gambar WHERE id = ?";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bind_param("i", $image_id);
+            $stmt->execute();
+            $image = $stmt->get_result()->fetch_assoc();
+            
+            if ($image) {
+                // Delete from database
+                $sql = "DELETE FROM postingan_gambar WHERE id = ?";
+                $stmt = $this->conn->prepare($sql);
+                $stmt->bind_param("i", $image_id);
+                $stmt->execute();
+                
+                // Delete physical file
+                $fullPath = "../../uploads/" . $image['path_gambar'];
+                if (file_exists($fullPath)) {
+                    unlink($fullPath);
+                }
+            }
+        } catch (Exception $e) {
+            // Log error if needed
+        }
+    }
 }
 ?>

@@ -71,7 +71,6 @@ $canComment = !isset($detailKelas['restrict_comments']) || !$detailKelas['restri
     <?php require '../../assets/head.php'; ?>
     <link rel="stylesheet" href="../css/kelas-posting.css">
     <link rel="stylesheet" href="../css/image-upload.css">
-    <link rel="stylesheet" href="../css/photoswipe-custom.css">
     <title><?php echo htmlspecialchars($detailKelas['namaKelas']); ?> - Kelas</title>
 </head>
 
@@ -268,9 +267,6 @@ $canComment = !isset($detailKelas['restrict_comments']) || !$detailKelas['restri
     <!-- Include Modal Components -->
     <?php require '../component/modal-delete-post.php'; ?>
     <?php require '../component/modal-comments.php'; ?>
-    <?php require '../component/photoswipe-modal.php'; ?>
-    <?php require '../component/photoswipe-modal.php'; ?>
-
     <script src="../script/menu-bar-script.js"></script>
     <script src="../script/image-upload-manager.js"></script>
     <script src="../script/photoswipe-simple.js"></script>
