@@ -193,12 +193,12 @@ $statistikPostingan = $postinganLogic->getStatistikPostingan($kelas_id);
                                     <i class="ti ti-file-plus mr-3 text-orange"></i>
                                     <span class="text-sm text-gray-700 font-medium">Buat Tugas</span>
                                 </button>
-                                <button class="w-full flex items-center p-3 text-left hover:bg-orange-50 rounded-lg transition-colors border border-transparent hover:border-orange-200">
-                                    <i class="ti ti-calendar-plus mr-3 text-orange"></i>
+                                <button onclick="openScheduleModal()" class="w-full flex items-center p-3 text-left hover:bg-blue-50 rounded-lg transition-colors border border-transparent hover:border-blue-200">
+                                    <i class="ti ti-calendar-plus mr-3 text-blue-600"></i>
                                     <span class="text-sm text-gray-700 font-medium">Upload Jadwal Kelas</span>
                                 </button>
-                                <button class="w-full flex items-center p-3 text-left hover:bg-orange-50 rounded-lg transition-colors border border-transparent hover:border-orange-200">
-                                    <i class="ti ti-upload mr-3 text-orange"></i>
+                                <button onclick="openMaterialModal()" class="w-full flex items-center p-3 text-left hover:bg-green-50 rounded-lg transition-colors border border-transparent hover:border-green-200">
+                                    <i class="ti ti-upload mr-3 text-green-600"></i>
                                     <span class="text-sm text-gray-700 font-medium">Upload Materi Pelajaran</span>
                                 </button>
                             </div>
@@ -264,6 +264,8 @@ $statistikPostingan = $postinganLogic->getStatistikPostingan($kelas_id);
     <?php require '../component/modal-manage-students.php'; ?>
     <?php require '../component/modal-class-permissions.php'; ?>
     <?php require '../component/modal-create-assignment.php'; ?>
+    <?php require '../component/modal-upload-schedule.php'; ?>
+    <?php require '../component/modal-upload-material.php'; ?>
 
     <script src="../script/menu-bar-script.js"></script>
     <script src="../script/class-settings-manager.js"></script>
@@ -271,6 +273,7 @@ $statistikPostingan = $postinganLogic->getStatistikPostingan($kelas_id);
     <script src="../script/photoswipe-simple.js"></script>
     <script src="../script/edit-post-modal.js"></script>
     <script src="../script/assignment-manager.js"></script>
+    <script src="../script/kelas-files-manager.js"></script>
     <script src="../script/kelas-posting-stable.js?v=<?php echo time(); ?>"></script>
     <script>
         // Initialize global variables
@@ -287,6 +290,7 @@ $statistikPostingan = $postinganLogic->getStatistikPostingan($kelas_id);
             window.kelasPosting = new KelasPosting(kelasId, permissions);
             window.classSettings = new ClassSettingsManager(kelasId);
             window.assignmentManager = new AssignmentManager(kelasId, '<?php echo $_SESSION['user']['role']; ?>');
+            window.kelasFilesManager = new KelasFilesManager(kelasId, '<?php echo $_SESSION['user']['role']; ?>');
         });
     </script>
 </body>

@@ -288,6 +288,22 @@ $canComment = !isset($detailKelas['restrict_comments']) || !$detailKelas['restri
                             </div>
                         </div>
 
+                        <!-- Class Schedule (conditional display) -->
+                        <div id="schedule-section" class="bg-white rounded-lg p-4 lg:p-6 shadow-sm mb-6" style="display: none;">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Jadwal Kelas</h3>
+                            <div id="class-schedules" class="space-y-3">
+                                <!-- Will be populated by JavaScript -->
+                            </div>
+                        </div>
+
+                        <!-- Learning Materials (conditional display) -->
+                        <div id="materials-section" class="bg-white rounded-lg p-4 lg:p-6 shadow-sm mb-6" style="display: none;">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Materi Pembelajaran</h3>
+                            <div id="learning-materials" class="space-y-3">
+                                <!-- Will be populated by JavaScript -->
+                            </div>
+                        </div>
+
                         <!-- Quick Actions -->
                         <div class="bg-white rounded-lg p-4 lg:p-6 shadow-sm">
                             <h3 class="text-lg font-semibold text-gray-900 mb-4">Aksi Cepat</h3>
@@ -322,6 +338,7 @@ $canComment = !isset($detailKelas['restrict_comments']) || !$detailKelas['restri
     <script src="../script/photoswipe-simple.js"></script>
     <script src="../script/assignment-manager.js"></script>
     <script src="../script/assignment-list-modal.js?v=<?php echo time(); ?>"></script>
+    <script src="../script/kelas-files-manager.js"></script>
     <script src="../script/kelas-posting-stable.js?v=<?php echo time(); ?>"></script>
     <script>
         // Define user role for JavaScript access
@@ -336,6 +353,13 @@ $canComment = !isset($detailKelas['restrict_comments']) || !$detailKelas['restri
             };
             window.kelasPosting = new KelasPosting(kelasId, permissions);
             window.assignmentManager = new AssignmentManager(kelasId, 'siswa');
+            
+            // Initialize file manager for students (read-only)
+            window.kelasFilesManager = new KelasFilesManager(kelasId, 'siswa');
+            
+            // Load schedules and materials
+            loadClassSchedules();
+            loadLearningMaterials();
             
             // Initialize assignment navigator for sidebar clicks
             window.assignmentNavigator = new AssignmentNavigator();
@@ -359,9 +383,119 @@ $canComment = !isset($detailKelas['restrict_comments']) || !$detailKelas['restri
                 kelasPosting: !!window.kelasPosting,
                 assignmentManager: !!window.assignmentManager,
                 assignmentNavigator: !!window.assignmentNavigator,
-                assignmentListModal: !!window.assignmentListModal
+                assignmentListModal: !!window.assignmentListModal,
+                kelasFilesManager: !!window.kelasFilesManager
             });
         });
+
+        // Function to load class schedules
+        async function loadClassSchedules() {
+            try {
+                const response = await fetch(`../logic/get-kelas-files.php?kelas_id=${<?php echo $kelas_id; ?>}&file_type=schedule`);
+                const data = await response.json();
+                
+                // Handle both array response and object with files property
+                const schedules = Array.isArray(data) ? data : (data.files || []);
+                
+                if (data.error) {
+                    console.error('API Error loading schedules:', data.error);
+                }
+                
+                const container = document.getElementById('class-schedules');
+                const section = document.getElementById('schedule-section');
+                if (!container || !section) return;
+                
+                if (schedules.length === 0) {
+                    section.style.display = 'none';
+                    return;
+                }
+                
+                section.style.display = 'block';
+                container.innerHTML = schedules.map(schedule => renderFileItem(schedule, 'blue')).join('');
+            } catch (error) {
+                console.error('Error loading schedules:', error);
+                const section = document.getElementById('schedule-section');
+                if (section) section.style.display = 'none';
+            }
+        }
+
+        // Function to load learning materials
+        async function loadLearningMaterials() {
+            try {
+                const response = await fetch(`../logic/get-kelas-files.php?kelas_id=${<?php echo $kelas_id; ?>}&file_type=material`);
+                const data = await response.json();
+                
+                // Handle both array response and object with files property
+                const materials = Array.isArray(data) ? data : (data.files || []);
+                
+                if (data.error) {
+                    console.error('API Error loading materials:', data.error);
+                }
+                
+                const container = document.getElementById('learning-materials');
+                const section = document.getElementById('materials-section');
+                if (!container || !section) return;
+                
+                if (materials.length === 0) {
+                    section.style.display = 'none';
+                    return;
+                }
+                
+                section.style.display = 'block';
+                container.innerHTML = materials.map(material => renderFileItem(material, 'green')).join('');
+            } catch (error) {
+                console.error('Error loading materials:', error);
+                const section = document.getElementById('materials-section');
+                if (section) section.style.display = 'none';
+            }
+        }
+
+        // Function to render file item for students
+        function renderFileItem(file, colorTheme) {
+            const fileSize = formatFileSize(file.file_size);
+            const uploadDate = new Date(file.created_at).toLocaleDateString('id-ID');
+            const fileIcon = getFileIcon(file.file_extension);
+            
+            return `
+                <div class="flex items-center p-3 bg-${colorTheme}-50 rounded-lg hover:bg-${colorTheme}-100 transition-colors">
+                    <div class="w-10 h-10 bg-${colorTheme}-100 rounded-lg flex items-center justify-center mr-3">
+                        <i class="${fileIcon} text-${colorTheme}-600"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <h5 class="text-sm font-medium text-gray-900 truncate">${file.title}</h5>
+                        <p class="text-xs text-gray-500">${fileSize} • ${uploadDate}</p>
+                    </div>
+                    <div class="flex items-center ml-3">
+                        <button onclick="downloadFile(${file.id})" class="text-${colorTheme}-600 hover:text-${colorTheme}-800 p-2 rounded-lg hover:bg-${colorTheme}-200 transition-colors" title="Download">
+                            <i class="ti ti-download text-sm"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Helper functions
+        function getFileIcon(extension) {
+            const iconMap = {
+                'pdf': 'ti ti-file-type-pdf',
+                'doc': 'ti ti-file-type-doc',
+                'docx': 'ti ti-file-type-docx',
+                'ppt': 'ti ti-presentation',
+                'pptx': 'ti ti-presentation',
+                'jpg': 'ti ti-photo',
+                'jpeg': 'ti ti-photo',
+                'png': 'ti ti-photo'
+            };
+            return iconMap[extension.toLowerCase()] || 'ti ti-file';
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
     </script>
 </body>
 
