@@ -143,6 +143,27 @@ $canComment = !isset($detailKelas['restrict_comments']) || !$detailKelas['restri
             <div class="flex flex-col lg:flex-row gap-6">
                 <!-- Left Column - Posts -->
                 <div class="flex-1 lg:w-2/3">
+                    <!-- Mobile Quick Actions (UI only, no logic yet) -->
+                    <div class="md:hidden bg-white rounded-lg p-3 shadow-sm mb-4">
+                        <div class="grid grid-cols-4 gap-2">
+                            <button type="button" data-action="assignments" aria-controls="assignment-list-modal" class="group flex flex-col items-center justify-center rounded-lg bg-white border border-gray-200 text-[10px] font-medium text-gray-600 shadow-sm active:scale-95 transition hover:border-blue-300 hover:bg-blue-50 h-20">
+                                <i class="ti ti-clipboard-list text-blue-600 text-xl mb-1"></i>
+                                <span class="leading-tight">Tugas</span>
+                            </button>
+                            <button type="button" data-action="schedule" class="group flex flex-col items-center justify-center rounded-lg bg-white border border-gray-200 text-[10px] font-medium text-gray-600 shadow-sm active:scale-95 transition hover:border-indigo-300 hover:bg-indigo-50 h-20">
+                                <i class="ti ti-calendar text-indigo-600 text-xl mb-1"></i>
+                                <span class="leading-tight">Jadwal</span>
+                            </button>
+                            <button type="button" data-action="materials" class="group flex flex-col items-center justify-center rounded-lg bg-white border border-gray-200 text-[10px] font-medium text-gray-600 shadow-sm active:scale-95 transition hover:border-green-300 hover:bg-green-50 h-20">
+                                <i class="ti ti-book text-green-600 text-xl mb-1"></i>
+                                <span class="leading-tight">Materi</span>
+                            </button>
+                            <button type="button" data-action="classmates" class="group flex flex-col items-center justify-center rounded-lg bg-white border border-gray-200 text-[10px] font-medium text-gray-600 shadow-sm active:scale-95 transition hover:border-orange-300 hover:bg-orange-50 h-20">
+                                <i class="ti ti-users text-orange text-xl mb-1"></i>
+                                <span class="leading-tight">Teman</span>
+                            </button>
+                        </div>
+                    </div>
                     <!-- Create Post (only show if posting is allowed) -->
                     <?php if ($canPost): ?>
                     <div class="bg-white rounded-lg p-4 lg:p-6 shadow-sm mb-6">
@@ -215,7 +236,7 @@ $canComment = !isset($detailKelas['restrict_comments']) || !$detailKelas['restri
                 </div>
 
                 <!-- Right Column - Class Details -->
-                <div class="lg:w-1/3">
+                <div class="lg:w-1/3 hidden md:block">
                     <div class="sticky top-6">
                         <!-- Recent Assignments -->
                         <div class="bg-white rounded-lg p-4 lg:p-6 shadow-sm mb-6">
@@ -304,21 +325,25 @@ $canComment = !isset($detailKelas['restrict_comments']) || !$detailKelas['restri
                             </div>
                         </div>
 
-                        <!-- Quick Actions -->
+                        <!-- Quick Actions (Desktop, matched with mobile style) -->
                         <div class="bg-white rounded-lg p-4 lg:p-6 shadow-sm">
                             <h3 class="text-lg font-semibold text-gray-900 mb-4">Aksi Cepat</h3>
-                            <div class="space-y-2">
-                                <button class="w-full flex items-center p-3 text-left hover:bg-gray-50 rounded-lg transition-colors">
-                                    <i class="ti ti-users mr-3 text-gray-600"></i>
-                                    <span class="text-sm text-gray-700">Lihat Teman Sekelas</span>
+                            <div class="grid grid-cols-2 gap-3">
+                                <button type="button" data-desktop-action="assignments" aria-controls="assignment-list-modal" class="group flex flex-col items-center justify-center rounded-lg bg-white border border-gray-200 text-xs font-medium text-gray-600 shadow-sm hover:border-blue-300 hover:bg-blue-50 transition h-24">
+                                    <i class="ti ti-clipboard-list text-blue-600 text-2xl mb-1"></i>
+                                    <span class="leading-tight">Tugas</span>
                                 </button>
-                                <button class="w-full flex items-center p-3 text-left hover:bg-gray-50 rounded-lg transition-colors">
-                                    <i class="ti ti-calendar mr-3 text-gray-600"></i>
-                                    <span class="text-sm text-gray-700">Jadwal Kelas</span>
+                                <button type="button" data-desktop-action="schedule" class="hidden group flex flex-col items-center justify-center rounded-lg bg-white border border-gray-200 text-xs font-medium text-gray-600 shadow-sm hover:border-indigo-300 hover:bg-indigo-50 transition h-24">
+                                    <i class="ti ti-calendar text-indigo-600 text-2xl mb-1"></i>
+                                    <span class="leading-tight">Jadwal</span>
                                 </button>
-                                <button class="w-full flex items-center p-3 text-left hover:bg-gray-50 rounded-lg transition-colors">
-                                    <i class="ti ti-book mr-3 text-gray-600"></i>
-                                    <span class="text-sm text-gray-700">Materi Pembelajaran</span>
+                                <button type="button" data-desktop-action="materials" class="hidden group flex flex-col items-center justify-center rounded-lg bg-white border border-gray-200 text-xs font-medium text-gray-600 shadow-sm hover:border-green-300 hover:bg-green-50 transition h-24">
+                                    <i class="ti ti-book text-green-600 text-2xl mb-1"></i>
+                                    <span class="leading-tight">Materi</span>
+                                </button>
+                                <button type="button" data-desktop-action="classmates" class="group flex flex-col items-center justify-center rounded-lg bg-white border border-gray-200 text-xs font-medium text-gray-600 shadow-sm hover:border-orange-300 hover:bg-orange-50 transition h-24">
+                                    <i class="ti ti-users text-orange text-2xl mb-1"></i>
+                                    <span class="leading-tight">Teman</span>
                                 </button>
                             </div>
                         </div>
@@ -333,12 +358,16 @@ $canComment = !isset($detailKelas['restrict_comments']) || !$detailKelas['restri
     <?php require '../component/modal-comments.php'; ?>
     <?php require '../component/modal-submit-assignment.php'; ?>
     <?php require '../component/modal-assignment-list.php'; ?>
+    <?php require '../component/modal-schedule-list.php'; ?>
+    <?php require '../component/modal-material-list.php'; ?>
+    <?php require '../component/modal-classmates-list.php'; ?>
     <script src="../script/menu-bar-script.js"></script>
     <script src="../script/image-upload-manager.js"></script>
     <script src="../script/photoswipe-simple.js"></script>
     <script src="../script/assignment-manager.js"></script>
     <script src="../script/assignment-list-modal.js?v=<?php echo time(); ?>"></script>
     <script src="../script/kelas-files-manager.js"></script>
+    <script src="../script/list-modals-manager.js?v=<?php echo time(); ?>"></script>
     <script src="../script/kelas-posting-stable.js?v=<?php echo time(); ?>"></script>
     <script>
         // Define user role for JavaScript access
@@ -374,6 +403,29 @@ $canComment = !isset($detailKelas['restrict_comments']) || !$detailKelas['restri
                     window.assignmentListModal.open();
                 });
             }
+
+            // Mobile quick action: open assignment list modal
+            const mobileAssignmentsBtn = document.querySelector('button[data-action="assignments"]');
+            if (mobileAssignmentsBtn) {
+                mobileAssignmentsBtn.addEventListener('click', () => {
+                    if (window.assignmentListModal && typeof window.assignmentListModal.open === 'function') {
+                        window.assignmentListModal.open();
+                    } else {
+                        console.warn('AssignmentListModal belum siap.');
+                    }
+                });
+            }
+
+            // Init list modals manager
+            window.listModalsManager = new ListModalsManager(kelasId);
+
+            // Mobile quick actions using manager
+            const mobileScheduleBtn = document.querySelector('button[data-action="schedule"]');
+            mobileScheduleBtn?.addEventListener('click', () => window.listModalsManager.open('schedule'));
+            const mobileMaterialBtn = document.querySelector('button[data-action="materials"]');
+            mobileMaterialBtn?.addEventListener('click', () => window.listModalsManager.open('material'));
+            const mobileClassmatesBtn = document.querySelector('button[data-action="classmates"]');
+            mobileClassmatesBtn?.addEventListener('click', () => window.listModalsManager.open('classmates'));
             
             // Debug info
             console.log('🎓 LMS Assignment Navigation initialized');
@@ -386,7 +438,30 @@ $canComment = !isset($detailKelas['restrict_comments']) || !$detailKelas['restri
                 assignmentListModal: !!window.assignmentListModal,
                 kelasFilesManager: !!window.kelasFilesManager
             });
+
+            // Desktop quick actions (same behavior as mobile)
+            document.querySelectorAll('[data-desktop-action]')?.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const action = btn.getAttribute('data-desktop-action');
+                    switch(action){
+                        case 'assignments':
+                            window.assignmentListModal?.open();
+                            break;
+                        case 'schedule':
+                            window.listModalsManager?.open('schedule');
+                            break;
+                        case 'materials':
+                            window.listModalsManager?.open('material');
+                            break;
+                        case 'classmates':
+                            window.listModalsManager?.open('classmates');
+                            break;
+                    }
+                });
+            });
         });
+
+    // Legacy simple dialog helpers removed (handled by ListModalsManager)
 
         // Function to load class schedules
         async function loadClassSchedules() {

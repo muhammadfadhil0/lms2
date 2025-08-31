@@ -54,6 +54,11 @@ $statistikPostingan = $postinganLogic->getStatistikPostingan($kelas_id);
     <link rel="stylesheet" href="../css/class-settings.css">
     <link rel="stylesheet" href="../css/image-upload.css">
     <title><?php echo htmlspecialchars($detailKelas['namaKelas']); ?> - Kelola Kelas</title>
+    <style>
+        /* Hide scrollbar for horizontal quick actions on mobile */
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
 </head>
 
 <body class="bg-gray-50">
@@ -112,6 +117,27 @@ $statistikPostingan = $postinganLogic->getStatistikPostingan($kelas_id);
             <div class="flex flex-col lg:flex-row gap-6">
                 <!-- Left Column - Posts -->
                 <div class="flex-1 lg:w-2/3">
+                    <!-- Mobile Quick Actions Separate Container -->
+                    <div class="md:hidden bg-white rounded-lg p-3 shadow-sm mb-4">
+                        <div class="grid grid-cols-4 gap-2">
+                            <button type="button" onclick="openClassSettings()" class="group flex flex-col items-center justify-center rounded-lg bg-white border border-gray-200 text-[10px] font-medium text-gray-600 shadow-sm active:scale-95 transition hover:border-orange-300 hover:bg-orange-50 h-20">
+                                <i class="ti ti-settings text-orange text-xl mb-1"></i>
+                                <span class="leading-tight">Setting</span>
+                            </button>
+                            <button type="button" onclick="openCreateAssignmentModal()" class="group flex flex-col items-center justify-center rounded-lg bg-white border border-gray-200 text-[10px] font-medium text-gray-600 shadow-sm active:scale-95 transition hover:border-orange-300 hover:bg-orange-50 h-20">
+                                <i class="ti ti-file-plus text-orange text-xl mb-1"></i>
+                                <span class="leading-tight">Tugas</span>
+                            </button>
+                            <button type="button" onclick="openScheduleModal()" class="group flex flex-col items-center justify-center rounded-lg bg-white border border-gray-200 text-[10px] font-medium text-gray-600 shadow-sm active:scale-95 transition hover:border-blue-300 hover:bg-blue-50 h-20">
+                                <i class="ti ti-calendar-plus text-blue-600 text-xl mb-1"></i>
+                                <span class="leading-tight">Jadwal</span>
+                            </button>
+                            <button type="button" onclick="openMaterialModal()" class="group flex flex-col items-center justify-center rounded-lg bg-white border border-gray-200 text-[10px] font-medium text-gray-600 shadow-sm active:scale-95 transition hover:border-green-300 hover:bg-green-50 h-20">
+                                <i class="ti ti-upload text-green-600 text-xl mb-1"></i>
+                                <span class="leading-tight">Materi</span>
+                            </button>
+                        </div>
+                    </div>
                     <!-- Create Post -->
                     <div class="bg-white rounded-lg p-4 lg:p-6 shadow-sm mb-6">
                         <form id="postForm" enctype="multipart/form-data">
@@ -266,6 +292,9 @@ $statistikPostingan = $postinganLogic->getStatistikPostingan($kelas_id);
     <?php require '../component/modal-create-assignment.php'; ?>
     <?php require '../component/modal-upload-schedule.php'; ?>
     <?php require '../component/modal-upload-material.php'; ?>
+    <?php require '../component/modal-schedule-list.php'; ?>
+    <?php require '../component/modal-material-list.php'; ?>
+    <?php require '../component/modal-classmates-list.php'; ?>
 
     <script src="../script/menu-bar-script.js"></script>
     <script src="../script/class-settings-manager.js"></script>
@@ -274,6 +303,7 @@ $statistikPostingan = $postinganLogic->getStatistikPostingan($kelas_id);
     <script src="../script/edit-post-modal.js"></script>
     <script src="../script/assignment-manager.js"></script>
     <script src="../script/kelas-files-manager.js"></script>
+    <script src="../script/list-modals-manager.js?v=<?php echo time(); ?>"></script>
     <script src="../script/kelas-posting-stable.js?v=<?php echo time(); ?>"></script>
     <script>
         // Initialize global variables
@@ -291,6 +321,14 @@ $statistikPostingan = $postinganLogic->getStatistikPostingan($kelas_id);
             window.classSettings = new ClassSettingsManager(kelasId);
             window.assignmentManager = new AssignmentManager(kelasId, '<?php echo $_SESSION['user']['role']; ?>');
             window.kelasFilesManager = new KelasFilesManager(kelasId, '<?php echo $_SESSION['user']['role']; ?>');
+
+            // Initialize list modals manager
+            window.listModalsManager = new ListModalsManager(kelasId);
+
+            // Global helpers using manager
+            window.openScheduleListModal = function() { window.listModalsManager.open('schedule'); };
+            window.openMaterialListModal = function() { window.listModalsManager.open('material'); };
+            window.openClassmatesListModal = function() { window.listModalsManager.open('classmates'); };
         });
     </script>
 </body>

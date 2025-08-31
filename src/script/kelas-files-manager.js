@@ -57,6 +57,10 @@ class KelasFilesManager {
                 if (typeof loadClassSchedules === 'function') {
                     loadClassSchedules();
                 }
+                // Refresh unified list modal if open
+                if (window.listModalsManager) {
+                    window.listModalsManager.loadSchedules(true);
+                }
             } else {
                 this.showAlert('error', result.message || 'Gagal mengupload jadwal');
                 if (result.debug) {
@@ -100,6 +104,9 @@ class KelasFilesManager {
                 // Also refresh student view if this is called from kelas-user.php
                 if (typeof loadLearningMaterials === 'function') {
                     loadLearningMaterials();
+                }
+                if (window.listModalsManager) {
+                    window.listModalsManager.loadMaterials(true);
                 }
             } else {
                 this.showAlert('error', result.message || 'Gagal mengupload materi');
@@ -287,8 +294,10 @@ class KelasFilesManager {
                 this.showAlert('success', 'File berhasil dihapus!');
                 if (fileType === 'schedule') {
                     this.loadExistingSchedules();
+                    if (window.listModalsManager) window.listModalsManager.loadSchedules(true);
                 } else {
                     this.loadExistingMaterials();
+                    if (window.listModalsManager) window.listModalsManager.loadMaterials(true);
                 }
             } else {
                 this.showAlert('error', result.message || 'Gagal menghapus file');

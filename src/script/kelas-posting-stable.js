@@ -1115,83 +1115,77 @@ class KelasPosting {
                 const submissionStatus = post.student_submission_status;
                 if (submissionStatus === 'dinilai') {
                     assignmentActions = `
-                        <div class="bg-green-50 border border-green-200 rounded-lg p-4 mt-3">
-                            <div class="space-y-3">
-                                <!-- Header with status -->
-                                <div class="flex items-center justify-between">
-                                    <div class="flex items-center">
-                                        <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-3">
-                                            <i class="ti ti-check text-green-600"></i>
-                                        </div>
-                                        <div>
-                                            <div class="font-medium text-green-800">Tugas telah dinilai</div>
-                                            <div class="text-sm text-green-600">Selamat! Tugas Anda sudah mendapat nilai</div>
-                                        </div>
+                        <div class="mt-3 bg-green-50 border border-green-200 rounded-lg p-4">
+                            <!-- Header -->
+                            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                <div class="flex items-start sm:items-center">
+                                    <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                                        <i class="ti ti-check text-green-600 text-lg"></i>
                                     </div>
-                                    <div class="text-right">
-                                        <div class="text-2xl font-bold text-green-600">${post.student_score}</div>
-                                        <div class="text-sm text-gray-500">dari ${post.assignment_max_score}</div>
+                                    <div class="min-w-0">
+                                        <div class="font-semibold text-green-700 text-sm sm:text-base">Tugas telah dinilai</div>
+                                        <div class="text-[12px] sm:text-sm text-green-600 mt-0.5">Selamat! Anda sudah mendapatkan nilai akhir.</div>
                                     </div>
                                 </div>
-                                
-                                <!-- Progress indicators -->
-                                <div class="flex items-center space-x-4 text-sm">
-                                    <div class="flex items-center text-green-600">
-                                        <div class="w-4 h-4 bg-green-600 rounded-full mr-2"></div>
-                                        <span>Tugas terkirim</span>
-                                    </div>
-                                    <div class="flex items-center text-green-600">
-                                        <div class="w-4 h-4 bg-green-600 rounded-full mr-2"></div>
-                                        <span>Telah dinilai guru</span>
+                                <div class="flex sm:block items-center sm:text-right bg-white sm:bg-transparent px-3 py-2 sm:p-0 rounded-md border border-green-200 sm:border-0">
+                                    <div class="flex items-baseline sm:block">
+                                        <span class="text-xl sm:text-2xl font-bold text-green-600 leading-none mr-1 sm:mr-0">${post.student_score}</span>
+                                        <span class="text-xs sm:text-sm text-gray-500 leading-none">/ ${post.assignment_max_score}</span>
                                     </div>
                                 </div>
-                                
-                                ${post.student_feedback ? `
-                                    <div class="bg-white border border-green-200 rounded-lg p-3">
-                                        <div class="flex items-start space-x-2">
-                                            <i class="ti ti-message-circle text-green-600 mt-1"></i>
-                                            <div>
-                                                <div class="font-medium text-green-800 mb-1">Komentar Guru:</div>
-                                                <div class="text-sm text-gray-700">${this.escapeHtml(post.student_feedback)}</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ` : ''}
-                                
-
                             </div>
+                            <!-- Progress Bar -->
+                            <div class="mt-4">
+                                <div class="flex justify-between text-[10px] sm:text-xs font-medium mb-1 text-gray-600">
+                                    <span class="text-green-600">Terkirim</span>
+                                    <span class="text-green-600">Dinilai</span>
+                                </div>
+                                <div class="relative h-2 bg-green-100 rounded-full">
+                                    <div class="absolute inset-y-0 left-0 bg-green-500 rounded-full" style="width:100%"></div>
+                                    <div class="absolute -top-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full shadow left-0 translate-x-[-2px]"></div>
+                                    <div class="absolute -top-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full shadow right-0 translate-x-[2px]"></div>
+                                </div>
+                            </div>
+                            ${post.student_feedback ? `
+                                <div class="mt-4 bg-white border border-green-200 rounded-lg p-3">
+                                    <div class="flex items-start space-x-2">
+                                        <i class="ti ti-message-circle text-green-600 mt-0.5"></i>
+                                        <div class="min-w-0">
+                                            <div class="font-medium text-green-700 text-xs sm:text-sm mb-1">Komentar Guru</div>
+                                            <div class="text-xs sm:text-sm text-gray-700 leading-relaxed">${this.escapeHtml(post.student_feedback)}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ` : ''}
                         </div>
                     `;
                 } else if (submissionStatus === 'dikumpulkan') {
                     assignmentActions = `
-                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mt-3">
-                            <div class="space-y-3">
-                                <!-- Header with status -->
-                                <div class="flex items-center justify-between">
-                                    <div class="flex items-center">
-                                        <div class="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center mr-3">
-                                            <i class="ti ti-clock text-yellow-600"></i>
-                                        </div>
-                                        <div>
-                                            <div class="font-medium text-yellow-800">Tugas telah dikumpulkan</div>
-                                            <div class="text-sm text-yellow-600">Menunggu penilaian dari guru</div>
-                                        </div>
+                        <div class="mt-3 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                <div class="flex items-start sm:items-center">
+                                    <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                                        <i class="ti ti-clock text-yellow-600 text-lg"></i>
                                     </div>
-                                    <div class="text-yellow-600">
-                                        <i class="ti ti-hourglass text-2xl"></i>
+                                    <div class="min-w-0">
+                                        <div class="font-semibold text-yellow-700 text-sm sm:text-base">Tugas sudah dikumpulkan</div>
+                                        <div class="text-[12px] sm:text-sm text-yellow-600 mt-0.5">Menunggu penilaian dari guru...</div>
                                     </div>
                                 </div>
-                                
-                                <!-- Progress indicators -->
-                                <div class="flex items-center space-x-4 text-sm">
-                                    <div class="flex items-center text-green-600">
-                                        <div class="w-4 h-4 bg-green-600 rounded-full mr-2"></div>
-                                        <span>Tugas terkirim</span>
-                                    </div>
-                                    <div class="flex items-center text-gray-400">
-                                        <div class="w-4 h-4 bg-gray-300 rounded-full mr-2"></div>
-                                        <span>Menunggu penilaian</span>
-                                    </div>
+                                <div class="flex items-center sm:block text-yellow-600">
+                                    <i class="ti ti-hourglass-high text-xl sm:text-2xl"></i>
+                                </div>
+                            </div>
+                            <!-- Progress Bar -->
+                            <div class="mt-4">
+                                <div class="flex justify-between text-[10px] sm:text-xs font-medium mb-1 text-gray-600">
+                                    <span class="text-green-600">Terkirim</span>
+                                    <span class="text-gray-400">Dinilai</span>
+                                </div>
+                                <div class="relative h-2 bg-gray-200 rounded-full">
+                                    <div class="absolute inset-y-0 left-0 bg-green-500 rounded-full" style="width:50%"></div>
+                                    <div class="absolute -top-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full shadow left-0 translate-x-[-2px]"></div>
+                                    <div class="absolute -top-1 w-4 h-4 bg-white border-2 border-gray-300 rounded-full shadow right-0 translate-x-[2px]"></div>
                                 </div>
                             </div>
                         </div>

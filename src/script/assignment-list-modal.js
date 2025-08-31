@@ -279,47 +279,50 @@ class AssignmentListModal {
         });
 
         return `
-            <div class="assignment-item p-4 border border-gray-200 rounded-lg hover:border-purple-300 hover:bg-purple-50 transition-all cursor-pointer ${statusClass}" 
-                 data-assignment-id="${assignment.id}">
-                <div class="flex items-start justify-between">
-                    <div class="flex-1 min-w-0">
-                        <div class="flex items-start space-x-3">
-                            <div class="flex-shrink-0">
-                                <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                                    <i class="ti ti-clipboard-text text-purple-600"></i>
-                                </div>
-                            </div>
-                            <div class="flex-1 min-w-0">
-                                <h4 class="text-sm font-semibold text-gray-900 truncate">${this.escapeHtml(assignment.judul || 'Tanpa Judul')}</h4>
-                                ${assignment.deskripsi ? `
-                                    <p class="text-xs text-gray-600 mt-1 line-clamp-2">${this.escapeHtml(assignment.deskripsi.substring(0, 100))}${assignment.deskripsi.length > 100 ? '...' : ''}</p>
-                                ` : ''}
-                                <div class="flex items-center space-x-4 mt-2 text-xs text-gray-500">
-                                    <span class="flex items-center">
-                                        <i class="ti ti-calendar mr-1"></i>
-                                        ${timeAgo}
-                                    </span>
-                                    ${deadlineFormatted ? `
-                                        <span class="flex items-center ${isSoon ? 'text-orange-600 font-medium' : isExpired ? 'text-red-600 font-medium' : ''}">
-                                            <i class="ti ti-clock mr-1"></i>
-                                            ${deadlineFormatted}
-                                        </span>
-                                    ` : ''}
-                                    ${assignment.nilai_maksimal ? `
-                                        <span class="flex items-center">
-                                            <i class="ti ti-trophy mr-1"></i>
-                                            ${assignment.nilai_maksimal} poin
-                                        </span>
-                                    ` : ''}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="flex flex-col items-end ml-3">
-                        <i class="${statusIcon} text-sm mb-1"></i>
-                        <span class="text-xs font-medium text-center">${statusText}</span>
+            <div class="assignment-item group p-3 border border-gray-200 rounded-md hover:border-purple-400 hover:bg-purple-50 transition cursor-pointer ${statusClass}"
+             data-assignment-id="${assignment.id}">
+            <div class="flex items-start gap-3">
+                <div class="w-9 h-9 flex items-center justify-center rounded-md bg-purple-100 text-purple-600">
+                <i class="ti ti-clipboard-text text-lg"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                <div class="flex items-start justify-between gap-3">
+                    <h4 class="text-sm font-semibold text-gray-800 leading-snug truncate">
+                    ${this.escapeHtml(assignment.judul || 'Tanpa Judul')}
+                    </h4>
+                    <div class="flex items-center gap-1 shrink-0 text-[10px] px-2 py-0.5 rounded-full
+                    ${
+                        statusClass.includes('red') ? 'bg-red-100 text-red-700' :
+                        statusClass.includes('green') ? 'bg-green-100 text-green-700' :
+                        statusClass.includes('yellow') ? 'bg-yellow-100 text-yellow-700' :
+                        statusClass.includes('orange') ? 'bg-orange-100 text-orange-700' :
+                        'bg-gray-100 text-gray-600'
+                    }">
+                    <i class="${statusIcon} mr-1 text-xs"></i>${statusText}
                     </div>
                 </div>
+                ${assignment.deskripsi ? `
+                    <p class="text-[11px] text-gray-600 mt-1 line-clamp-1">
+                    ${this.escapeHtml(assignment.deskripsi.substring(0, 80))}${assignment.deskripsi.length > 80 ? '…' : ''}
+                    </p>
+                ` : ''}
+                <div class="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-[11px] text-gray-500">
+                    <span class="flex items-center gap-1">
+                    <i class="ti ti-calendar-time text-[12px]"></i>${timeAgo}
+                    </span>
+                    ${deadlineFormatted ? `
+                    <span class="flex items-center gap-1 ${isSoon ? 'text-orange-600 font-medium' : isExpired ? 'text-red-600 font-medium' : ''}">
+                        <i class="ti ti-clock text-[12px]"></i>${deadlineFormatted}
+                    </span>
+                    ` : ''}
+                    ${assignment.nilai_maksimal ? `
+                    <span class="flex items-center gap-1">
+                        <i class="ti ti-trophy text-[12px]"></i>${assignment.nilai_maksimal} poin
+                    </span>
+                    ` : ''}
+                </div>
+                </div>
+            </div>
             </div>
         `;
     }
