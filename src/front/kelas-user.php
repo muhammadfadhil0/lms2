@@ -95,8 +95,8 @@ $canComment = !isset($detailKelas['restrict_comments']) || !$detailKelas['restri
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <?php require '../../assets/head.php'; ?>
-    <link rel="stylesheet" href="../css/kelas-posting.css">
-    <link rel="stylesheet" href="../css/image-upload.css">
+    <link rel="stylesheet" href="../css/kelas-posting.css?v=<?php echo time(); ?>">
+    <link rel="stylesheet" href="../css/image-upload.css?v=<?php echo time(); ?>">
     <title><?php echo htmlspecialchars($detailKelas['namaKelas']); ?> - Kelas</title>
 </head>
 
@@ -217,32 +217,6 @@ $canComment = !isset($detailKelas['restrict_comments']) || !$detailKelas['restri
                 <!-- Right Column - Class Details -->
                 <div class="lg:w-1/3">
                     <div class="sticky top-6">
-                        <div class="bg-white rounded-lg p-4 lg:p-6 shadow-sm mb-6">
-                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Detail Kelas</h3>
-                            <div class="space-y-4">
-                                <div class="flex items-center">
-                                    <div class="w-10 h-10 bg-orange-tipis rounded-lg flex items-center justify-center mr-3">
-                                        <i class="ti ti-users text-orange"></i>
-                                    </div>
-                                    <div>
-                                        <p class="text-xl font-bold text-gray-900"><?php echo $jumlahSiswa; ?></p>
-                                        <p class="text-sm text-gray-600">Mahasiswa</p>
-                                    </div>
-                                </div>
-                                <div class="flex items-center">
-                                    <div class="w-10 h-10 bg-orange-tipis rounded-lg flex items-center justify-center mr-3">
-                                        <i class="ti ti-message-circle text-orange"></i>
-                                    </div>
-                                    <div>
-                                        <p class="text-xl font-bold text-gray-900"><?php echo $statistikPostingan['totalPostingan'] ?? 0; ?></p>
-                                        <p class="text-sm text-gray-600">Postingan</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Class Stats -->
-
                         <!-- Recent Assignments -->
                         <div class="bg-white rounded-lg p-4 lg:p-6 shadow-sm mb-6">
                             <h3 class="text-lg font-semibold text-gray-900 mb-4">Tugas Terbaru</h3>
@@ -284,7 +258,7 @@ $canComment = !isset($detailKelas['restrict_comments']) || !$detailKelas['restri
                                         $deadlineFormatted = date('j M Y', strtotime($assignment['deadline']));
                                         $isDeadlineSoon = strtotime($assignment['deadline']) - time() < (24 * 60 * 60 * 3); // 3 days
                                         ?>
-                                        <div class="p-3 <?php echo $statusClass; ?> border rounded-lg">
+                                        <div class="assignment-card p-3 <?php echo $statusClass; ?> border rounded-lg cursor-pointer hover:bg-opacity-80 transition-all duration-200" data-assignment-id="<?php echo $assignment['id']; ?>">
                                             <div class="flex items-start justify-between">
                                                 <div class="flex-1">
                                                     <h4 class="font-medium text-gray-900 text-sm"><?php echo htmlspecialchars($assignment['judul']); ?></h4>
@@ -303,9 +277,9 @@ $canComment = !isset($detailKelas['restrict_comments']) || !$detailKelas['restri
                                         </div>
                                     <?php endforeach; ?>
                                     
-                                    <?php if (count($recentAssignments) >= 5): ?>
+                                    <?php if (count($recentAssignments) > 0): ?>
                                         <div class="text-center mt-3">
-                                            <button class="text-sm text-orange-600 hover:text-orange-800 font-medium">
+                                            <button id="view-all-assignments" class="text-sm text-orange-600 hover:text-orange-800 font-medium transition-colors">
                                                 Lihat Semua Tugas
                                             </button>
                                         </div>
@@ -330,10 +304,6 @@ $canComment = !isset($detailKelas['restrict_comments']) || !$detailKelas['restri
                                     <i class="ti ti-book mr-3 text-gray-600"></i>
                                     <span class="text-sm text-gray-700">Materi Pembelajaran</span>
                                 </button>
-                                <button class="w-full flex items-center p-3 text-left hover:bg-gray-50 rounded-lg transition-colors">
-                                    <i class="ti ti-star mr-3 text-gray-600"></i>
-                                    <span class="text-sm text-gray-700">Nilai & Rapor</span>
-                                </button>
                             </div>
                         </div>
                     </div>
@@ -346,10 +316,12 @@ $canComment = !isset($detailKelas['restrict_comments']) || !$detailKelas['restri
     <?php require '../component/modal-delete-post.php'; ?>
     <?php require '../component/modal-comments.php'; ?>
     <?php require '../component/modal-submit-assignment.php'; ?>
+    <?php require '../component/modal-assignment-list.php'; ?>
     <script src="../script/menu-bar-script.js"></script>
     <script src="../script/image-upload-manager.js"></script>
     <script src="../script/photoswipe-simple.js"></script>
     <script src="../script/assignment-manager.js"></script>
+    <script src="../script/assignment-list-modal.js?v=<?php echo time(); ?>"></script>
     <script src="../script/kelas-posting-stable.js?v=<?php echo time(); ?>"></script>
     <script>
         // Define user role for JavaScript access
@@ -364,6 +336,31 @@ $canComment = !isset($detailKelas['restrict_comments']) || !$detailKelas['restri
             };
             window.kelasPosting = new KelasPosting(kelasId, permissions);
             window.assignmentManager = new AssignmentManager(kelasId, 'siswa');
+            
+            // Initialize assignment navigator for sidebar clicks
+            window.assignmentNavigator = new AssignmentNavigator();
+            
+            // Initialize assignment list modal
+            window.assignmentListModal = new AssignmentListModal(kelasId);
+            
+            // Add event listener for "View All Assignments" button
+            const viewAllBtn = document.getElementById('view-all-assignments');
+            if (viewAllBtn) {
+                viewAllBtn.addEventListener('click', () => {
+                    window.assignmentListModal.open();
+                });
+            }
+            
+            // Debug info
+            console.log('🎓 LMS Assignment Navigation initialized');
+            console.log('📋 Class ID:', kelasId);
+            console.log('👤 User role: siswa');
+            console.log('🔧 Available global objects:', {
+                kelasPosting: !!window.kelasPosting,
+                assignmentManager: !!window.assignmentManager,
+                assignmentNavigator: !!window.assignmentNavigator,
+                assignmentListModal: !!window.assignmentListModal
+            });
         });
     </script>
 </body>

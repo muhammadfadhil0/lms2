@@ -27,5 +27,11 @@ function getConnection() {
     return $koneksi;
 }
 
+// Fungsi helper untuk mendapatkan PDO connection
+function getPDOConnection() {
+    global $pdo;
+    return $pdo;
+}
+
 // Set charset untuk menghindari masalah encoding
 mysqli_set_charset($koneksi, "utf8mb4");

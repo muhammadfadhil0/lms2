@@ -1043,7 +1043,7 @@ class KelasPosting {
 
         // Assignment header with info
         let assignmentHeader = `
-            <div class="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-lg p-4 mt-3">
+            <div class="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-lg p-4 mt-3" data-assignment-id="${post.assignment_id}">
                 <div class="flex items-start space-x-3">
                     <div class="flex-shrink-0">
                         <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
@@ -1158,10 +1158,7 @@ class KelasPosting {
                                     </div>
                                 ` : ''}
                                 
-                                <button onclick="showSubmissionForm(${post.assignment_id})" 
-                                        class="text-sm text-blue-600 hover:text-blue-800 font-medium">
-                                    <i class="ti ti-refresh mr-1"></i>Kumpulkan Ulang
-                                </button>
+
                             </div>
                         </div>
                     `;
@@ -1196,11 +1193,6 @@ class KelasPosting {
                                         <span>Menunggu penilaian</span>
                                     </div>
                                 </div>
-                                
-                                <button onclick="showSubmissionForm(${post.assignment_id})" 
-                                        class="text-sm text-blue-600 hover:text-blue-800 font-medium">
-                                    <i class="ti ti-refresh mr-1"></i>Kumpulkan Ulang
-                                </button>
                             </div>
                         </div>
                     `;
@@ -1597,6 +1589,239 @@ async function submitAssignment(assignmentId) {
         // Reset button
         submitBtn.disabled = false;
         submitBtn.innerHTML = '<i class="ti ti-send mr-2"></i>Kumpulkan';
+    }
+}
+
+// Assignment Navigation and Highlight System
+class AssignmentNavigator {
+    constructor() {
+        this.init();
+    }
+
+    init() {
+        // Add click handlers to assignment items in sidebar
+        this.addSidebarClickHandlers();
+    }
+
+    // Public method to refresh handlers (useful if DOM changes)
+    refreshHandlers() {
+        console.log('🔄 Refreshing assignment handlers...');
+        this.addSidebarClickHandlers();
+    }
+
+    addSidebarClickHandlers() {
+        // Use a more reliable method to wait for assignments to be rendered
+        const checkAssignments = () => {
+            const assignmentCards = document.querySelectorAll('.assignment-card');
+            console.log('🎯 Found assignment cards:', assignmentCards.length);
+            
+            if (assignmentCards.length > 0) {
+                assignmentCards.forEach((card, index) => {
+                    const assignmentId = card.getAttribute('data-assignment-id');
+                    console.log(`📋 Assignment card ${index + 1}:`, { element: card, assignmentId });
+                    
+                    // Remove existing listeners to prevent duplicates
+                    card.removeEventListener('click', this.handleAssignmentClick);
+                    
+                    // Add new listener
+                    card.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        console.log('🖱️ Assignment card clicked:', assignmentId);
+                        if (assignmentId) {
+                            this.scrollToAssignment(assignmentId);
+                        }
+                    });
+                });
+            } else {
+                // Retry if no cards found yet
+                setTimeout(checkAssignments, 500);
+            }
+        };
+        
+        // Start checking immediately and retry if needed
+        checkAssignments();
+    }
+
+    async scrollToAssignment(assignmentId) {
+        console.log('🎯 Scrolling to assignment:', assignmentId);
+        
+        // First, try to find the assignment post in current loaded posts
+        let assignmentPost = this.findAssignmentPost(assignmentId);
+        
+        if (!assignmentPost) {
+            // If not found, load more posts until we find it or reach the end
+            assignmentPost = await this.loadUntilAssignmentFound(assignmentId);
+        }
+        
+        if (assignmentPost) {
+            console.log('✅ Assignment post found, scrolling...');
+            this.smoothScrollToPost(assignmentPost);
+        } else {
+            console.warn('❌ Assignment post not found:', assignmentId);
+            // Show message to user
+            this.showNotFoundMessage();
+        }
+    }
+
+    findAssignmentPost(assignmentId) {
+        // Try to find by data-assignment-id attribute within post content
+        const assignmentElement = document.querySelector(`[data-assignment-id="${assignmentId}"]`);
+        if (assignmentElement) {
+            // Find the parent post element
+            const postElement = assignmentElement.closest('[data-post-id]');
+            if (postElement) {
+                return postElement;
+            }
+        }
+        
+        // Fallback: search through all posts for assignment content
+        const posts = document.querySelectorAll('[data-post-id]');
+        for (let post of posts) {
+            const assignmentContent = post.querySelector(`[data-assignment-id="${assignmentId}"]`);
+            if (assignmentContent) {
+                return post;
+            }
+        }
+        
+        return null;
+    }
+
+    async loadUntilAssignmentFound(assignmentId, maxAttempts = 10) {
+        let attempts = 0;
+        
+        while (attempts < maxAttempts && window.kelasPosting.hasMorePosts) {
+            console.log(`🔍 Attempt ${attempts + 1}: Loading more posts to find assignment ${assignmentId}`);
+            
+            // Load more posts
+            await window.kelasPosting.loadPostingan(false);
+            
+            // Check if assignment is now loaded
+            const assignmentPost = this.findAssignmentPost(assignmentId);
+            if (assignmentPost) {
+                console.log('✅ Assignment found after loading more posts');
+                return assignmentPost;
+            }
+            
+            attempts++;
+            // Small delay between attempts
+            await new Promise(resolve => setTimeout(resolve, 300));
+        }
+        
+        return null;
+    }
+
+    smoothScrollToPost(postElement) {
+        // Calculate position to center the post in viewport
+        const elementRect = postElement.getBoundingClientRect();
+        const offsetTop = window.pageYOffset + elementRect.top;
+        const windowHeight = window.innerHeight;
+        const elementHeight = elementRect.height;
+        
+        // Center the element in the viewport with some padding from top
+        const scrollToPosition = offsetTop - (windowHeight / 2) + (elementHeight / 2);
+        
+        console.log('📏 Scroll calculation:', {
+            elementRect,
+            offsetTop,
+            windowHeight,
+            elementHeight,
+            scrollToPosition: Math.max(0, scrollToPosition)
+        });
+        
+        // Smooth scroll
+        window.scrollTo({
+            top: Math.max(0, scrollToPosition),
+            behavior: 'smooth'
+        });
+        
+        // Wait for scroll to complete, then highlight
+        setTimeout(() => {
+            this.highlightPost(postElement);
+        }, 800);
+    }
+
+    highlightPost(postElement) {
+        console.log('✨ Highlighting post:', postElement);
+        
+        // Force remove any existing highlight first
+        postElement.classList.remove('assignment-highlight');
+        
+        // Force a reflow to ensure the class removal takes effect
+        postElement.offsetHeight;
+        
+        // Store original styles
+        const originalBorder = postElement.style.border;
+        const originalBoxShadow = postElement.style.boxShadow;
+        const originalBackground = postElement.style.backgroundColor;
+        const originalTransition = postElement.style.transition;
+        const originalTransform = postElement.style.transform;
+        
+        // Add highlight class
+        postElement.classList.add('assignment-highlight');
+        
+        // Also add inline styles as fallback to ensure visibility
+        postElement.style.setProperty('border', '4px solid #f97316', 'important');
+        postElement.style.setProperty('box-shadow', '0 0 0 8px rgba(249, 115, 22, 0.4)', 'important');
+        postElement.style.setProperty('background-color', 'rgba(249, 115, 22, 0.05)', 'important');
+        postElement.style.setProperty('transform', 'scale(1.02)', 'important');
+        postElement.style.setProperty('transition', 'all 0.3s ease-in-out', 'important');
+        postElement.style.setProperty('border-radius', '8px', 'important');
+        postElement.style.setProperty('z-index', '999', 'important');
+        postElement.style.setProperty('position', 'relative', 'important');
+        
+        // Verify the styles were applied
+        console.log('🎨 Class list after adding highlight:', postElement.classList.toString());
+        console.log('🎨 Final computed styles:', {
+            border: window.getComputedStyle(postElement).border,
+            borderColor: window.getComputedStyle(postElement).borderColor,
+            boxShadow: window.getComputedStyle(postElement).boxShadow,
+            backgroundColor: window.getComputedStyle(postElement).backgroundColor,
+            transform: window.getComputedStyle(postElement).transform
+        });
+        
+        // Add a visual indicator in console
+        console.log('🎨 Highlight styles applied, will remove after 5 seconds');
+        
+        // Remove highlight after 5 seconds
+        setTimeout(() => {
+            postElement.classList.remove('assignment-highlight');
+            
+            // Restore original styles
+            postElement.style.border = originalBorder;
+            postElement.style.boxShadow = originalBoxShadow;
+            postElement.style.backgroundColor = originalBackground;
+            postElement.style.transition = originalTransition;
+            postElement.style.transform = originalTransform;
+            
+            // Remove other properties
+            postElement.style.removeProperty('border-radius');
+            postElement.style.removeProperty('z-index');
+            postElement.style.removeProperty('position');
+            
+            console.log('🎨 Highlight class and styles removed');
+        }, 5000);
+    }
+
+    showNotFoundMessage() {
+        // Create and show a temporary notification
+        const notification = document.createElement('div');
+        notification.className = 'fixed top-4 right-4 bg-orange-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 transition-opacity duration-300';
+        notification.innerHTML = `
+            <div class="flex items-center">
+                <i class="ti ti-info-circle mr-2"></i>
+                <span>Postingan tugas tidak ditemukan atau belum dimuat</span>
+            </div>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // Fade out and remove after 3 seconds
+        setTimeout(() => {
+            notification.style.opacity = '0';
+            setTimeout(() => {
+                document.body.removeChild(notification);
+            }, 300);
+        }, 3000);
     }
 }
 

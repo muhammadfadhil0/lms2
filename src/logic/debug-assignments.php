@@ -1,35 +1,47 @@
 <?php
-// Clean any existing output buffers
-while (ob_get_level()) {
-    ob_end_clean();
-}
-
+// Debug version of get-assignments.php
 session_start();
 require_once 'koneksi.php';
 
+// Enable error reporting for debugging
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 header('Content-Type: application/json');
-header('Cache-Control: no-cache');
-
-if (!isset($_SESSION['user'])) {
-    echo json_encode(['success' => false, 'message' => 'Unauthorized']);
-    exit();
-}
-
-$kelas_id = $_GET['kelas_id'] ?? null;
-$search = trim($_GET['search'] ?? '');
-$sort = $_GET['sort'] ?? 'created_desc';
-
-if (!$kelas_id) {
-    echo json_encode(['success' => false, 'message' => 'Kelas ID diperlukan']);
-    exit();
-}
 
 try {
+    if (!isset($_SESSION['user'])) {
+        echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+        exit();
+    }
+
+    $kelas_id = $_GET['kelas_id'] ?? null;
+    $search = trim($_GET['search'] ?? '');
+    $sort = $_GET['sort'] ?? 'created_desc';
+
+    if (!$kelas_id) {
+        echo json_encode(['success' => false, 'message' => 'Kelas ID diperlukan']);
+        exit();
+    }
+
     $user_id = $_SESSION['user']['id'];
     $user_role = $_SESSION['user']['role'];
     
+    // Debug info
+    $debug = [
+        'kelas_id' => $kelas_id,
+        'user_id' => $user_id,
+        'user_role' => $user_role,
+        'search' => $search,
+        'sort' => $sort
+    ];
+    
     // Get PDO connection
-    $pdo = getPDOConnection();
+    global $pdo;
+    if (!$pdo) {
+        echo json_encode(['success' => false, 'message' => 'Database connection failed', 'debug' => $debug]);
+        exit();
+    }
     
     // Verify user has access to this class
     if ($user_role === 'guru') {
@@ -41,7 +53,7 @@ try {
     }
     
     if (!$stmt->fetch()) {
-        echo json_encode(['success' => false, 'message' => 'Akses ditolak']);
+        echo json_encode(['success' => false, 'message' => 'Akses ditolak', 'debug' => $debug]);
         exit();
     }
     
@@ -114,14 +126,17 @@ try {
     $stmt->execute($params);
     $assignments = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
-    // Format data for frontend - simplified
+    // Format data for frontend
     foreach ($assignments as &$assignment) {
-        // Only add essential formatted data
+        // Format deadline
         if ($assignment['deadline']) {
             $assignment['deadline_formatted'] = date('j M Y, H:i', strtotime($assignment['deadline']));
-            $assignment['is_deadline_soon'] = strtotime($assignment['deadline']) - time() < (24 * 60 * 60 * 3);
+            $assignment['is_deadline_soon'] = strtotime($assignment['deadline']) - time() < (24 * 60 * 60 * 3); // 3 days
             $assignment['is_deadline_passed'] = strtotime($assignment['deadline']) < time();
         }
+        
+        // Format creation date
+        $assignment['created_formatted'] = date('j M Y, H:i', strtotime($assignment['created_at']));
         
         // Add relative time
         $timeDiff = time() - strtotime($assignment['created_at']);
@@ -132,24 +147,26 @@ try {
         } else {
             $assignment['time_ago'] = floor($timeDiff / 86400) . ' hari yang lalu';
         }
-        
-        // Remove unnecessary fields to reduce response size
-        unset($assignment['file_path']);
-        unset($assignment['updated_at']);
-        unset($assignment['created_at']);
     }
     
-    $response = [
+    echo json_encode([
         'success' => true, 
         'assignments' => $assignments,
         'total' => count($assignments),
         'search' => $search,
-        'sort' => $sort
-    ];
-    
-    echo json_encode($response, JSON_UNESCAPED_UNICODE);
+        'sort' => $sort,
+        'debug' => $debug,
+        'sql' => $sql,
+        'params' => $params
+    ]);
     
 } catch (Exception $e) {
-    echo json_encode(['success' => false, 'message' => 'Terjadi kesalahan: ' . $e->getMessage()]);
+    echo json_encode([
+        'success' => false, 
+        'message' => 'Error: ' . $e->getMessage(),
+        'file' => $e->getFile(),
+        'line' => $e->getLine(),
+        'trace' => $e->getTraceAsString()
+    ]);
 }
 ?>

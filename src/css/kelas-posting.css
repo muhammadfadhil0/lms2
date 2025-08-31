@@ -47,6 +47,102 @@
     transition: all 0.3s ease-out;
 }
 
+/* Assignment highlight animation */
+@keyframes highlightBorder {
+    0% {
+        border-color: transparent !important;
+        box-shadow: 0 0 0 0 rgba(249, 115, 22, 0) !important;
+    }
+    10% {
+        border-color: #f97316 !important;
+        box-shadow: 0 0 0 8px rgba(249, 115, 22, 0.4) !important;
+    }
+    90% {
+        border-color: #f97316 !important;
+        box-shadow: 0 0 0 8px rgba(249, 115, 22, 0.4) !important;
+    }
+    100% {
+        border-color: transparent !important;
+        box-shadow: 0 0 0 0 rgba(249, 115, 22, 0) !important;
+    }
+}
+
+@keyframes backgroundPulse {
+    0% {
+        background-color: transparent !important;
+    }
+    50% {
+        background-color: rgba(249, 115, 22, 0.05) !important;
+    }
+    100% {
+        background-color: transparent !important;
+    }
+}
+
+/* More specific selector to override Tailwind and other styles */
+div.assignment-highlight,
+div[data-post-id].assignment-highlight,
+.bg-white.assignment-highlight {
+    border: 4px solid #f97316 !important;
+    border-radius: 8px !important;
+    box-shadow: 0 0 0 8px rgba(249, 115, 22, 0.4) !important;
+    animation: highlightBorder 1s ease-in-out, backgroundPulse 1s ease-in-out !important;
+    transition: none !important;
+    background-color: rgba(249, 115, 22, 0.05) !important;
+    position: relative !important;
+    z-index: 999 !important;
+    outline: none !important;
+    transform: scale(1.01) !important;
+}
+
+/* Assignment card hover effect */
+.assignment-card {
+    transition: all 0.2s ease-in-out;
+    cursor: pointer;
+}
+
+.assignment-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border-color: #f97316 !important;
+}
+
+.assignment-card:active {
+    transform: translateY(0);
+}
+
+/* Assignment List Modal Styles */
+#assignment-list-modal {
+    z-index: 9999;
+}
+
+.assignment-item {
+    transition: all 0.2s ease-in-out;
+}
+
+.assignment-item:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* Search input focus styles */
+#assignment-search:focus {
+    box-shadow: 0 0 0 3px rgba(147, 51, 234, 0.1);
+}
+
+/* Sort dropdown focus styles */
+#assignment-sort:focus {
+    box-shadow: 0 0 0 3px rgba(147, 51, 234, 0.1);
+}
+
 .post-enter-active {
     opacity: 1;
     transform: translateY(0);
