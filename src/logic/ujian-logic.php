@@ -14,7 +14,8 @@ class UjianLogic {
             $sql = "INSERT INTO ujian (namaUjian, deskripsi, kelas_id, guru_id, mataPelajaran, tanggalUjian, waktuMulai, waktuSelesai, durasi, status) 
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft')";
             $stmt = $this->conn->prepare($sql);
-            $stmt->bind_param("ssiisssssi", $namaUjian, $deskripsi, $kelas_id, $guru_id, $mataPelajaran, $tanggalUjian, $waktuMulai, $waktuSelesai, $durasi);
+            // Tipe parameter: s (namaUjian), s(deskripsi), i(kelas_id), i(guru_id), s(mataPelajaran), s(tanggalUjian), s(waktuMulai), s(waktuSelesai), i(durasi)
+            $stmt->bind_param("ssiissssi", $namaUjian, $deskripsi, $kelas_id, $guru_id, $mataPelajaran, $tanggalUjian, $waktuMulai, $waktuSelesai, $durasi);
             
             if ($stmt->execute()) {
                 return [
@@ -29,11 +30,97 @@ class UjianLogic {
             return ['success' => false, 'message' => 'Error: ' . $e->getMessage()];
         }
     }
+
+    // Update ujian existing milik guru (hanya field identitas & waktu)
+    public function updateUjian($ujian_id, $guru_id, $namaUjian, $deskripsi, $kelas_id, $mataPelajaran, $tanggalUjian, $waktuMulai, $waktuSelesai, $durasi, $shuffleQuestions = null, $showScore = null, $autoScore = null) {
+        try {
+            // Pastikan ujian milik guru
+            $cek = $this->getUjianByIdAndGuru($ujian_id, $guru_id);
+            if (!$cek) {
+                return ['success' => false, 'message' => 'Ujian tidak ditemukan'];
+            }
+
+            $fields = [
+                'namaUjian = ?',      // s
+                'deskripsi = ?',       // s
+                'kelas_id = ?',        // i
+                'mataPelajaran = ?',   // s
+                'tanggalUjian = ?',    // s
+                'waktuMulai = ?',      // s
+                'waktuSelesai = ?',    // s
+                'durasi = ?'           // i
+            ];
+            // Correct order: s s i s s s s i
+            $types = 'ssissssi';
+            $params = [$namaUjian, $deskripsi, $kelas_id, $mataPelajaran, $tanggalUjian, $waktuMulai, $waktuSelesai, $durasi];
+
+            // Tambahkan optional settings jika kolom ada dan argumen diberikan
+            // Optional settings checks in one describe pass each
+            if ($shuffleQuestions !== null) {
+                if ($res = $this->conn->query("SHOW COLUMNS FROM ujian LIKE 'shuffleQuestions'")) {
+                    if ($res->num_rows > 0) {
+                        $fields[] = 'shuffleQuestions = ?';
+                        $types .= 'i';
+                        $params[] = (int)$shuffleQuestions;
+                    }
+                }
+            }
+            if ($showScore !== null) {
+                if ($res = $this->conn->query("SHOW COLUMNS FROM ujian LIKE 'showScore'")) {
+                    if ($res->num_rows > 0) {
+                        $fields[] = 'showScore = ?';
+                        $types .= 'i';
+                        $params[] = (int)$showScore;
+                    }
+                }
+            }
+            if ($autoScore !== null) {
+                if ($res = $this->conn->query("SHOW COLUMNS FROM ujian LIKE 'autoScore'")) {
+                    if ($res->num_rows > 0) {
+                        $fields[] = 'autoScore = ?';
+                        $types .= 'i';
+                        $params[] = (int)$autoScore;
+                    }
+                }
+            }
+
+            $sql = 'UPDATE ujian SET '.implode(', ', $fields).' WHERE id = ? AND guru_id = ?';
+            $types .= 'ii';
+            $params[] = $ujian_id;
+            $params[] = $guru_id;
+
+            $stmt = $this->conn->prepare($sql);
+            if (!$stmt) {
+                return ['success' => false, 'message' => 'Prepare gagal'];
+            }
+
+            $stmt->bind_param($types, ...$params);
+            if ($stmt->execute()) {
+                return ['success' => true, 'message' => 'Ujian berhasil diupdate'];
+            }
+            return ['success' => false, 'message' => 'Gagal update ujian'];
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => 'Error: '.$e->getMessage()];
+        }
+    }
+
+    // Mendapatkan ujian milik guru tertentu (validasi kepemilikan)
+    public function getUjianByIdAndGuru($ujian_id, $guru_id) {
+        try {
+            $sql = "SELECT u.*, k.namaKelas FROM ujian u LEFT JOIN kelas k ON u.kelas_id = k.id WHERE u.id = ? AND u.guru_id = ? LIMIT 1";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bind_param("ii", $ujian_id, $guru_id);
+            $stmt->execute();
+            return $stmt->get_result()->fetch_assoc();
+        } catch (Exception $e) {
+            return null;
+        }
+    }
     
     // Mendapatkan ujian berdasarkan guru
     public function getUjianByGuru($guru_id) {
         try {
-            $sql = "SELECT u.*, k.namaKelas,
+            $sql = "SELECT u.*, k.namaKelas, k.gambarKover,
                            COUNT(DISTINCT us.siswa_id) as jumlahPeserta,
                            COUNT(DISTINCT s.id) as jumlahSoal
                     FROM ujian u 
@@ -57,11 +144,21 @@ class UjianLogic {
     // Mendapatkan ujian berdasarkan siswa
     public function getUjianBySiswa($siswa_id) {
         try {
-            $sql = "SELECT u.*, k.namaKelas, us.status as statusPengerjaan, us.totalNilai, us.waktuMulai, us.waktuSelesai,
+            $sql = "SELECT u.*, k.namaKelas, k.gambarKover, us.status as statusPengerjaan, us.totalNilai, us.waktuMulai, us.waktuSelesai, us.id as ujian_siswa_id,
                            CASE 
-                               WHEN us.id IS NULL THEN 'belum_dikerjakan'
+                               WHEN us.id IS NULL THEN 
+                                   CASE 
+                                       WHEN CONCAT(u.tanggalUjian, ' ', u.waktuSelesai) < NOW() THEN 'terlambat'
+                                       WHEN CONCAT(u.tanggalUjian, ' ', u.waktuMulai) <= NOW() AND CONCAT(u.tanggalUjian, ' ', u.waktuSelesai) >= NOW() THEN 'dapat_dikerjakan'
+                                       WHEN CONCAT(u.tanggalUjian, ' ', u.waktuMulai) > NOW() THEN 'belum_dimulai'
+                                       ELSE 'belum_dikerjakan'
+                                   END
                                WHEN us.status = 'selesai' THEN 'selesai'
-                               WHEN us.status = 'sedang_mengerjakan' THEN 'sedang_mengerjakan'
+                               WHEN us.status = 'sedang_mengerjakan' THEN 
+                                   CASE 
+                                       WHEN CONCAT(u.tanggalUjian, ' ', u.waktuSelesai) < NOW() THEN 'waktu_habis'
+                                       ELSE 'sedang_mengerjakan'
+                                   END
                                ELSE 'belum_dikerjakan'
                            END as status_ujian
                     FROM ujian u 
@@ -84,17 +181,71 @@ class UjianLogic {
     // Mulai ujian
     public function mulaiUjian($ujian_id, $siswa_id) {
         try {
-            // Cek apakah ujian sudah dimulai
-            $sql = "SELECT id FROM ujian_siswa WHERE ujian_id = ? AND siswa_id = ?";
+            // Cek informasi ujian terlebih dahulu
+            $sqlUjian = "SELECT * FROM ujian WHERE id = ?";
+            $stmtUjian = $this->conn->prepare($sqlUjian);
+            $stmtUjian->bind_param("i", $ujian_id);
+            $stmtUjian->execute();
+            $ujian = $stmtUjian->get_result()->fetch_assoc();
+            
+            if (!$ujian) {
+                return ['success' => false, 'message' => 'Ujian tidak ditemukan'];
+            }
+            
+            // Cek apakah ujian sudah dimulai sebelumnya
+            $sql = "SELECT id, status, waktuMulai FROM ujian_siswa WHERE ujian_id = ? AND siswa_id = ?";
             $stmt = $this->conn->prepare($sql);
             $stmt->bind_param("ii", $ujian_id, $siswa_id);
             $stmt->execute();
+            $existing = $stmt->get_result()->fetch_assoc();
             
-            if ($stmt->get_result()->num_rows > 0) {
-                return ['success' => false, 'message' => 'Ujian sudah dimulai sebelumnya'];
+            if ($existing) {
+                // Jika ujian sudah selesai, tidak bisa masuk lagi
+                if ($existing['status'] === 'selesai') {
+                    return ['success' => false, 'message' => 'Ujian sudah diselesaikan sebelumnya'];
+                }
+                
+                // Jika masih sedang mengerjakan, lanjutkan ujian yang ada
+                if ($existing['status'] === 'sedang_mengerjakan') {
+                    // Cek apakah waktu ujian masih valid (belum expired)
+                    $waktuMulai = strtotime($existing['waktuMulai']);
+                    $durasiDetik = $ujian['durasi'] * 60;
+                    $waktuSekarang = time();
+                    
+                    // Jika waktu ujian sudah habis, otomatis selesaikan ujian
+                    if (($waktuSekarang - $waktuMulai) > $durasiDetik) {
+                        $this->selesaiUjian($existing['id']);
+                        return ['success' => false, 'message' => 'Waktu ujian telah habis'];
+                    }
+                    
+                    // Ujian masih berlangsung, lanjutkan
+                    return [
+                        'success' => true, 
+                        'message' => 'Melanjutkan ujian',
+                        'ujian_siswa_id' => $existing['id']
+                    ];
+                }
             }
             
-            // Mulai ujian
+            // Cek apakah masih dalam waktu ujian yang diizinkan
+            $tanggalUjian = $ujian['tanggalUjian'];
+            $waktuMulai = $ujian['waktuMulai'];
+            $waktuSelesai = $ujian['waktuSelesai'];
+            
+            $waktuMulaiUjian = strtotime($tanggalUjian . ' ' . $waktuMulai);
+            $waktuSelesaiUjian = strtotime($tanggalUjian . ' ' . $waktuSelesai);
+            $waktuSekarang = time();
+            
+            // Validasi waktu ujian (dengan toleransi 5 menit sebelum waktu mulai)
+            if ($waktuSekarang < ($waktuMulaiUjian - 300)) {
+                return ['success' => false, 'message' => 'Ujian belum dimulai'];
+            }
+            
+            if ($waktuSekarang > $waktuSelesaiUjian) {
+                return ['success' => false, 'message' => 'Waktu ujian telah berakhir'];
+            }
+            
+            // Mulai ujian baru
             $sql = "INSERT INTO ujian_siswa (ujian_id, siswa_id, waktuMulai, status) VALUES (?, ?, NOW(), 'sedang_mengerjakan')";
             $stmt = $this->conn->prepare($sql);
             $stmt->bind_param("ii", $ujian_id, $siswa_id);
@@ -219,6 +370,165 @@ class UjianLogic {
             return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
         } catch (Exception $e) {
             return [];
+        }
+    }
+    
+    // Get ujian by ID (for all users)
+    public function getUjianById($ujian_id) {
+        try {
+            $sql = "SELECT * FROM ujian WHERE id = ?";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bind_param("i", $ujian_id);
+            $stmt->execute();
+            
+            return $stmt->get_result()->fetch_assoc();
+        } catch (Exception $e) {
+            return null;
+        }
+    }
+    
+    // Get ujian_siswa by ID
+    public function getUjianSiswaById($ujian_siswa_id) {
+        try {
+            $sql = "SELECT us.*, u.namaUjian, u.durasi FROM ujian_siswa us 
+                    JOIN ujian u ON us.ujian_id = u.id 
+                    WHERE us.id = ?";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bind_param("i", $ujian_siswa_id);
+            $stmt->execute();
+            
+            return $stmt->get_result()->fetch_assoc();
+        } catch (Exception $e) {
+            return null;
+        }
+    }
+    
+    // Save student answer
+    public function simpanJawaban($ujian_siswa_id, $soal_id, $jawaban) {
+        try {
+            // Check if answer already exists
+            $sql = "SELECT id FROM jawaban_siswa WHERE ujian_siswa_id = ? AND soal_id = ?";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bind_param("ii", $ujian_siswa_id, $soal_id);
+            $stmt->execute();
+            $existing = $stmt->get_result()->fetch_assoc();
+            
+            if ($existing) {
+                // Update existing answer
+                $sql = "UPDATE jawaban_siswa SET jawaban = ?, waktu_jawab = NOW() WHERE id = ?";
+                $stmt = $this->conn->prepare($sql);
+                $stmt->bind_param("si", $jawaban, $existing['id']);
+            } else {
+                // Insert new answer
+                $sql = "INSERT INTO jawaban_siswa (ujian_siswa_id, soal_id, jawaban, waktu_jawab) VALUES (?, ?, ?, NOW())";
+                $stmt = $this->conn->prepare($sql);
+                $stmt->bind_param("iis", $ujian_siswa_id, $soal_id, $jawaban);
+            }
+            
+            if ($stmt->execute()) {
+                return ['success' => true, 'message' => 'Jawaban berhasil disimpan'];
+            } else {
+                return ['success' => false, 'message' => 'Gagal menyimpan jawaban'];
+            }
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => 'Error: ' . $e->getMessage()];
+        }
+    }
+    
+    // Get student's saved answers
+    public function getJawabanSiswa($ujian_siswa_id) {
+        try {
+            $sql = "SELECT soal_id, jawaban FROM jawaban_siswa WHERE ujian_siswa_id = ?";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bind_param("i", $ujian_siswa_id);
+            $stmt->execute();
+            
+            $result = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+            $answers = [];
+            
+            foreach ($result as $row) {
+                $answers[$row['soal_id']] = $row['jawaban'];
+            }
+            
+            return $answers;
+        } catch (Exception $e) {
+            return [];
+        }
+    }
+    
+    // Reset ujian siswa (untuk guru) - hapus progress ujian siswa tertentu
+    public function resetUjianSiswa($ujian_id, $siswa_id, $guru_id) {
+        try {
+            // Pastikan ujian milik guru yang sedang login
+            $sqlCek = "SELECT id FROM ujian WHERE id = ? AND guru_id = ?";
+            $stmtCek = $this->conn->prepare($sqlCek);
+            $stmtCek->bind_param("ii", $ujian_id, $guru_id);
+            $stmtCek->execute();
+            
+            if ($stmtCek->get_result()->num_rows === 0) {
+                return ['success' => false, 'message' => 'Ujian tidak ditemukan atau bukan milik Anda'];
+            }
+            
+            $this->conn->begin_transaction();
+            
+            // Hapus jawaban siswa terlebih dahulu
+            $sqlJawaban = "DELETE js FROM jawaban_siswa js 
+                          JOIN ujian_siswa us ON js.ujian_siswa_id = us.id 
+                          WHERE us.ujian_id = ? AND us.siswa_id = ?";
+            $stmtJawaban = $this->conn->prepare($sqlJawaban);
+            $stmtJawaban->bind_param("ii", $ujian_id, $siswa_id);
+            $stmtJawaban->execute();
+            
+            // Hapus record ujian_siswa
+            $sqlUjianSiswa = "DELETE FROM ujian_siswa WHERE ujian_id = ? AND siswa_id = ?";
+            $stmtUjianSiswa = $this->conn->prepare($sqlUjianSiswa);
+            $stmtUjianSiswa->bind_param("ii", $ujian_id, $siswa_id);
+            $stmtUjianSiswa->execute();
+            
+            $this->conn->commit();
+            
+            return ['success' => true, 'message' => 'Ujian siswa berhasil direset'];
+        } catch (Exception $e) {
+            $this->conn->rollback();
+            return ['success' => false, 'message' => 'Error: ' . $e->getMessage()];
+        }
+    }
+    
+    // Reset semua siswa dalam ujian (untuk guru)
+    public function resetSemuaSiswaUjian($ujian_id, $guru_id) {
+        try {
+            // Pastikan ujian milik guru yang sedang login
+            $sqlCek = "SELECT id FROM ujian WHERE id = ? AND guru_id = ?";
+            $stmtCek = $this->conn->prepare($sqlCek);
+            $stmtCek->bind_param("ii", $ujian_id, $guru_id);
+            $stmtCek->execute();
+            
+            if ($stmtCek->get_result()->num_rows === 0) {
+                return ['success' => false, 'message' => 'Ujian tidak ditemukan atau bukan milik Anda'];
+            }
+            
+            $this->conn->begin_transaction();
+            
+            // Hapus semua jawaban siswa untuk ujian ini
+            $sqlJawaban = "DELETE js FROM jawaban_siswa js 
+                          JOIN ujian_siswa us ON js.ujian_siswa_id = us.id 
+                          WHERE us.ujian_id = ?";
+            $stmtJawaban = $this->conn->prepare($sqlJawaban);
+            $stmtJawaban->bind_param("i", $ujian_id);
+            $stmtJawaban->execute();
+            
+            // Hapus semua record ujian_siswa untuk ujian ini
+            $sqlUjianSiswa = "DELETE FROM ujian_siswa WHERE ujian_id = ?";
+            $stmtUjianSiswa = $this->conn->prepare($sqlUjianSiswa);
+            $stmtUjianSiswa->bind_param("i", $ujian_id);
+            $stmtUjianSiswa->execute();
+            
+            $this->conn->commit();
+            
+            return ['success' => true, 'message' => 'Semua progress siswa berhasil direset'];
+        } catch (Exception $e) {
+            $this->conn->rollback();
+            return ['success' => false, 'message' => 'Error: ' . $e->getMessage()];
         }
     }
 }

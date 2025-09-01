@@ -1,24 +1,18 @@
-            let questionCounter = 1;
+            // Set initial counter based on existing rendered cards
+            let questionCounter = document.querySelectorAll ? document.querySelectorAll('.question-card').length || 1 : 1;
             
             function setupQuestionTypeHandler(questionCard) {
                 const typeSelect = questionCard.querySelector('.question-type-select');
                 const answerOptions = questionCard.querySelector('.answer-options');
                 const answerKey = questionCard.querySelector('.answer-key');
-                const autoGradingToggle = questionCard.querySelector('.auto-grading-toggle');
-                
                 typeSelect.addEventListener('change', function() {
                     const questionType = this.value;
-
                     if (questionType === 'multiple_choice') {
                         answerOptions.classList.remove('hidden');
                         answerKey.classList.add('hidden');
-                        autoGradingToggle.checked = true;
-                        autoGradingToggle.disabled = false;
                     } else {
                         answerOptions.classList.add('hidden');
                         answerKey.classList.remove('hidden');
-                        autoGradingToggle.checked = false;
-                        autoGradingToggle.disabled = true;
                     }
                 });
             }
@@ -132,15 +126,28 @@
                 deleteBtn.addEventListener('click', function(e) {
                     e.stopPropagation();
                     
-                    if (document.querySelectorAll('.question-card').length > 1) {
-                        if (confirm('Apakah Anda yakin ingin menghapus soal ini?')) {
-                            questionCard.remove();
-                            updateQuestionNumbers();
-                            updateQuestionNavigation();
-                            updateStats();
-                        }
+                    // Check if modal is available, fallback to confirm if not
+                    if (window.deleteQuestionModal && typeof window.deleteQuestionModal.show === 'function') {
+                        window.deleteQuestionModal.show(questionCard);
                     } else {
-                        alert('Tidak dapat menghapus soal terakhir. Ujian harus memiliki minimal 1 soal.');
+                        console.warn('Modal hapus soal belum siap, fallback ke confirm().', window.deleteQuestionModal);
+                        // Fallback to original confirm dialog
+                        const existingId = questionCard.getAttribute('data-soal-id');
+                        const totalCards = document.querySelectorAll('.question-card').length;
+                        if(totalCards<=1){ alert('Tidak dapat menghapus soal terakhir.'); return; }
+                        if(!confirm('Hapus soal ini?')) return;
+                        if(existingId){
+                                const fd = new FormData(); fd.append('soal_id', existingId);
+                                fetch('../logic/delete-question.php',{method:'POST', body:fd})
+                                    .then(r=>r.json()).then(j=>{
+                                        if(j.success){
+                                                questionCard.remove();
+                                                updateQuestionNumbers(); updateQuestionNavigation(); updateStats();
+                                        } else alert('Gagal hapus: '+(j.message||''));
+                                    }).catch(()=>alert('Gagal hapus (network).'));
+                        } else {
+                                questionCard.remove(); updateQuestionNumbers(); updateQuestionNavigation(); updateStats();
+                        }
                     }
                 });
             }
@@ -148,7 +155,10 @@
             // Points Change Handler
             function setupPointsHandler(questionCard) {
                 const pointsInput = questionCard.querySelector('.question-points');
-                pointsInput.addEventListener('change', updateStats);
+                if (pointsInput) {
+                    pointsInput.addEventListener('input', updateStats);
+                    pointsInput.addEventListener('change', updateStats);
+                }
             }
 
             // Add New Question
@@ -259,41 +269,31 @@
                         <textarea class="answer-key-text w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 resize-none" 
                                   rows="2" placeholder="Masukkan kunci jawaban..."></textarea>
                     </div>
-
-                    <!-- Question Settings -->
-                    <div class="flex flex-wrap items-center justify-between pt-4 border-t border-gray-200">
-                        <div class="flex items-center space-x-4">
-                            <!-- Auto Grading Toggle -->
-                            <div class="flex items-center space-x-2">
-                                <label class="relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" class="auto-grading-toggle sr-only peer" checked>
-                                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange"></div>
-                                </label>
-                                <span class="text-sm text-gray-700">Penilaian Otomatis</span>
-                            </div>
-
-                            <!-- Point Value -->
-                            <div class="flex items-center space-x-2">
-                                <span class="text-sm text-gray-700">Poin:</span>
-                                <input type="number" class="question-points w-16 px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500" value="10" min="1">
-                            </div>
-                        </div>
-
-                        <!-- Required Toggle -->
+                    
+                    <!-- Points Section -->
+                    <div class="points-section mt-4 pt-4 border-t border-gray-200">
                         <div class="flex items-center space-x-2">
-                            <label class="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" class="required-toggle sr-only peer">
-                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange"></div>
-                            </label>
-                            <span class="text-sm text-gray-700">Wajib</span>
+                            <span class="text-sm text-gray-700">Poin:</span>
+                            <input type="number" class="question-points w-20 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500" value="10" min="1" max="100">
+                            <span class="text-xs text-gray-500">poin</span>
                         </div>
                     </div>
+                </div>
                 `;
                 
                 questionsContainer.appendChild(newQuestion);
                 
                 // Setup all handlers for the new question
                 setupQuestionHandlers(newQuestion);
+                
+                // Check if auto score is active and hide points section if needed
+                const autoScoreFlag = document.getElementById('ujian_id')?.dataset.autoscore === '1';
+                if (autoScoreFlag) {
+                    const pointsSection = newQuestion.querySelector('.points-section');
+                    if (pointsSection) {
+                        pointsSection.classList.add('hidden');
+                    }
+                }
                 
                 // Make the new question active
                 document.querySelectorAll('.question-card').forEach(card => {
@@ -341,6 +341,15 @@
                 // Setup handlers
                 setupQuestionHandlers(newCard);
                 
+                // Check if auto score is active and hide points section if needed
+                const autoScoreFlag = document.getElementById('ujian_id')?.dataset.autoscore === '1';
+                if (autoScoreFlag) {
+                    const pointsSection = newCard.querySelector('.points-section');
+                    if (pointsSection) {
+                        pointsSection.classList.add('hidden');
+                    }
+                }
+                
                 // Make new card active
                 document.querySelectorAll('.question-card').forEach(card => {
                     card.classList.remove('active');
@@ -379,8 +388,15 @@
                     
                     // Update required/optional status
                     const statusSpan = card.querySelector('h3').nextElementSibling;
-                    const requiredToggle = card.querySelector('.required-toggle');
-                    statusSpan.textContent = requiredToggle.checked ? '(Wajib)' : '(Opsional)';
+                    if (statusSpan) {
+                        const requiredToggle = card.querySelector('.required-toggle');
+                        if (requiredToggle && Object.prototype.hasOwnProperty.call(requiredToggle, 'checked')) {
+                            statusSpan.textContent = requiredToggle.checked ? '(Wajib)' : '(Opsional)';
+                        } else {
+                            // Default jika toggle tidak ada
+                            statusSpan.textContent = '(Opsional)';
+                        }
+                    }
                 });
             }
 
@@ -394,9 +410,9 @@
                 questionCards.forEach((card, index) => {
                     const questionNumber = index + 1;
                     const navItem = document.createElement('button');
-                    navItem.className = 'question-nav-item w-full text-left px-3 py-2 rounded-lg border transition-colors';
+                    navItem.className = 'question-nav-item flex items-center justify-center aspect-square text-sm rounded-lg border transition-colors';
                     navItem.dataset.question = questionNumber;
-                    navItem.textContent = `${questionNumber}. Soal`;
+                    navItem.textContent = questionNumber;
                     
                     if (card.classList.contains('active')) {
                         navItem.className += ' border-orange bg-orange-50 text-orange font-medium';
@@ -413,13 +429,35 @@
                     
                     questionNav.appendChild(navItem);
                 });
+                // Apply overflow class if more than 30
+                if(questionCards.length > 30){
+                    questionNav.classList.add('overflow-limit');
+                } else {
+                    questionNav.classList.remove('overflow-limit');
+                }
             }
 
             // Update stats
             function updateStats() {
-                const totalQuestions = document.querySelectorAll('.question-card').length;
-                const totalPoints = Array.from(document.querySelectorAll('.question-points'))
-                    .reduce((sum, input) => sum + parseInt(input.value || 0), 0);
+                const autoScoreFlag = document.getElementById('ujian_id')?.dataset.autoscore === '1';
+                const cards = Array.from(document.querySelectorAll('.question-card'));
+                const activeCards = autoScoreFlag ? cards.filter(c=>c.querySelector('.question-type-select')?.value==='multiple_choice') : cards;
+                const totalQuestions = activeCards.length;
+                let totalPoints = 0;
+                
+                if(autoScoreFlag){
+                    // For auto score: distribute 100 points evenly among active MC questions
+                    const validCards = activeCards.filter(c=>c.querySelector('.question-text')?.value?.trim());
+                    if (validCards.length > 0) {
+                        totalPoints = 100; // Always 100 for auto score
+                    }
+                } else {
+                    // Normal mode: sum all points from inputs
+                    document.querySelectorAll('.question-points').forEach(inp => { 
+                        const value = parseInt(inp.value) || 0;
+                        totalPoints += value;
+                    });
+                }
                 
                 document.getElementById('total-questions').textContent = totalQuestions;
                 document.getElementById('total-points').textContent = totalPoints;
@@ -458,9 +496,13 @@
 
             // Initialize
             document.addEventListener('DOMContentLoaded', function() {
+                            // Detect autoScore flag from server (inject via hidden or query?) Attempt read from a global meta
+                            const ujianHidden = document.getElementById('ujian_id');
+                            const autoScoreFlag = ujianHidden && ujianHidden.dataset.autoscore === '1';
+                            console.log('AutoScore flag detected:', autoScoreFlag, 'from dataset:', ujianHidden?.dataset.autoscore);
+                
                 // Setup handlers for initial question
-                const initialQuestion = document.querySelector('.question-card');
-                setupQuestionHandlers(initialQuestion);
+                document.querySelectorAll('.question-card').forEach(card=>setupQuestionHandlers(card));
                 
                 // Add question button
                 document.getElementById('add-question-btn').addEventListener('click', addNewQuestion);
@@ -469,20 +511,320 @@
                 document.getElementById('add-description-btn').addEventListener('click', addDescription);
                 
                 // Action buttons
+                // Question validation function
+                function validateQuestions() {
+                    const cards = document.querySelectorAll('.question-card');
+                    const incompleteQuestions = [];
+                    
+                    cards.forEach((card, index) => {
+                        const questionNumber = index + 1;
+                        const type = card.querySelector('.question-type-select').value;
+                        const pertanyaan = card.querySelector('.question-text').value.trim();
+                        const isActive = card.dataset.active !== '0';
+                        
+                        if (!isActive) return; // Skip inactive questions (for auto-score mode)
+                        
+                        let issues = [];
+                        
+                        // Check if question text is filled
+                        if (!pertanyaan) {
+                            issues.push('Pertanyaan belum diisi');
+                        }
+                        
+                        // Check based on question type
+                        if (type === 'multiple_choice') {
+                            const options = card.querySelectorAll('.answer-options .flex.items-center.space-x-3');
+                            const correct = card.querySelector('input[type=radio]:checked');
+                            
+                            // Check if at least 2 options are filled
+                            const filledOptions = Array.from(options).filter(opt => 
+                                opt.querySelector('input[type=text]').value.trim() !== ''
+                            );
+                            
+                            if (filledOptions.length < 2) {
+                                issues.push('Minimal 2 pilihan jawaban harus diisi');
+                            }
+                            
+                            // Check if correct answer is selected
+                            if (!correct) {
+                                issues.push('Jawaban benar belum dipilih');
+                            }
+                        } else {
+                            // Short answer or long answer
+                            const kunci = card.querySelector('.answer-key-text').value.trim();
+                            if (!kunci) {
+                                issues.push('Kunci jawaban belum diisi');
+                            }
+                        }
+                        
+                        if (issues.length > 0) {
+                            incompleteQuestions.push({
+                                questionNumber: questionNumber,
+                                questionId: card.dataset.questionId,
+                                issues: issues,
+                                card: card
+                            });
+                        }
+                    });
+                    
+                    return incompleteQuestions;
+                }
+
+                // Show incomplete questions modal
+                function showIncompleteQuestionsModal(incompleteQuestions) {
+                    const modal = document.getElementById('incomplete-questions-modal');
+                    const listContainer = document.getElementById('incomplete-questions-list');
+                    
+                    // Clear previous content
+                    listContainer.innerHTML = '';
+                    
+                    // Populate incomplete questions
+                    incompleteQuestions.forEach(question => {
+                        const questionItem = document.createElement('div');
+                        questionItem.className = 'question-item-card border border-red-200 rounded-lg p-3 bg-red-50 cursor-pointer';
+                        questionItem.innerHTML = `
+                            <div class="flex items-start justify-between">
+                                <div class="flex-1">
+                                    <h4 class="text-sm font-medium text-red-800">Soal ${question.questionNumber}</h4>
+                                    <ul class="text-xs text-red-600 mt-1 space-y-1">
+                                        ${question.issues.map(issue => `<li>• ${issue}</li>`).join('')}
+                                    </ul>
+                                </div>
+                                <div class="ml-2 text-red-500">
+                                    <i class="ti ti-arrow-right"></i>
+                                </div>
+                            </div>
+                        `;
+                        
+                        // Add click handler to navigate to question
+                        questionItem.addEventListener('click', () => {
+                            modal.close();
+                            navigateToQuestion(question.card);
+                        });
+                        
+                        listContainer.appendChild(questionItem);
+                    });
+                    
+                    // Show modal with simple fade
+                    modal.showModal();
+                }
+
+                // Navigate to specific question
+                function navigateToQuestion(questionCard) {
+                    // Remove active class from all cards
+                    document.querySelectorAll('.question-card').forEach(card => {
+                        card.classList.remove('active');
+                    });
+                    
+                    // Add active class to target card
+                    questionCard.classList.add('active');
+                    
+                    // Scroll to the question
+                    questionCard.scrollIntoView({ 
+                        behavior: 'smooth', 
+                        block: 'center' 
+                    });
+                    
+                    // Focus on the first empty field
+                    const questionText = questionCard.querySelector('.question-text');
+                    if (!questionText.value.trim()) {
+                        questionText.focus();
+                    } else if (questionCard.querySelector('.question-type-select').value === 'multiple_choice') {
+                        const emptyOption = questionCard.querySelector('.answer-options input[type=text][value=""]');
+                        if (emptyOption) {
+                            emptyOption.focus();
+                        }
+                    } else {
+                        const answerKey = questionCard.querySelector('.answer-key-text');
+                        if (!answerKey.value.trim()) {
+                            answerKey.focus();
+                        }
+                    }
+                    
+                    // Update navigation
+                    updateQuestionNavigation();
+                }
+
+                // Setup modal event handlers
+                function setupModalHandlers() {
+                    const modal = document.getElementById('incomplete-questions-modal');
+                    const closeBtn = document.getElementById('close-incomplete-modal');
+                                        
+                    closeBtn.addEventListener('click', () => {
+                        modal.close();
+                    });
+                    
+                    
+                    // Close modal when clicking outside
+                    modal.addEventListener('click', (e) => {
+                        if (e.target === modal) {
+                            modal.close();
+                        }
+                    });
+                    
+                    // Close modal with Escape key
+                    modal.addEventListener('keydown', (e) => {
+                        if (e.key === 'Escape') {
+                            modal.close();
+                        }
+                    });
+                }
+
+                async function serializeAndSendAll(publish=false){
+                    // Validate questions before saving
+                    const incompleteQuestions = validateQuestions();
+                    if (incompleteQuestions.length > 0) {
+                        showIncompleteQuestionsModal(incompleteQuestions);
+                        return;
+                    }
+                    
+                    const ujianId = document.getElementById('ujian_id').value;
+                    const cards = document.querySelectorAll('.question-card');
+                    let successCount = 0; let failCount=0;
+                    // If autoScore, compute equal points distribution then scale to 100
+                    let autoPointsMap = {};
+                    if(autoScoreFlag){
+                        const validCards = Array.from(cards).filter(c=>c.querySelector('.question-text').value.trim() && c.dataset.active !== '0');
+                        const n = validCards.length;
+                        let base = Math.floor(100 / n);
+                        let remainder = 100 - (base * n);
+                        validCards.forEach((c,i)=>{ autoPointsMap[c.dataset.questionId] = base + (i < remainder ? 1 : 0); });
+                    }
+                    for (const card of cards){
+                        const type = card.querySelector('.question-type-select').value;
+                        const pertanyaan = card.querySelector('.question-text').value.trim();
+                        let poin = parseInt(card.querySelector('.question-points')?.value || 10);
+                        
+                        // Skip inactive questions (auto-score mode)
+                        if (card.dataset.active === '0') continue;
+                        
+                        if(autoScoreFlag){
+                            // Force multiple choice
+                            if(type !== 'multiple_choice'){
+                                continue; // skip non MC if any slipped in
+                            }
+                            poin = autoPointsMap[card.dataset.questionId] || poin;
+                        }
+                        if(!pertanyaan){continue;} // skip kosong
+                        let formData = new FormData();
+                        const existingId = card.getAttribute('data-soal-id');
+                        formData.append('ujian_id', ujianId);
+                        formData.append('poin', poin);
+                        if(type==='multiple_choice'){
+                            formData.append('tipe','multiple_choice');
+                            const options = card.querySelectorAll('.answer-options .flex.items-center.space-x-3');
+                            const correct = card.querySelector('input[type=radio]:checked');
+                            options.forEach(opt=>{
+                                const letter = opt.querySelector('input[type=radio]').value;
+                                const text = opt.querySelector('input[type=text]').value.trim();
+                                if(text){
+                                    formData.append('pilihan['+letter+']', text);
+                                }
+                            });
+                            if(correct){formData.append('kunci_pilihan', correct.value);}    
+                        } else if (type==='short_answer'){
+                            formData.append('tipe','short_answer');
+                            formData.append('kunci', card.querySelector('.answer-key-text').value.trim());
+                        } else {
+                            formData.append('tipe','long_answer');
+                            formData.append('kunci', card.querySelector('.answer-key-text').value.trim());
+                        }
+                        formData.append('pertanyaan', pertanyaan);
+                        try {
+                            const endpoint = existingId ? '../logic/update-question.php' : '../logic/create-question.php';
+                            if(existingId){ formData.append('soal_id', existingId); }
+                            const resp = await fetch(endpoint,{method:'POST', body:formData});
+                            const json = await resp.json();
+                            if(json.success){
+                                successCount++;
+                                if(!existingId && json.soal_id){ card.setAttribute('data-soal-id', json.soal_id); }
+                            } else {failCount++;}
+                        } catch(e){failCount++;}
+                    }
+                    
+                    // Show success message
+                    if (failCount === 0 && successCount > 0) {
+                        showToast(`Berhasil menyimpan ${successCount} soal!`, 'success');
+                    } else if (failCount > 0) {
+                        showToast(`Simpan selesai. Berhasil: ${successCount}, Gagal: ${failCount}`, 'warning');
+                    }
+                    
+                    if(publish && failCount===0){
+                        if(confirm('Semua soal tersimpan. Aktifkan ujian sekarang?')){
+                            // publish ujian
+                            const pubForm = new FormData();
+                            pubForm.append('ujian_id', ujianId);
+                            pubForm.append('status','aktif');
+                            fetch('../logic/update-status-ujian.php',{method:'POST',body:pubForm})
+                                .then(r=>r.json()).then(j=>{
+                                    if(j.success){
+                                        showToast('Ujian berhasil dipublikasikan!', 'success');
+                                        setTimeout(() => {
+                                            window.location.href='ujian-guru.php';
+                                        }, 2000);
+                                    } else showToast('Gagal publish: '+j.message, 'error');
+                                }).catch(()=>showToast('Gagal publish (network).', 'error'));
+                        }
+                    }
+                }
+
+                // Setup modal event handlers when DOM is ready
+                setupModalHandlers();
+
                 document.getElementById('save-draft-btn').addEventListener('click', function() {
-                    alert('Draft berhasil disimpan!');
+                    serializeAndSendAll(false);
                 });
                 
                 document.getElementById('preview-exam-btn').addEventListener('click', function() {
                     alert('Membuka preview ujian...');
                 });
                 
-                document.getElementById('publish-exam-btn').addEventListener('click', function() {
-                    if (confirm('Apakah Anda yakin ingin mempublikasikan ujian ini? Ujian yang sudah dipublikasikan tidak dapat diubah.')) {
-                        alert('Ujian berhasil dipublikasikan!');
-                    }
-                });
-                
                 // Update initial stats
                 updateStats();
+
+                // Handle auto score mode
+                if(autoScoreFlag){
+                    console.log('Initializing auto score mode');
+                    document.querySelectorAll('.question-card').forEach(card=>{
+                        const sel = card.querySelector('.question-type-select');
+                        if(sel){
+                            if(sel.value!=='multiple_choice'){
+                                card.classList.add('opacity-60','pointer-events-none','relative');
+                                if(!card.querySelector('.autoScore-disabled-note')){
+                                    const overlay=document.createElement('div');
+                                    overlay.className='autoScore-disabled-note absolute inset-0 flex items-center justify-center text-center p-4';
+                                    overlay.innerHTML='<div class="bg-white/80 backdrop-blur-sm rounded-md p-3 text-xs font-medium text-amber-700 border border-amber-300 shadow-sm">Penilaian otomatis: soal non pilihan ganda tidak diujikan.</div>';
+                                    card.appendChild(overlay);
+                                }
+                                // Mark as inactive
+                                card.dataset.active = '0';
+                            } else {
+                                sel.value='multiple_choice';
+                                Array.from(sel.options).forEach(opt=>{ if(opt.value!=='multiple_choice'){ opt.disabled=true; opt.hidden=true; }});
+                                sel.addEventListener('change', ()=>{ sel.value='multiple_choice'; });
+                                // Mark as active
+                                card.dataset.active = '1';
+                            }
+                        }
+                    });
+                    document.querySelectorAll('.answer-key').forEach(el=>el.classList.add('hidden'));
+                    
+                    // Hide points sections when auto score is active
+                    document.querySelectorAll('.points-section').forEach(section => {
+                        section.classList.add('hidden');
+                    });
+                    
+                    // Add notification if not already exists
+                    if (!document.querySelector('.autoscore-notification')) {
+                        const note = document.createElement('div');
+                        note.className='autoscore-notification hidden mb-4 p-4 border border-orange bg-orange-50 text-sm text-orange-700 rounded';
+                        note.innerHTML = '<strong>Mode Hitung Nilai Otomatis aktif:</strong> hanya soal pilihan ganda yang diujikan, poin dihitung otomatis (distribusi ke total 100).';
+                        document.querySelector('.max-w-7xl')?.prepend(note);
+                    }
+                    
+                    // Update stats after applying auto score logic
+                    updateStats();
+                } else {
+                    console.log('Auto score mode not active');
+                }
             });

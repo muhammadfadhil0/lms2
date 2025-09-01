@@ -1,4 +1,8 @@
 <?php
+// Set timezone konsisten aplikasi
+if(function_exists('date_default_timezone_set')) {
+    date_default_timezone_set('Asia/Jakarta');
+}
 $servername = "localhost";
 $username ="root";
 $password = "";

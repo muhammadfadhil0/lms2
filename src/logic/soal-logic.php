@@ -36,6 +36,8 @@ class SoalLogic {
             $this->updateTotalSoalUjian($ujian_id);
             
             $this->conn->commit();
+            // Jika ujian autoScore, redistribusi poin
+            $this->redistributeAutoScoreIfNeeded($ujian_id);
             return ['success' => true, 'message' => 'Soal berhasil dibuat', 'soal_id' => $soal_id];
             
         } catch (Exception $e) {
@@ -54,6 +56,7 @@ class SoalLogic {
             
             if ($stmt->execute()) {
                 $this->updateTotalSoalUjian($ujian_id);
+                $this->redistributeAutoScoreIfNeeded($ujian_id);
                 return ['success' => true, 'message' => 'Soal berhasil dibuat', 'soal_id' => $this->conn->insert_id];
             } else {
                 return ['success' => false, 'message' => 'Gagal membuat soal'];
@@ -62,13 +65,41 @@ class SoalLogic {
             return ['success' => false, 'message' => 'Error: ' . $e->getMessage()];
         }
     }
+    // Redistribute points to sum 100 if ujian.autoScore=1 and only multiple choice questions are counted
+    private function redistributeAutoScoreIfNeeded($ujian_id){
+        try {
+            $res = $this->conn->prepare('SELECT autoScore FROM ujian WHERE id=?');
+            $res->bind_param('i',$ujian_id); $res->execute(); $r=$res->get_result()->fetch_assoc();
+            if(!$r || !(int)$r['autoScore']) return; // not enabled
+            // Ambil semua soal multiple_choice (pilihan_ganda)
+            $q = $this->conn->prepare("SELECT id FROM soal WHERE ujian_id=? AND tipeSoal='pilihan_ganda' ORDER BY nomorSoal ASC");
+            $q->bind_param('i',$ujian_id); $q->execute(); $resSet=$q->get_result();
+            $ids = []; while($row=$resSet->fetch_assoc()){ $ids[] = (int)$row['id']; }
+            $n = count($ids); if($n===0) return; // nothing to distribute
+            $base = intdiv(100, $n); $rem = 100 - ($base*$n);
+            foreach($ids as $i=>$sid){ $val = $base + ($i < $rem ? 1 : 0); $up = $this->conn->prepare('UPDATE soal SET poin=? WHERE id=?'); $up->bind_param('ii',$val,$sid); $up->execute(); }
+            // Update aggregate
+            $this->updateTotalSoalUjian($ujian_id);
+        } catch(Exception $e){ /* ignore */ }
+    }
     
     // Update total soal dan poin di ujian
     private function updateTotalSoalUjian($ujian_id) {
-        $sql = "UPDATE ujian SET 
-                    totalSoal = (SELECT COUNT(*) FROM soal WHERE ujian_id = ?),
-                    totalPoin = (SELECT SUM(poin) FROM soal WHERE ujian_id = ?)
-                WHERE id = ?";
+        // Jika ujian autoScore aktif, hanya hitung soal pilihan ganda (soal lain dianggap non-aktif)
+        $auto = 0; $chk = $this->conn->prepare('SELECT autoScore FROM ujian WHERE id=?');
+        $chk->bind_param('i',$ujian_id); $chk->execute(); $res=$chk->get_result()->fetch_assoc();
+        if($res){ $auto = (int)$res['autoScore']; }
+        if($auto){
+            $sql = "UPDATE ujian SET 
+                        totalSoal = (SELECT COUNT(*) FROM soal WHERE ujian_id = ? AND tipeSoal='pilihan_ganda'),
+                        totalPoin = (SELECT COALESCE(SUM(poin),0) FROM soal WHERE ujian_id = ? AND tipeSoal='pilihan_ganda')
+                    WHERE id = ?";
+        } else {
+            $sql = "UPDATE ujian SET 
+                        totalSoal = (SELECT COUNT(*) FROM soal WHERE ujian_id = ?),
+                        totalPoin = (SELECT COALESCE(SUM(poin),0) FROM soal WHERE ujian_id = ?)
+                    WHERE id = ?";
+        }
         $stmt = $this->conn->prepare($sql);
         $stmt->bind_param("iii", $ujian_id, $ujian_id, $ujian_id);
         $stmt->execute();
