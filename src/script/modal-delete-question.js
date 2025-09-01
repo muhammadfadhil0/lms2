@@ -127,12 +127,7 @@ class DeleteQuestionModal {
         const existingId = this.currentQuestionCard.getAttribute('data-soal-id');
         const totalCards = document.querySelectorAll('.question-card').length;
         
-        // Check if this is the last question
-        if (totalCards <= 1) {
-            alert('Tidak dapat menghapus soal terakhir.');
-            this.close();
-            return;
-        }
+        // Allow deletion of all questions (removed restriction)
         
         this.setLoading(true);
         
@@ -164,6 +159,10 @@ class DeleteQuestionModal {
                 
                 if (result.success) {
                     this.deleteQuestionFromDOM();
+                    // Show success notification
+                    if (typeof showToast === 'function') {
+                        showToast('Soal berhasil dihapus', 'success');
+                    }
                 } else {
                     throw new Error(result.message || 'Gagal menghapus soal dari server');
                 }
@@ -171,6 +170,10 @@ class DeleteQuestionModal {
                 // Just remove from DOM (not saved yet)
                 console.log('Menghapus soal lokal (belum disimpan)');
                 this.deleteQuestionFromDOM();
+                // Show success notification
+                if (typeof showToast === 'function') {
+                    showToast('Soal berhasil dihapus', 'success');
+                }
             }
         } catch (error) {
             console.error('Error deleting question:', error);

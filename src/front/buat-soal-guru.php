@@ -40,6 +40,8 @@
     <?php require '../component/modal-add-class.php'; ?>
     <?php require '../component/modal-incomplete-questions.php'; ?>
     <?php require '../component/modal-delete-question.php'; ?>
+    <?php require '../component/modal-add-question-pingo.php'; ?>
+    
     <!DOCTYPE html>
     <html lang="en">
 
@@ -125,6 +127,76 @@
             #toast-container .toast {
                 transition: all .3s ease;
             }
+
+            /* Pingo AI Modal Styles */
+            #pingo-ai-modal .bg-white {
+                backdrop-filter: blur(10px);
+            }
+
+            /* Radio button custom styles with orange theme */
+            input[type="radio"]:checked + div {
+                color: inherit;
+            }
+
+            /* Difficulty radio button hover effects */
+            input[name="ai-difficulty"]:checked + div .font-medium {
+                color: rgb(255, 99, 71) !important;
+            }
+
+            /* Loading animation for AI button */
+            .animate-spin {
+                animation: spin 1s linear infinite;
+            }
+
+            @keyframes spin {
+                from { transform: rotate(0deg); }
+                to { transform: rotate(360deg); }
+            }
+
+            /* Modal animation with orange accents */
+            #pingo-ai-modal:not(.hidden) .bg-white {
+                animation: modal-slide-in 0.3s ease-out;
+            }
+
+            @keyframes modal-slide-in {
+                from {
+                    opacity: 0;
+                    transform: scale(0.95) translateY(-10px);
+                }
+                to {
+                    opacity: 1;
+                    transform: scale(1) translateY(0);
+                }
+            }
+
+            /* Enhanced focus states for orange theme */
+            #pingo-ai-modal select:focus,
+            #pingo-ai-modal textarea:focus {
+                border-color: rgb(255, 99, 71);
+                box-shadow: 0 0 0 1px rgb(255, 71);
+            }
+            
+            /* Z-index fixes for modal */
+            .sidebar-tools {
+                z-index: 50 !important;
+            }
+            
+            [data-sidebar],
+            .sidebar,
+            nav,
+            header {
+                z-index: 40 !important;
+            }
+            
+            /* Ensure PingoAI modal is above everything */
+            #add-soal-ai {
+                z-index: 9999 !important;
+            }
+            
+            /* Toast container should be above modal */
+            #toast-container {
+                z-index: 10100 !important;
+            }
         </style>
     </head>
 
@@ -191,7 +263,7 @@
                         <div class="mb-6 p-4 rounded-lg border border-amber-300 bg-amber-50 text-amber-800 text-sm flex items-start">
                             <i class="ti ti-alert-triangle mr-2 mt-0.5"></i>
                             <div>
-                                <strong>Penilaian Otomatis Aktif.</strong><br>Hanya soal pilihan ganda yang akan diujikan & dinilai. Soal lain dianggap non-aktif.
+                                <strong>Penilaian Otomatis Aktif.</strong><br>Hanya soal pilihan ganda yang akan diujikan & dinilai. Penilaian akan kami genapkan menjadi 100.
                             </div>
                         </div>
                     <?php endif; ?>
@@ -453,6 +525,12 @@
                                     <span>Tambah Soal</span>
                                 </button>
 
+                                <!-- Pingo AI Helper -->
+                                <button id="pingo-ai-btn" command="show-modal" commandfor="add-soal-ai" class="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-orange to-orange-600 text-white rounded-lg hover:from-orange-600 hover:to-red-500 mb-3">
+                                    <i class="ti ti-sparkles"></i>
+                                    <span>Bantu dengan Pingo AI</span>
+                                </button>
+
                                 <!-- Add Description -->
                                 <button id="add-description-btn" class="w-full flex items-center justify-center space-x-2 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors mb-3">
                                     <i class="ti ti-text"></i>
@@ -512,7 +590,33 @@
         <script src="../script/menu-bar-script.js"></script>
         <script src="../script/modal-delete-question.js"></script>
         <script src="../script/buat-soal.js"></script>
+        <script src="../pingo/pingo-modal.js"></script>
         <script>
+            // Show modal when Pingo button is clicked
+            document.addEventListener('DOMContentLoaded', function() {
+                const pingoBtn = document.getElementById('pingo-ai-btn');
+                
+                if (pingoBtn) {
+                    pingoBtn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        
+                        // Wait for pingo-modal.js to load and expose the function
+                        if (typeof window.openPingoModal === 'function') {
+                            window.openPingoModal();
+                        } else {
+                            // Fallback if function not available yet
+                            setTimeout(() => {
+                                if (typeof window.openPingoModal === 'function') {
+                                    window.openPingoModal();
+                                } else {
+                                    console.error('PingoAI modal function not available');
+                                }
+                            }, 100);
+                        }
+                    });
+                }
+            });
+
             function showToast(message, type = 'info') {
                 const colors = {
                     success: 'bg-green-600',
@@ -520,8 +624,13 @@
                     info: 'bg-blue-600',
                     warning: 'bg-yellow-600 text-gray-900'
                 };
-                const c = document.getElementById('toast-container');
-                if (!c) return;
+                let c = document.getElementById('toast-container');
+                if (!c) {
+                    c = document.createElement('div');
+                    c.id = 'toast-container';
+                    c.className = 'fixed top-4 right-4 space-y-3 z-[10100]';
+                    document.body.appendChild(c);
+                }
                 const el = document.createElement('div');
                 el.className = `toast flex items-start text-sm text-white px-4 py-3 rounded-lg shadow-lg backdrop-blur-md bg-opacity-90 ${colors[type]||colors.info} animate-fade-in`;
                 el.innerHTML = `<div class='mr-3 mt-0.5'><i class="ti ${type==='success'?'ti-check':type==='error'?'ti-alert-circle':type==='warning'?'ti-alert-triangle':'ti-info-circle'}"></i></div><div class='flex-1'>${message}</div><button class='ml-3 text-white/80 hover:text-white' onclick='this.parentElement.remove()'><i class="ti ti-x"></i></button>`;

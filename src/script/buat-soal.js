@@ -134,7 +134,7 @@
                         // Fallback to original confirm dialog
                         const existingId = questionCard.getAttribute('data-soal-id');
                         const totalCards = document.querySelectorAll('.question-card').length;
-                        if(totalCards<=1){ alert('Tidak dapat menghapus soal terakhir.'); return; }
+                        // Allow deletion of all questions (removed restriction)
                         if(!confirm('Hapus soal ini?')) return;
                         if(existingId){
                                 const fd = new FormData(); fd.append('soal_id', existingId);
@@ -143,10 +143,18 @@
                                         if(j.success){
                                                 questionCard.remove();
                                                 updateQuestionNumbers(); updateQuestionNavigation(); updateStats();
+                                                // Show success notification
+                                                if (typeof showToast === 'function') {
+                                                    showToast('Soal berhasil dihapus', 'success');
+                                                }
                                         } else alert('Gagal hapus: '+(j.message||''));
                                     }).catch(()=>alert('Gagal hapus (network).'));
                         } else {
                                 questionCard.remove(); updateQuestionNumbers(); updateQuestionNavigation(); updateStats();
+                                // Show success notification for local deletion
+                                if (typeof showToast === 'function') {
+                                    showToast('Soal berhasil dihapus', 'success');
+                                }
                         }
                     }
                 });
