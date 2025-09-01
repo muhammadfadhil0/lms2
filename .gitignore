@@ -1,0 +1,83 @@
+# === Configuration Files ===
+# File konfigurasi yang berisi API keys dan informasi sensitif
+src/pingo/config.php
+config/database.php
+config/config.php
+*.env
+.env*
+
+# === Database ===
+# File database dan backup
+*.sql
+*.db
+*.sqlite
+*.sqlite3
+database/backups/
+dumps/
+
+# === Uploads & User Generated Content ===
+# File upload dan konten yang di-generate user
+uploads/assignments/*
+uploads/kelas/*
+uploads/kelas_files/*
+uploads/postingan/*
+uploads/submissions/*
+# Kecuali file .gitkeep untuk menjaga struktur folder
+!uploads/*/.gitkeep
+!uploads/assignments/.gitkeep
+!uploads/kelas/.gitkeep
+!uploads/kelas_files/.gitkeep
+!uploads/postingan/.gitkeep
+!uploads/submissions/.gitkeep
+
+# === Logs & Temporary Files ===
+# File log dan temporary
+logs/
+*.log
+temp/
+tmp/
+cache/
+sessions/
+
+# === IDE & Editor Files ===
+# File yang dibuat oleh IDE dan text editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# === PHP Specific ===
+# File PHP yang di-generate atau cache
+vendor/
+composer.lock
+composer.phar
+*.cache
+.phpunit.result.cache
+
+# === System Files ===
+# File sistem operasi
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# === Backup Files ===
+# File backup
+*.bak
+*.backup
+*.old
+*_backup
+backup_*
+
+# === Debug & Development Files ===
+# File untuk debugging dan development
+debug-*.php
+test-*.php
+test-*.html
+*.debug
