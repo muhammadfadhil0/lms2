@@ -11,21 +11,25 @@
                         </div>
                         <div class="mt-4 text-center sm:mt-0 sm:ml-5 sm:text-left">
                             <h3 id="dialog-title" class="text-lg font-semibold text-gray-900">Tambah Kelas Baru</h3>
-                            <div class="mt-2">
+                            <div class="">
                                 <p class="text-base text-gray-500">Tambahkan kelas baru untuk diajarkan kepada siswa</p>
                             </div>
                         </div>
                     </div>
-                    
+
                     <form id="add-class-form" class="mt-6" onsubmit="createKelas(event)">
                         <div class="space-y-5">
                             <div>
                                 <label for="namaKelas" class="block text-base font-medium text-gray-700 mb-2">Nama Kelas</label>
                                 <input type="text" id="namaKelas" name="namaKelas" required
                                     class="mt-1 block w-full px-3 py-3 rounded-md border-2 border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-base"
-                                    placeholder="Contoh: Matematika Kelas X">
+                                    placeholder="Cth: Matematika Kelas X">
+                                <div class="text-left mt-1 text-xs text-amber-700">
+                                    <i class="ti ti-info-circle mr-1"></i>
+                                    Nama kelas akan menjadi judul kelas dan Ujian Anda
+                                </div>
                             </div>
-                            
+
                             <div>
                                 <label for="mataPelajaran" class="block text-base font-medium text-gray-700 mb-2">Mata Pelajaran</label>
                                 <select id="mataPelajaran" name="mataPelajaran" required
@@ -44,20 +48,20 @@
                                     <option value="Olahraga">Olahraga</option>
                                 </select>
                             </div>
-                            
+
                             <div>
                                 <label for="deskripsi" class="block text-base font-medium text-gray-700 mb-2">Deskripsi Kelas</label>
                                 <textarea id="deskripsi" name="deskripsi" rows="4"
                                     class="mt-1 block w-full px-3 py-3 rounded-md border-2 border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-base"
-                                    placeholder="Deskripsi singkat tentang kelas ini"></textarea>
+                                    placeholder="Contoh: Kelas Matematika X membahas aljabar dasar, trigonometri, dan soal HOTS. Pertemuan 2x seminggu dengan latihan dan kuis mingguan."></textarea>
                             </div>
-                            
+
                             <div>
                                 <label for="maxSiswa" class="block text-base font-medium text-gray-700 mb-2">Maksimal Siswa</label>
                                 <input type="number" id="maxSiswa" name="maxSiswa" min="1" max="100" value="30"
                                     class="mt-1 block w-full px-3 py-3 rounded-md border-2 border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-base">
                             </div>
-                            
+
                             <div>
                                 <label for="class-image" class="block text-base font-medium text-gray-700 mb-2">Gambar Kelas</label>
                                 <input type="file" id="class-image" name="class_image" accept="image/*"
@@ -67,11 +71,15 @@
                                     file:text-base file:font-medium
                                     file:bg-orange-50 file:text-orange-700
                                     hover:file:bg-orange-100">
+                                <div class="text-left mt-1 text-xs text-amber-700">
+                                    <i class="ti ti-info-circle mr-1"></i>
+                                    Jika Anda tidak menambahkan gambar, maka gambar kelas akan di jadikan default
+                                </div>
                             </div>
                         </div>
                     </form>
                 </div>
-                
+
                 <div class="bg-gray-50 px-5 py-5 sm:px-6 text-center">
                     <button type="submit" form="add-class-form"
                         class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-3 bg-orange-600 text-base font-medium text-white hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500">
@@ -83,4 +91,3 @@
         </div>
     </dialog>
 </el-dialog>
-

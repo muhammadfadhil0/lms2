@@ -142,8 +142,14 @@ class UjianLogic {
     }
     
     // Mendapatkan ujian berdasarkan siswa
-    public function getUjianBySiswa($siswa_id) {
+    public function getUjianBySiswa($siswa_id, $force_refresh = false) {
         try {
+            // Force refresh untuk debugging
+            if ($force_refresh) {
+                // Clear any potential query cache
+                $this->conn->query("SELECT 1");
+            }
+            
             $sql = "SELECT u.*, k.namaKelas, k.gambarKover, us.status as statusPengerjaan, us.totalNilai, us.waktuMulai, us.waktuSelesai, us.id as ujian_siswa_id,
                            CASE 
                                WHEN us.id IS NULL THEN 
@@ -172,7 +178,14 @@ class UjianLogic {
             $stmt->bind_param("ii", $siswa_id, $siswa_id);
             $stmt->execute();
             
-            return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+            $results = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+            
+            // Debug log
+            if ($force_refresh) {
+                error_log("getUjianBySiswa results for siswa_id $siswa_id: " . json_encode($results));
+            }
+            
+            return $results;
         } catch (Exception $e) {
             return [];
         }
@@ -267,19 +280,42 @@ class UjianLogic {
     // Selesai ujian
     public function selesaiUjian($ujian_siswa_id) {
         try {
+            // Debug: log sebelum update
+            error_log("Attempting to finish ujian_siswa_id: " . $ujian_siswa_id);
+            
             // Update status ujian siswa
             $sql = "UPDATE ujian_siswa SET waktuSelesai = NOW(), status = 'selesai' WHERE id = ?";
             $stmt = $this->conn->prepare($sql);
             $stmt->bind_param("i", $ujian_siswa_id);
             
             if ($stmt->execute()) {
-                // Hitung nilai
-                $this->hitungNilai($ujian_siswa_id);
-                return ['success' => true, 'message' => 'Ujian selesai'];
+                // Debug: cek apakah update berhasil
+                $affected_rows = $stmt->affected_rows;
+                error_log("Update affected rows: " . $affected_rows);
+                
+                if ($affected_rows > 0) {
+                    // Hitung nilai
+                    $this->hitungNilai($ujian_siswa_id);
+                    
+                    // Debug: verify update
+                    $verify_sql = "SELECT status FROM ujian_siswa WHERE id = ?";
+                    $verify_stmt = $this->conn->prepare($verify_sql);
+                    $verify_stmt->bind_param("i", $ujian_siswa_id);
+                    $verify_stmt->execute();
+                    $result = $verify_stmt->get_result()->fetch_assoc();
+                    error_log("Verified status after update: " . ($result['status'] ?? 'NULL'));
+                    
+                    return ['success' => true, 'message' => 'Ujian selesai'];
+                } else {
+                    error_log("No rows affected - ujian_siswa_id might not exist: " . $ujian_siswa_id);
+                    return ['success' => false, 'message' => 'Data ujian tidak ditemukan'];
+                }
             } else {
+                error_log("SQL execute failed: " . $stmt->error);
                 return ['success' => false, 'message' => 'Gagal menyelesaikan ujian'];
             }
         } catch (Exception $e) {
+            error_log("Exception in selesaiUjian: " . $e->getMessage());
             return ['success' => false, 'message' => 'Error: ' . $e->getMessage()];
         }
     }
@@ -359,12 +395,57 @@ class UjianLogic {
     // Mendapatkan hasil ujian
     public function getHasilUjian($ujian_id) {
         try {
-            $sql = "SELECT * FROM view_hasil_ujian WHERE id IN (
-                        SELECT us.id FROM ujian_siswa us WHERE us.ujian_id = ?
-                    ) ORDER BY totalNilai DESC";
+            $sql = "SELECT us.id, us.ujian_id, us.siswa_id, us.totalNilai, us.jumlahBenar, us.jumlahSalah, us.status,
+                           u.namaLengkap
+                    FROM ujian_siswa us 
+                    JOIN users u ON us.siswa_id = u.id
+                    WHERE us.ujian_id = ?
+                    ORDER BY us.totalNilai DESC, u.namaLengkap ASC";
             
             $stmt = $this->conn->prepare($sql);
             $stmt->bind_param("i", $ujian_id);
+            $stmt->execute();
+            
+            return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        } catch (Exception $e) {
+            return [];
+        }
+    }
+    
+    // Mendapatkan detail jawaban siswa untuk ujian tertentu
+    public function getDetailJawabanSiswa($ujian_siswa_id) {
+        try {
+            $sql = "SELECT js.*, s.pertanyaan, s.tipeSoal, s.kunciJawaban, s.poin as poin_soal, s.nomorSoal
+                    FROM jawaban_siswa js
+                    JOIN soal s ON js.soal_id = s.id
+                    WHERE js.ujian_siswa_id = ?
+                    ORDER BY s.nomorSoal ASC";
+            
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bind_param("i", $ujian_siswa_id);
+            $stmt->execute();
+            
+            return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        } catch (Exception $e) {
+            return [];
+        }
+    }
+    
+    // Mendapatkan data untuk mode koreksi swipe
+    public function getDataKoreksiSwipe($ujian_id) {
+        try {
+            $sql = "SELECT us.id as ujian_siswa_id, us.siswa_id, u.namaLengkap as siswa_nama,
+                           s.id as soal_id, s.nomorSoal, s.pertanyaan, s.tipeSoal, s.kunciJawaban, s.poin,
+                           js.jawaban, js.pilihanJawaban, js.benar, js.poin as poin_jawaban
+                    FROM ujian_siswa us
+                    JOIN users u ON us.siswa_id = u.id
+                    CROSS JOIN soal s
+                    LEFT JOIN jawaban_siswa js ON us.id = js.ujian_siswa_id AND s.id = js.soal_id
+                    WHERE us.ujian_id = ? AND s.ujian_id = ?
+                    ORDER BY us.siswa_id ASC, s.nomorSoal ASC";
+            
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bind_param("ii", $ujian_id, $ujian_id);
             $stmt->execute();
             
             return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
@@ -415,12 +496,12 @@ class UjianLogic {
             
             if ($existing) {
                 // Update existing answer
-                $sql = "UPDATE jawaban_siswa SET jawaban = ?, waktu_jawab = NOW() WHERE id = ?";
+                $sql = "UPDATE jawaban_siswa SET jawaban = ?, waktuDijawab = NOW() WHERE id = ?";
                 $stmt = $this->conn->prepare($sql);
                 $stmt->bind_param("si", $jawaban, $existing['id']);
             } else {
                 // Insert new answer
-                $sql = "INSERT INTO jawaban_siswa (ujian_siswa_id, soal_id, jawaban, waktu_jawab) VALUES (?, ?, ?, NOW())";
+                $sql = "INSERT INTO jawaban_siswa (ujian_siswa_id, soal_id, jawaban, waktuDijawab) VALUES (?, ?, ?, NOW())";
                 $stmt = $this->conn->prepare($sql);
                 $stmt->bind_param("iis", $ujian_siswa_id, $soal_id, $jawaban);
             }
@@ -529,6 +610,20 @@ class UjianLogic {
         } catch (Exception $e) {
             $this->conn->rollback();
             return ['success' => false, 'message' => 'Error: ' . $e->getMessage()];
+        }
+    }
+    
+    // Get ujian siswa by ujian_id and siswa_id
+    public function getUjianSiswaByUjianIdAndSiswaId($ujian_id, $siswa_id) {
+        try {
+            $sql = "SELECT * FROM ujian_siswa WHERE ujian_id = ? AND siswa_id = ?";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bind_param("ii", $ujian_id, $siswa_id);
+            $stmt->execute();
+            
+            return $stmt->get_result()->fetch_assoc();
+        } catch (Exception $e) {
+            return null;
         }
     }
 }

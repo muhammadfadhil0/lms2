@@ -2,7 +2,7 @@
   <div class="modal-backdrop fixed inset-0 bg-black/20 transition-opacity duration-300 opacity-0"></div>
 
   <div tabindex="0" class="modal-container flex min-h-full items-end justify-center p-4 text-center focus:outline-none sm:items-center sm:p-0 relative z-10">
-    <div class="modal-panel relative transform overflow-hidden rounded-xl bg-white shadow-2xl border border-gray-200 transition-all duration-300 ease-out opacity-0 scale-95 translate-y-4 sm:my-8 sm:w-full sm:max-w-2xl sm:translate-y-0">
+    <div class="modal-panel relative transform overflow-hidden rounded-xl bg-white shadow-2xl transition-all duration-300 ease-out opacity-0 scale-95 translate-y-4 sm:my-8 sm:w-full sm:max-w-2xl sm:translate-y-0">
 
       <!-- Header -->
       <div class="bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-4">

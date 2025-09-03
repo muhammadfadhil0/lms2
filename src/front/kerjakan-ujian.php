@@ -1,6 +1,7 @@
 <?php
 // Minimalist exam page
 session_start();
+
 $currentPage = 'ujian';
 
 if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'siswa') {
@@ -14,6 +15,68 @@ require_once '../logic/soal-logic.php';
 $ujianLogic = new UjianLogic();
 $soalLogic = new SoalLogic();
 $siswa_id = $_SESSION['user']['id'];
+
+// AJAX HANDLERS FIRST - NO OUTPUT BEFORE THIS POINT
+// Submit answer (AJAX)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'submit_answer') {
+    // Clear any previous output
+    if (ob_get_level()) ob_end_clean();
+    
+    $ujian_siswa_id = (int)$_POST['ujian_siswa_id'];
+    $soal_id = (int)$_POST['soal_id'];
+    $jawaban = $_POST['jawaban'] ?? '';
+    $save_result = $ujianLogic->simpanJawaban($ujian_siswa_id, $soal_id, $jawaban);
+
+    if (isset($_POST['finish_exam'])) {
+        $finish_result = $ujianLogic->selesaiUjian($ujian_siswa_id);
+        
+        // Log for debugging
+        error_log("Finish exam result: " . json_encode($finish_result));
+        
+        // Ensure clean JSON response
+        header('Content-Type: application/json; charset=utf-8');
+        http_response_code(200);
+        
+        $response = [
+            'success' => $finish_result['success'], 
+            'message' => $finish_result['message'],
+            'finished' => true,
+            'ujian_siswa_id' => $ujian_siswa_id
+        ];
+        
+        $json_output = json_encode($response, JSON_UNESCAPED_UNICODE);
+        
+        // Check for JSON encoding errors
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            error_log("JSON encoding error: " . json_last_error_msg());
+            $json_output = json_encode(['success' => false, 'message' => 'JSON encoding error']);
+        }
+        
+        echo $json_output;
+        exit();
+    }
+
+    header('Content-Type: application/json; charset=utf-8');
+    http_response_code(200);
+    echo json_encode(['success' => true], JSON_UNESCAPED_UNICODE);
+    exit();
+}
+
+// Alternative: Direct form submit for finish exam (fallback)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'finish_direct') {
+    $ujian_siswa_id = (int)$_POST['ujian_siswa_id'];
+    $finish_result = $ujianLogic->selesaiUjian($ujian_siswa_id);
+    
+    if ($finish_result['success']) {
+        header('Location: ujian-user.php?finished=1&direct=1');
+    } else {
+        header('Location: ujian-user.php?error=finish_failed&message=' . urlencode($finish_result['message']));
+    }
+    exit();
+}
+
+// Start output buffering for HTML content
+ob_start();
 
 // Parameters
 $ujian_id = isset($_GET['ujian_id']) ? (int)$_GET['ujian_id'] : 0;
@@ -32,6 +95,13 @@ if ($ujian_siswa_id) {
         header('Location: ujian-user.php');
         exit();
     }
+} else if ($ujian_id) {
+    // Jika akses langsung via ujian_id, cek apakah siswa sudah pernah mengerjakan ujian ini
+    $existing_record = $ujianLogic->getUjianSiswaByUjianIdAndSiswaId($ujian_id, $siswa_id);
+    if ($existing_record && $existing_record['status'] === 'selesai') {
+        header('Location: ujian-user.php?error=ujian_sudah_selesai');
+        exit();
+    }
 }
 
 // Start exam action
@@ -45,31 +115,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     }
 }
 
-// Submit answer (AJAX)
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'submit_answer') {
-    $ujian_siswa_id = (int)$_POST['ujian_siswa_id'];
-    $soal_id = (int)$_POST['soal_id'];
-    $jawaban = $_POST['jawaban'] ?? '';
-    $save_result = $ujianLogic->simpanJawaban($ujian_siswa_id, $soal_id, $jawaban);
-
-    if (isset($_POST['finish_exam'])) {
-        $finish_result = $ujianLogic->selesaiUjian($ujian_siswa_id);
-        if ($finish_result['success']) {
-            header('Location: ujian-user.php?finished=1');
-            exit();
-        }
-    }
-
-    header('Content-Type: application/json');
-    echo json_encode(['success' => true]);
-    exit();
-}
-
 $ujian = null; $soal_list = []; $ujian_siswa = null; $is_started = false;
 if ($ujian_siswa_id) {
     $ujian_siswa = $ujianLogic->getUjianSiswaById($ujian_siswa_id);
     if ($ujian_siswa && (int)$ujian_siswa['siswa_id'] === (int)$siswa_id) {
         $ujian_id = (int)$ujian_siswa['ujian_id'];
+        
+        // Cek apakah ujian sudah selesai - jika sudah, redirect dengan pesan
+        if ($ujian_siswa['status'] === 'selesai') {
+            header('Location: ujian-user.php?error=ujian_sudah_selesai');
+            exit();
+        }
+        
         $is_started = ($ujian_siswa['status'] === 'sedang_mengerjakan');
     } else {
         header('Location: ujian-user.php');
@@ -316,6 +373,18 @@ $saved_answers = []; if ($is_started && $ujian_siswa_id) { $saved_answers = $uji
                     <button id="cancelFinish" class="btn btn-secondary px-4 py-2">Batal</button>
                     <button id="confirmFinish" class="btn btn-danger px-4 py-2">Ya, Selesai</button>
                 </div>
+                
+                <!-- Debug: Alternative finish method -->
+                <?php if (isset($_GET['debug'])): ?>
+                <div class="mt-4 pt-4 border-t border-gray-200">
+                    <p class="text-xs text-gray-500 mb-2">Debug Mode - Alternative Finish:</p>
+                    <form method="post" style="display: inline;">
+                        <input type="hidden" name="action" value="finish_direct">
+                        <input type="hidden" name="ujian_siswa_id" value="<?= $ujian_siswa_id ?? '' ?>">
+                        <button type="submit" class="btn btn-primary px-3 py-1 text-xs">Direct Finish</button>
+                    </form>
+                </div>
+                <?php endif; ?>
             </div>
         </div>
     </div>
@@ -470,7 +539,58 @@ $saved_answers = []; if ($is_started && $ujian_siswa_id) { $saved_answers = $uji
         }
         function showFinishModal(){ document.getElementById('finishModal').classList.remove('hidden'); }
         function hideFinishModal(){ document.getElementById('finishModal').classList.add('hidden'); }
-        function finishExam(){ saveCurrent(false); const fd=new FormData(); fd.append('action','submit_answer'); fd.append('ujian_siswa_id',examData.ujianSiswaId); fd.append('soal_id','0'); fd.append('jawaban',''); fd.append('finish_exam','1'); fetch('kerjakan-ujian.php',{method:'POST',body:fd}).then(()=>window.location='ujian-user.php?finished=1').catch(()=>window.location='ujian-user.php'); }
+        function finishExam(){ 
+            console.log('Starting finishExam...', examData.ujianSiswaId);
+            saveCurrent(false); 
+            const fd=new FormData(); 
+            fd.append('action','submit_answer'); 
+            fd.append('ujian_siswa_id',examData.ujianSiswaId); 
+            fd.append('soal_id','0'); 
+            fd.append('jawaban',''); 
+            fd.append('finish_exam','1'); 
+            
+            console.log('Sending finish exam request...');
+            fetch('kerjakan-ujian.php',{method:'POST',body:fd})
+                .then(response => {
+                    console.log('Response status:', response.status);
+                    console.log('Response headers:', response.headers.get('Content-Type'));
+                    
+                    // Check if response is actually JSON
+                    const contentType = response.headers.get('Content-Type');
+                    if (!contentType || !contentType.includes('application/json')) {
+                        throw new Error('Response is not JSON. Content-Type: ' + contentType);
+                    }
+                    
+                    return response.text(); // Get as text first to debug
+                })
+                .then(text => {
+                    console.log('Raw response text:', text);
+                    try {
+                        const data = JSON.parse(text);
+                        console.log('Parsed JSON response:', data);
+                        
+                        if (data.success) {
+                            console.log('Ujian berhasil diselesaikan, redirecting...');
+                            window.location='ujian-user.php?finished=1';
+                        } else {
+                            console.error('Gagal menyelesaikan ujian:', data.message);
+                            alert('Gagal menyelesaikan ujian: ' + data.message);
+                            window.location='ujian-user.php';
+                        }
+                    } catch (parseError) {
+                        console.error('JSON parse error:', parseError);
+                        console.error('Raw response that failed to parse:', text);
+                        alert('Server returned invalid response. Check console for details.');
+                        window.location='ujian-user.php';
+                    }
+                })
+                .catch(error => {
+                    console.error('Finish exam error:', error);
+                    alert('Terjadi kesalahan saat menyelesaikan ujian: ' + error.message);
+                    // Tetap redirect meskipun ada error
+                    window.location='ujian-user.php';
+                }); 
+        }
         function autoFinish(){ notify('Waktu habis! Menyelesaikan ujian...','warning'); setTimeout(finishExam,1500); }
         function notify(msg,type){ const n=document.createElement('div'); n.className='fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow text-white text-sm font-medium '+(type==='success'?'bg-green-600': type==='error'?'bg-red-600': type==='warning'?'bg-amber-500':'bg-blue-600'); n.textContent=msg; document.body.appendChild(n); setTimeout(()=>n.remove(),2500); }
     </script>
