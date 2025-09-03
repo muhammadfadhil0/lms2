@@ -1,7 +1,7 @@
-    <!-- cek sekarang ada di halaman apa -->
-    <?php 
+<!-- cek sekarang ada di halaman apa -->
+    <?php
     session_start();
-    $currentPage = 'buat-ujian'; 
+    $currentPage = 'buat-ujian';
     if (!isset($_SESSION['user']) || $_SESSION['user']['role'] != 'guru') {
         header("Location: ../../index.php");
         exit();
@@ -43,14 +43,18 @@
                     'exam_class' => $ujianData['kelas_id'] ?? '',
                     'exam_subject' => $ujianData['mataPelajaran'] ?? '',
                     'exam_date' => $ujianData['tanggalUjian'] ?? '',
-                    'exam_start_time' => isset($ujianData['waktuMulai']) ? substr($ujianData['waktuMulai'],0,5) : '',
+                    'exam_start_time' => isset($ujianData['waktuMulai']) ? substr($ujianData['waktuMulai'], 0, 5) : '',
                     'exam_duration' => $ujianData['durasi'] ?? '',
                 ];
                 if (isset($ujianData['shuffleQuestions']) && $ujianData['shuffleQuestions']) {
                     $old['shuffle_questions'] = 1;
                 }
-                if (!isset($ujianData['showScore']) || $ujianData['showScore']) { $old['show_score'] = 1; }
-                if (isset($ujianData['autoScore']) && $ujianData['autoScore']) { $old['auto_score'] = 1; }
+                if (!isset($ujianData['showScore']) || $ujianData['showScore']) {
+                    $old['show_score'] = 1;
+                }
+                if (isset($ujianData['autoScore']) && $ujianData['autoScore']) {
+                    $old['auto_score'] = 1;
+                }
             }
         }
     }
@@ -61,16 +65,18 @@
     <?php require '../component/modal-add-class.php'; ?>
     <!DOCTYPE html>
     <html lang="en">
+
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <?php require '../../assets/head.php'; ?>
-    <title><?= $editing ? 'Edit Ujian' : 'Buat Ujian' ?> - LMS</title>
+        <title><?= $editing ? 'Edit Ujian' : 'Buat Ujian' ?> - LMS</title>
     </head>
+
     <body class="bg-gray-50">
 
-    <!-- Toast Container -->
-    <div id="toast-container" class="fixed top-4 right-4 space-y-3 z-[10000]"></div>
+        <!-- Toast Container -->
+        <div id="toast-container" class="fixed top-4 right-4 space-y-3 z-[10000]"></div>
 
         <!-- Main Content -->
         <div data-main-content class="md:ml-64 min-h-screen pb-20 md:pb-0 transition-all duration-300 ease-in-out">
@@ -124,25 +130,27 @@
                                     <input type="hidden" name="ujian_id" value="<?= (int)$ujian_id ?>">
                                 <?php endif; ?>
                                 <?php if (!empty($errors)): ?>
-                                <div class="mb-6 p-4 rounded-lg border border-red-200 bg-red-50 text-sm text-red-700">
-                                    <ul class="list-disc ml-4 space-y-1">
-                                        <?php foreach($errors as $e): ?>
-                                            <li><?= htmlspecialchars($e) ?></li>
-                                        <?php endforeach; ?>
-                                    </ul>
-                                </div>
+                                    <div class="mb-6 p-4 rounded-lg border border-red-200 bg-red-50 text-sm text-red-700">
+                                        <ul class="list-disc ml-4 space-y-1">
+                                            <?php foreach ($errors as $e): ?>
+                                                <li><?= htmlspecialchars($e) ?></li>
+                                            <?php endforeach; ?>
+                                        </ul>
+                                    </div>
                                 <?php endif; ?>
                                 <!-- Nama Ujian -->
                                 <div class="mb-6">
                                     <label for="exam_name" class="block text-sm font-medium text-gray-700 mb-2">
                                         Nama Ujian <span class="text-red-500">*</span>
+                                        <span class="ml-2 inline-flex items-center text-[10px] font-medium px-2 py-1 rounded bg-orange-100 text-orange-700 border border-orange-200">
+                                            <i class="ti ti-sparkles mr-1 text-[12px]"></i>Pingo AI mengakses data ini
+                                        </span>
                                     </label>
                                     <input type="text" id="exam_name" name="exam_name" required value="<?= htmlspecialchars($old['exam_name'] ?? '') ?>"
                                         class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
                                         placeholder="Contoh: Ujian Tengah Semester Matematika">
                                     <p class="text-xs text-gray-500 mt-1">Berikan nama yang jelas dan mudah diidentifikasi</p>
                                 </div>
-
                                 <!-- Deskripsi Ujian -->
                                 <div class="mb-6">
                                     <label for="exam_description" class="block text-sm font-medium text-gray-700 mb-2">
@@ -162,8 +170,8 @@
                                     <select id="exam_class" name="exam_class" required
                                         class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors bg-white">
                                         <option value="">Pilih Kelas</option>
-                                        <?php foreach($kelasGuru as $k): ?>
-                                            <option value="<?= (int)$k['id'] ?>" <?= (isset($old['exam_class']) && (int)$old['exam_class']==(int)$k['id']) ? 'selected' : '' ?>><?= htmlspecialchars($k['namaKelas']) ?> (<?= htmlspecialchars($k['mataPelajaran']) ?>)</option>
+                                        <?php foreach ($kelasGuru as $k): ?>
+                                            <option value="<?= (int)$k['id'] ?>" <?= (isset($old['exam_class']) && (int)$old['exam_class'] == (int)$k['id']) ? 'selected' : '' ?>><?= htmlspecialchars($k['namaKelas']) ?> (<?= htmlspecialchars($k['mataPelajaran']) ?>)</option>
                                         <?php endforeach; ?>
                                     </select>
                                     <p class="text-xs text-gray-500 mt-1">Pilih kelas yang akan mengikuti ujian ini</p>
@@ -173,12 +181,16 @@
                                 <div class="mb-6">
                                     <label for="exam_subject" class="block text-sm font-medium text-gray-700 mb-2">
                                         Mata Pelajaran <span class="text-red-500">*</span>
+                                        <span class="ml-2 inline-flex items-center text-[10px] font-medium px-2 py-1 rounded bg-orange-100 text-orange-700 border border-orange-200">
+                                            <i class="ti ti-sparkles mr-1 text-[12px]"></i>Pingo AI mengakses data ini
+                                        </span>
                                     </label>
+
                                     <select id="exam_subject" name="exam_subject" required
                                         class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors bg-white">
                                         <option value="">Pilih Mata Pelajaran</option>
-                                        <?php $subjects = ['matematika'=>'Matematika','bahasa_indonesia'=>'Bahasa Indonesia','bahasa_inggris'=>'Bahasa Inggris','ipa'=>'IPA','ips'=>'IPS','ppkn'=>'PPKn','seni_budaya'=>'Seni Budaya','pendidikan_jasmani'=>'Pendidikan Jasmani'];
-                                        foreach($subjects as $val=>$label): ?>
+                                        <?php $subjects = ['matematika' => 'Matematika', 'bahasa_indonesia' => 'Bahasa Indonesia', 'bahasa_inggris' => 'Bahasa Inggris', 'ipa' => 'IPA', 'ips' => 'IPS', 'ppkn' => 'PPKn', 'seni_budaya' => 'Seni Budaya', 'pendidikan_jasmani' => 'Pendidikan Jasmani'];
+                                        foreach ($subjects as $val => $label): ?>
                                             <option value="<?= $val ?>" <?= (($old['exam_subject'] ?? '') === $val) ? 'selected' : '' ?>><?= $label ?></option>
                                         <?php endforeach; ?>
                                     </select>
@@ -187,7 +199,11 @@
                                 <!-- Materi/Topik -->
                                 <div class="mb-6">
                                     <label for="exam_topic" class="block text-sm font-medium text-gray-700 mb-2">
-                                           Materi/Topik <span class="text-gray-400 text-xs font-normal">(Opsional)</span>
+                                        Materi/Topik <span class="text-gray-400 text-xs font-normal">(Opsional)</span>
+                                        <span class="ml-2 inline-flex items-center text-[10px] font-medium px-2 py-1 rounded bg-orange-100 text-orange-700 border border-orange-200">
+                                            <i class="ti ti-sparkles mr-1 text-[12px]"></i>Pingo AI mengakses data ini
+                                        </span>
+
                                     </label>
                                     <input type="text" id="exam_topic" name="exam_topic" value="<?= htmlspecialchars($old['exam_topic'] ?? '') ?>"
                                         class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
@@ -198,7 +214,7 @@
                                 <!-- Pengaturan Waktu -->
                                 <div class="mb-8">
                                     <h3 class="text-lg font-medium text-gray-800 mb-4">Pengaturan Waktu</h3>
-                                    
+
                                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         <!-- Tanggal Ujian -->
                                         <div>
@@ -221,12 +237,12 @@
                                         <!-- Durasi Ujian -->
                                         <div>
                                             <label for="exam_duration" class="block text-sm font-medium text-gray-700 mb-2">
-                                                   Durasi Ujian <span class="text-gray-400 text-xs font-normal">(Opsional, default 60)</span>
+                                                Durasi Ujian <span class="text-gray-400 text-xs font-normal">(Opsional, default 60)</span>
                                             </label>
                                             <select id="exam_duration" name="exam_duration" required
                                                 class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors bg-white">
                                                 <option value="">Pilih Durasi</option>
-                                                <?php foreach([15,30,45,60,75,90,105,120,150,180] as $d): ?>
+                                                <?php foreach ([15, 30, 45, 60, 75, 90, 105, 120, 150, 180] as $d): ?>
                                                     <option value="<?= $d ?>" <?= ((int)($old['exam_duration'] ?? 0) === $d) ? 'selected' : '' ?>><?= $d ?> Menit</option>
                                                 <?php endforeach; ?>
                                             </select>
@@ -248,7 +264,7 @@
                                 <!-- Pengaturan Tambahan -->
                                 <div class="mb-8">
                                     <h3 class="text-lg font-medium text-gray-800 mb-4">Pengaturan Tambahan</h3>
-                                    
+
                                     <div class="space-y-4">
                                         <!-- Acak Soal -->
                                         <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
@@ -258,7 +274,7 @@
                                             </div>
                                             <label class="relative inline-flex items-center cursor-pointer">
                                                 <input type="checkbox" name="shuffle_questions" class="sr-only peer" <?= isset($old['shuffle_questions']) ? 'checked' : '' ?>>
-                                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange"></div>
+                                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-600"></div>
                                             </label>
                                         </div>
 
@@ -270,7 +286,7 @@
                                             </div>
                                             <label class="relative inline-flex items-center cursor-pointer">
                                                 <input type="checkbox" name="show_score" class="sr-only peer" <?= isset($old['show_score']) ? 'checked' : 'checked' ?>>
-                                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange"></div>
+                                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-600"></div>
                                             </label>
                                         </div>
 
@@ -282,20 +298,20 @@
                                             </div>
                                             <label class="relative inline-flex items-center cursor-pointer">
                                                 <input type="checkbox" name="auto_score" id="auto_score_toggle" class="sr-only peer" <?= isset($old['auto_score']) ? 'checked' : '' ?>>
-                                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 rounded-full peer transition-colors peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange"></div>
+                                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 rounded-full peer transition-colors peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-600"></div>
                                             </label>
                                         </div>
                                     </div>
                                 </div>
 
                                 <!-- Action Buttons -->
-                                <div class="flex flex-col sm:flex-row gap-4 pt-6 border-t border-gray-200">
-                                    <button type="button" onclick="history.back()" 
+                                <div class="flex flex-col sm:flex-row gap-4 pt-6 justify-between border-t border-gray-200">
+                                    <button type="button" onclick="history.back()"
                                         class="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium">
                                         Batal
                                     </button>
                                     <button type="button" id="saveAsDraft"
-                                        class="px-6 py-3 border border-orange text-orange rounded-lg hover:bg-orange-50 transition-colors font-medium">
+                                        class="hidden px-6 py-3 border border-orange text-orange rounded-lg hover:bg-orange-50 transition-colors font-medium">
                                         Simpan sebagai Draft
                                     </button>
                                     <button type="submit" id="submitBtn"
@@ -313,20 +329,31 @@
         <!-- Scripts -->
         <script src="../script/menu-bar-script.js"></script>
         <script>
-            function showToast(message, type='info'){
-                const colors = {success:'bg-green-600',error:'bg-red-600',info:'bg-blue-600',warning:'bg-yellow-600 text-gray-900'};
-                const c = document.getElementById('toast-container'); if(!c) return alert(message);
+            function showToast(message, type = 'info') {
+                const colors = {
+                    success: 'bg-green-600',
+                    error: 'bg-red-600',
+                    info: 'bg-blue-600',
+                    warning: 'bg-yellow-600 text-gray-900'
+                };
+                const c = document.getElementById('toast-container');
+                if (!c) return alert(message);
                 const el = document.createElement('div');
                 el.className = `toast flex items-start text-sm text-white px-4 py-3 rounded-lg shadow-lg backdrop-blur-md bg-opacity-90 ${colors[type]||colors.info} animate-fade-in`;
                 el.innerHTML = `<div class='mr-3 mt-0.5'><i class=\"ti ${type==='success'?'ti-check':type==='error'?'ti-alert-circle':type==='warning'?'ti-alert-triangle':'ti-info-circle'}\"></i></div><div class='flex-1'>${message}</div><button class='ml-3 text-white/80 hover:text-white' onclick='this.parentElement.remove()'><i class=\"ti ti-x\"></i></button>`;
                 c.appendChild(el);
-                setTimeout(()=>{ el.classList.add('opacity-0','translate-x-2'); setTimeout(()=>el.remove(),300); },4000);
+                setTimeout(() => {
+                    el.classList.add('opacity-0', 'translate-x-2');
+                    setTimeout(() => el.remove(), 300);
+                }, 4000);
             }
-            (function(){
-                const p=new URLSearchParams(location.search);
-                if(p.get('duplicated')==='1'){
+            (function() {
+                const p = new URLSearchParams(location.search);
+                if (p.get('duplicated') === '1') {
                     showToast('Salinan ujian berhasil dibuat. Lakukan penyesuaian lalu lanjut ke pembuatan soal.', 'success');
-                    const url=new URL(location.href); url.searchParams.delete('duplicated'); history.replaceState({},'',url);
+                    const url = new URL(location.href);
+                    url.searchParams.delete('duplicated');
+                    history.replaceState({}, '', url);
                 }
             })();
             // Auto calculate end time when start time and duration change
@@ -338,12 +365,12 @@
                 if (startTime && duration) {
                     const [hours, minutes] = startTime.split(':').map(Number);
                     const durationMinutes = parseInt(duration);
-                    
+
                     const startDate = new Date();
                     startDate.setHours(hours, minutes, 0, 0);
-                    
+
                     const endDate = new Date(startDate.getTime() + durationMinutes * 60000);
-                    
+
                     const endTimeString = endDate.toTimeString().slice(0, 5);
                     endTimeInput.value = endTimeString;
                 } else {
@@ -356,19 +383,19 @@
             document.getElementById('exam_duration').addEventListener('change', calculateEndTime);
 
             // If editing and values exist, compute end time immediately
-            (function(){
+            (function() {
                 const startVal = document.getElementById('exam_start_time').value;
                 const durVal = document.getElementById('exam_duration').value;
-                if(startVal && durVal){
+                if (startVal && durVal) {
                     calculateEndTime();
                 }
             })();
 
             // Warn user when enabling auto score (non-MC questions will be inactive)
             const autoScoreToggle = document.getElementById('auto_score_toggle');
-            if(autoScoreToggle){
-                autoScoreToggle.addEventListener('change', function(){
-                    if(this.checked){
+            if (autoScoreToggle) {
+                autoScoreToggle.addEventListener('change', function() {
+                    if (this.checked) {
                         showToast('Penilaian otomatis diaktifkan: soal selain pilihan ganda akan menjadi non-aktif dan tidak diujikan.', 'warning');
                     }
                 });
@@ -404,10 +431,10 @@
                 // Save current form data to localStorage or send to server
                 const formData = new FormData(document.getElementById('createExamForm'));
                 const data = Object.fromEntries(formData);
-                
+
                 // For now, just show a message
                 alert('Draft berhasil disimpan!');
-                
+
                 // In real implementation, you would send this to server
                 // fetch('../logic/save-exam-draft.php', {
                 //     method: 'POST',
@@ -416,9 +443,26 @@
             });
         </script>
         <style>
-            @keyframes fade-in { from { opacity:0; transform: translateX(8px);} to { opacity:1; transform: translateX(0);} }
-            .animate-fade-in { animation: fade-in .25s ease-out; }
-            #toast-container .toast { transition: all .3s ease; }
+            @keyframes fade-in {
+                from {
+                    opacity: 0;
+                    transform: translateX(8px);
+                }
+
+                to {
+                    opacity: 1;
+                    transform: translateX(0);
+                }
+            }
+
+            .animate-fade-in {
+                animation: fade-in .25s ease-out;
+            }
+
+            #toast-container .toast {
+                transition: all .3s ease;
+            }
         </style>
     </body>
+
     </html>

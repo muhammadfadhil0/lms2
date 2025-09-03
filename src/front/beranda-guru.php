@@ -177,13 +177,17 @@ $currentPage = 'beranda';
                                 </div>
                             <?php endforeach; ?>
                         <?php else: ?>
-                            <div class="col-span-full text-center py-12">
-                                <i class="ti ti-book-off text-6xl text-gray-300 mb-4"></i>
-                                <h3 class="text-lg font-medium text-gray-900 mb-2">Belum ada kelas</h3>
-                                <p class="text-gray-500 mb-4">Mulai dengan membuat kelas pertama Anda</p>
-                                <button command="show-modal" commandfor="add-class-modal" class="inline-flex items-center px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors">
+                            <div class="col-span-full flex flex-col items-center justify-center py-16 px-4">
+                                <div class="w-24 h-24 bg-orange-100 rounded-full flex items-center justify-center mb-6">
+                                    <i class="ti ti-book-plus text-orange text-4xl"></i>
+                                </div>
+                                <h3 class="text-lg font-semibold text-gray-800 mb-2">Belum Ada Kelas</h3>
+                                <p class="text-gray-500 text-sm text-center mb-8 max-w-sm">
+                                    Mulai membuat kelas pertama untuk mengelola siswa dan ujian
+                                </p>
+                                <button command="show-modal" commandfor="add-class-modal" class="inline-flex items-center px-6 py-3 bg-orange text-white font-medium rounded-lg hover:bg-orange-600 transition-colors">
                                     <i class="ti ti-plus mr-2"></i>
-                                    Buat Kelas
+                                    Buat Kelas Pertama
                                 </button>
                             </div>
                         <?php endif; ?>

@@ -395,7 +395,7 @@
                                                 <textarea class="answer-key-text w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 resize-none" rows="2" placeholder="Masukkan kunci jawaban..."><?= !$isMC ? htmlspecialchars($kunci) : ''; ?></textarea>
                                             </div>
                                             <?php if ($autoScoreFlag && !$isMC): ?>
-                                                <div class="absolute inset-0 flex items-center justify-center text-center p-4">
+                                                <div class="absolute hidden inset-0 flex items-center justify-center text-center p-4">
                                                     <div class="bg-white/80 backdrop-blur-sm rounded-md p-3 text-xs font-medium text-amber-700 border border-amber-300 shadow-sm">
                                                         Penilaian otomatis diaktifkan. Soal selain pilihan ganda tidak diujikan.
                                                     </div>

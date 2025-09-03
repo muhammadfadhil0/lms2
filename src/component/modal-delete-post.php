@@ -37,9 +37,6 @@
                         Batal
                     </button>
                 </div>
-                <div class="px-4 pb-2 sm:px-6">
-                    <p class="text-center text-xs text-gray-400">Klik atau sentuh mana saja untuk menutup</p>
-                </div>
             </el-dialog-panel>
         </div>
     </dialog>

@@ -212,13 +212,9 @@ function statusBadgeClass($status)
                     </button>
                   </form>
                 <?php elseif ($ujian['status'] === 'aktif'): ?>
-                  <form method="post" action="../logic/update-status-ujian.php" onsubmit="return confirm('Tandai selesai?');" class="pt-1">
-                    <input type="hidden" name="ujian_id" value="<?= (int)$ujian['id'] ?>">
-                    <input type="hidden" name="status" value="selesai">
-                    <button class="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm">
-                      <i class="ti ti-check"></i><span>Tandai Selesai</span>
-                    </button>
-                  </form>
+                  <button id="finishExamBtn" data-ujian-id="<?= (int)$ujian['id'] ?>" class="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm">
+                    <i class="ti ti-check"></i><span>Tandai Selesai</span>
+                  </button>
                 <?php endif; ?>
               </div>
 
@@ -241,7 +237,237 @@ function statusBadgeClass($status)
     </main>
   </div>
 
+  <!-- Include Modal -->
+  <?php require '../component/modal-confirm-finish-exam.php'; ?>
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="fixed top-4 right-4 space-y-3 z-[10000]"></div>
+
   <script src="../script/menu-bar-script.js"></script>
+  <script>
+    // Toast notification system
+    function showToast(message, type = 'info', duration = 5000) {
+      const colors = {
+        success: 'bg-green-600',
+        error: 'bg-red-600',
+        info: 'bg-blue-600',
+        warning: 'bg-yellow-600 text-gray-900'
+      };
+      const container = document.getElementById('toast-container');
+      if (!container) return alert(message);
+      
+      const el = document.createElement('div');
+      el.className = `toast flex items-start text-sm text-white px-4 py-3 rounded-lg shadow-lg backdrop-blur-md bg-opacity-90 ${colors[type] || colors.info} animate-fade-in`;
+      el.innerHTML = `
+        <div class="mr-3 mt-0.5">
+          <i class="ti ${type === 'success' ? 'ti-check' : type === 'error' ? 'ti-alert-circle' : type === 'warning' ? 'ti-alert-triangle' : 'ti-info-circle'}"></i>
+        </div>
+        <div class="flex-1">${message}</div>
+        <button class="ml-3 text-white/80 hover:text-white" onclick="this.parentElement.remove()">
+          <i class="ti ti-x"></i>
+        </button>
+      `;
+      
+      container.appendChild(el);
+      
+      setTimeout(() => {
+        el.classList.add('opacity-0', 'translate-x-2');
+        setTimeout(() => el.remove(), 300);
+      }, duration);
+    }
+
+    // Modal handling
+    const finishModal = document.getElementById('confirmFinishModal');
+    const finishBtn = document.getElementById('finishExamBtn');
+    const confirmFinishBtn = document.getElementById('confirmFinishBtn');
+    const cancelFinishBtn = document.getElementById('cancelFinishBtn');
+    
+    let currentUjianId = null;
+
+    // Open modal when finish button is clicked
+    if (finishBtn) {
+      finishBtn.addEventListener('click', () => {
+        currentUjianId = finishBtn.dataset.ujianId;
+        finishModal.showModal();
+        // Add a small delay to ensure the modal is rendered before animation
+        setTimeout(() => {
+          finishModal.classList.add('modal-open');
+        }, 10);
+      });
+    }
+
+    // Close modal handlers
+    function closeFinishModal() {
+      finishModal.classList.remove('modal-open');
+      // Wait for animation to complete before closing
+      setTimeout(() => {
+        finishModal.close();
+        currentUjianId = null;
+      }, 300);
+    }
+
+    if (cancelFinishBtn) {
+      cancelFinishBtn.addEventListener('click', closeFinishModal);
+    }
+
+    // Close modal when clicking backdrop
+    finishModal.addEventListener('click', (e) => {
+      if (e.target === finishModal) {
+        closeFinishModal();
+      }
+    });
+
+    // Handle confirm finish
+    if (confirmFinishBtn) {
+      confirmFinishBtn.addEventListener('click', async () => {
+        if (!currentUjianId) return;
+
+        // Show loading state
+        const btnText = confirmFinishBtn.querySelector('.finish-btn-text');
+        const btnLoader = confirmFinishBtn.querySelector('.finish-btn-loading');
+        
+        btnText.textContent = 'Memproses...';
+        btnLoader.classList.remove('hidden');
+        confirmFinishBtn.disabled = true;
+
+        try {
+          const response = await fetch('../logic/update-status-ujian.php', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+              ujian_id: currentUjianId,
+              status: 'selesai'
+            })
+          });
+
+          const result = await response.json();
+
+          if (result.success) {
+            closeFinishModal();
+            // Show success alert for 10 seconds
+            showToast('Ujian telah selesai, cek arsip untuk melihatnya kembali', 'success', 10000);
+            
+            // Redirect back to ujian list after a brief delay
+            setTimeout(() => {
+              window.location.href = 'ujian-guru.php?updated=1';
+            }, 1500);
+          } else {
+            throw new Error(result.message || 'Gagal menandai ujian selesai');
+          }
+        } catch (error) {
+          showToast(error.message || 'Terjadi kesalahan saat memproses permintaan', 'error');
+        } finally {
+          // Reset button state
+          btnText.textContent = 'Tandai Selesai';
+          btnLoader.classList.add('hidden');
+          confirmFinishBtn.disabled = false;
+        }
+      });
+    }
+  </script>
+
+  <style>
+    @keyframes fade-in {
+      from {
+        opacity: 0;
+        transform: translateX(8px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .animate-fade-in {
+      animation: fade-in .25s ease-out;
+    }
+
+    #toast-container .toast {
+      transition: all .3s ease;
+    }
+
+    dialog {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      padding: 1rem;
+      margin: 0;
+      border: none;
+      background: transparent;
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    dialog:not([open]) {
+      display: none;
+    }
+
+    /* Mobile: modal di bawah */
+    @media (max-width: 639px) {
+      dialog {
+        align-items: flex-end;
+        padding-bottom: 2rem;
+      }
+    }
+
+    /* Desktop: modal di tengah */
+    @media (min-width: 640px) {
+      dialog {
+        align-items: center;
+        padding: 2rem;
+      }
+    }
+
+    dialog::backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      animation: backdrop-fade-in 0.3s ease;
+    }
+
+    @keyframes backdrop-fade-in {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+
+    /* Animation untuk modal content */
+    .modal-content {
+      transform: scale(0.9) translateY(20px);
+      opacity: 0;
+      transition: all 0.3s ease;
+      max-width: 32rem;
+      width: 100%;
+    }
+
+    dialog.modal-open .modal-content {
+      transform: scale(1) translateY(0);
+      opacity: 1;
+    }
+
+    /* Mobile modal animation */
+    @media (max-width: 639px) {
+      .modal-content {
+        transform: translateY(100%);
+      }
+      
+      dialog.modal-open .modal-content {
+        transform: translateY(0);
+      }
+    }
+  </style>
 </body>
 
 </html>

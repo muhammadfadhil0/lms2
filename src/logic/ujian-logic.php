@@ -127,7 +127,7 @@ class UjianLogic {
                     LEFT JOIN kelas k ON u.kelas_id = k.id
                     LEFT JOIN ujian_siswa us ON u.id = us.ujian_id
                     LEFT JOIN soal s ON u.id = s.ujian_id
-                    WHERE u.guru_id = ?
+                    WHERE u.guru_id = ? AND u.status != 'selesai'
                     GROUP BY u.id
                     ORDER BY u.dibuat DESC";
             
@@ -415,14 +415,27 @@ class UjianLogic {
     // Mendapatkan detail jawaban siswa untuk ujian tertentu
     public function getDetailJawabanSiswa($ujian_siswa_id) {
         try {
-            $sql = "SELECT js.*, s.pertanyaan, s.tipeSoal, s.kunciJawaban, s.poin as poin_soal, s.nomorSoal
-                    FROM jawaban_siswa js
-                    JOIN soal s ON js.soal_id = s.id
-                    WHERE js.ujian_siswa_id = ?
+            // First get ujian_id from ujian_siswa_id
+            $sql = "SELECT ujian_id FROM ujian_siswa WHERE id = ?";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bind_param("i", $ujian_siswa_id);
+            $stmt->execute();
+            $ujian_data = $stmt->get_result()->fetch_assoc();
+            
+            if (!$ujian_data) {
+                return [];
+            }
+            
+            // Get all questions for this exam and left join with student answers
+            $sql = "SELECT s.id as soal_id, s.pertanyaan, s.tipeSoal, s.kunciJawaban, s.poin as poin_soal, s.nomorSoal,
+                           js.jawaban, js.pilihanJawaban, js.benar, js.poin as poin_jawaban, js.waktuDijawab
+                    FROM soal s
+                    LEFT JOIN jawaban_siswa js ON s.id = js.soal_id AND js.ujian_siswa_id = ?
+                    WHERE s.ujian_id = ?
                     ORDER BY s.nomorSoal ASC";
             
             $stmt = $this->conn->prepare($sql);
-            $stmt->bind_param("i", $ujian_siswa_id);
+            $stmt->bind_param("ii", $ujian_siswa_id, $ujian_data['ujian_id']);
             $stmt->execute();
             
             return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
@@ -439,13 +452,13 @@ class UjianLogic {
                            js.jawaban, js.pilihanJawaban, js.benar, js.poin as poin_jawaban
                     FROM ujian_siswa us
                     JOIN users u ON us.siswa_id = u.id
-                    CROSS JOIN soal s
+                    JOIN soal s ON s.ujian_id = us.ujian_id
                     LEFT JOIN jawaban_siswa js ON us.id = js.ujian_siswa_id AND s.id = js.soal_id
-                    WHERE us.ujian_id = ? AND s.ujian_id = ?
+                    WHERE us.ujian_id = ? AND us.status = 'selesai'
                     ORDER BY us.siswa_id ASC, s.nomorSoal ASC";
             
             $stmt = $this->conn->prepare($sql);
-            $stmt->bind_param("ii", $ujian_id, $ujian_id);
+            $stmt->bind_param("i", $ujian_id);
             $stmt->execute();
             
             return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
@@ -487,6 +500,17 @@ class UjianLogic {
     // Save student answer
     public function simpanJawaban($ujian_siswa_id, $soal_id, $jawaban) {
         try {
+            // Get soal type to handle different answer formats
+            $sql = "SELECT tipeSoal FROM soal WHERE id = ?";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bind_param("i", $soal_id);
+            $stmt->execute();
+            $soal = $stmt->get_result()->fetch_assoc();
+            
+            if (!$soal) {
+                return ['success' => false, 'message' => 'Soal tidak ditemukan'];
+            }
+            
             // Check if answer already exists
             $sql = "SELECT id FROM jawaban_siswa WHERE ujian_siswa_id = ? AND soal_id = ?";
             $stmt = $this->conn->prepare($sql);
@@ -494,22 +518,40 @@ class UjianLogic {
             $stmt->execute();
             $existing = $stmt->get_result()->fetch_assoc();
             
+            // Determine if this is a multiple choice answer
+            $pilihanJawaban = null;
+            if ($soal['tipeSoal'] === 'pilihan_ganda' && strlen(trim($jawaban)) === 1) {
+                $pilihanJawaban = strtoupper(trim($jawaban));
+            }
+            
             if ($existing) {
                 // Update existing answer
-                $sql = "UPDATE jawaban_siswa SET jawaban = ?, waktuDijawab = NOW() WHERE id = ?";
-                $stmt = $this->conn->prepare($sql);
-                $stmt->bind_param("si", $jawaban, $existing['id']);
+                if ($pilihanJawaban) {
+                    $sql = "UPDATE jawaban_siswa SET jawaban = ?, pilihanJawaban = ?, waktuDijawab = NOW() WHERE id = ?";
+                    $stmt = $this->conn->prepare($sql);
+                    $stmt->bind_param("ssi", $jawaban, $pilihanJawaban, $existing['id']);
+                } else {
+                    $sql = "UPDATE jawaban_siswa SET jawaban = ?, pilihanJawaban = NULL, waktuDijawab = NOW() WHERE id = ?";
+                    $stmt = $this->conn->prepare($sql);
+                    $stmt->bind_param("si", $jawaban, $existing['id']);
+                }
             } else {
                 // Insert new answer
-                $sql = "INSERT INTO jawaban_siswa (ujian_siswa_id, soal_id, jawaban, waktuDijawab) VALUES (?, ?, ?, NOW())";
-                $stmt = $this->conn->prepare($sql);
-                $stmt->bind_param("iis", $ujian_siswa_id, $soal_id, $jawaban);
+                if ($pilihanJawaban) {
+                    $sql = "INSERT INTO jawaban_siswa (ujian_siswa_id, soal_id, jawaban, pilihanJawaban, waktuDijawab) VALUES (?, ?, ?, ?, NOW())";
+                    $stmt = $this->conn->prepare($sql);
+                    $stmt->bind_param("iiss", $ujian_siswa_id, $soal_id, $jawaban, $pilihanJawaban);
+                } else {
+                    $sql = "INSERT INTO jawaban_siswa (ujian_siswa_id, soal_id, jawaban, waktuDijawab) VALUES (?, ?, ?, NOW())";
+                    $stmt = $this->conn->prepare($sql);
+                    $stmt->bind_param("iis", $ujian_siswa_id, $soal_id, $jawaban);
+                }
             }
             
             if ($stmt->execute()) {
                 return ['success' => true, 'message' => 'Jawaban berhasil disimpan'];
             } else {
-                return ['success' => false, 'message' => 'Gagal menyimpan jawaban'];
+                return ['success' => false, 'message' => 'Gagal menyimpan jawaban: ' . $stmt->error];
             }
         } catch (Exception $e) {
             return ['success' => false, 'message' => 'Error: ' . $e->getMessage()];
@@ -519,7 +561,10 @@ class UjianLogic {
     // Get student's saved answers
     public function getJawabanSiswa($ujian_siswa_id) {
         try {
-            $sql = "SELECT soal_id, jawaban FROM jawaban_siswa WHERE ujian_siswa_id = ?";
+            $sql = "SELECT js.soal_id, js.jawaban, js.pilihanJawaban, s.tipeSoal 
+                    FROM jawaban_siswa js 
+                    JOIN soal s ON js.soal_id = s.id 
+                    WHERE js.ujian_siswa_id = ?";
             $stmt = $this->conn->prepare($sql);
             $stmt->bind_param("i", $ujian_siswa_id);
             $stmt->execute();
@@ -528,7 +573,12 @@ class UjianLogic {
             $answers = [];
             
             foreach ($result as $row) {
-                $answers[$row['soal_id']] = $row['jawaban'];
+                // For multiple choice, use pilihanJawaban if available, otherwise jawaban
+                if ($row['tipeSoal'] === 'pilihan_ganda' && !empty($row['pilihanJawaban'])) {
+                    $answers[$row['soal_id']] = $row['pilihanJawaban'];
+                } else {
+                    $answers[$row['soal_id']] = $row['jawaban'];
+                }
             }
             
             return $answers;
@@ -624,6 +674,31 @@ class UjianLogic {
             return $stmt->get_result()->fetch_assoc();
         } catch (Exception $e) {
             return null;
+        }
+    }
+
+    // Mendapatkan ujian yang diarsipkan (status selesai) berdasarkan guru
+    public function getArchivedUjianByGuru($guru_id) {
+        try {
+            $sql = "SELECT u.*, k.namaKelas, k.gambarKover,
+                           COUNT(DISTINCT us.siswa_id) as jumlahPeserta,
+                           COUNT(DISTINCT s.id) as jumlahSoal,
+                           u.dibuat as updatedAt
+                    FROM ujian u 
+                    LEFT JOIN kelas k ON u.kelas_id = k.id
+                    LEFT JOIN ujian_siswa us ON u.id = us.ujian_id
+                    LEFT JOIN soal s ON u.id = s.ujian_id
+                    WHERE u.guru_id = ? AND u.status = 'selesai'
+                    GROUP BY u.id
+                    ORDER BY u.dibuat DESC";
+            
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bind_param("i", $guru_id);
+            $stmt->execute();
+            
+            return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        } catch (Exception $e) {
+            return [];
         }
     }
 }

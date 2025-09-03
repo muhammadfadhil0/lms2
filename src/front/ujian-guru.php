@@ -60,6 +60,9 @@ function badgeColor($status)
                         <i class="ti ti-plus text-lg md:text-xl"></i>
                         <span class="hidden md:inline ml-1 text-sm">Tambah Ujian</span>
                     </a>
+                    <button id="archiveBtn" class="p-2 text-gray-400 hover:text-gray-600 transition-colors" title="Arsip Ujian">
+                        <i class="ti ti-archive text-lg md:text-xl"></i>
+                    </button>
                     <button class="p-2 text-gray-400 hover:text-gray-600 transition-colors">
                         <i class="ti ti-bell text-lg md:text-xl"></i>
                     </button>
@@ -76,7 +79,19 @@ function badgeColor($status)
             <!-- Ujian List -->
             <div class="mb-6">
                 <?php if (empty($ujianList)): ?>
-                    <div class="p-6 bg-white border rounded-lg text-center text-gray-500">Belum ada ujian. Klik "Tambah Ujian" untuk membuat.</div>
+                    <div class="flex flex-col items-center justify-center py-16 px-4">
+                        <div class="w-24 h-24 bg-orange-100 rounded-full flex items-center justify-center mb-6">
+                            <i class="ti ti-clipboard-plus text-orange text-4xl"></i>
+                        </div>
+                        <h3 class="text-lg font-semibold text-gray-800 mb-2">Belum Ada Ujian</h3>
+                        <p class="text-gray-500 text-sm text-center mb-8 max-w-sm">
+                            Mulai membuat ujian pertama Anda untuk siswa
+                        </p>
+                        <a href="buat-ujian-guru.php" class="inline-flex items-center px-6 py-3 bg-orange text-white font-medium rounded-lg hover:bg-orange-600 transition-colors">
+                            <i class="ti ti-plus mr-2"></i>
+                            Buat Ujian Pertama
+                        </a>
+                    </div>
                 <?php else: ?>
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                         <?php foreach ($ujianList as $u):
@@ -140,6 +155,9 @@ function badgeColor($status)
             </div>
         </main>
     </div>
+
+    <!-- Include Archive Sidebar -->
+    <?php require '../component/sidebar-archive.php'; ?>
 
     <script src="../script/menu-bar-script.js"></script>
     <script>
@@ -229,6 +247,140 @@ function badgeColor($status)
                     .catch(() => showToast('Gagal menghapus ujian (network error).', 'error'));
             }
         }
+
+        // Archive sidebar functionality
+        const archiveBtn = document.getElementById('archiveBtn');
+        const archiveSidebar = document.getElementById('archiveSidebar');
+        const archiveBackdrop = document.getElementById('archiveBackdrop');
+        const closeArchiveBtn = document.getElementById('closeArchiveBtn');
+        const archiveLoader = document.getElementById('archiveLoader');
+        const archiveContent = document.getElementById('archiveContent');
+        const archiveEmpty = document.getElementById('archiveEmpty');
+
+        function openArchiveSidebar() {
+            archiveBackdrop.classList.remove('hidden');
+            archiveSidebar.classList.remove('translate-x-full');
+            document.body.style.overflow = 'hidden';
+            loadArchivedExams();
+        }
+
+        function closeArchiveSidebar() {
+            archiveBackdrop.classList.add('hidden');
+            archiveSidebar.classList.add('translate-x-full');
+            document.body.style.overflow = '';
+        }
+
+        async function loadArchivedExams() {
+            archiveLoader.classList.remove('hidden');
+            archiveContent.classList.add('hidden');
+            archiveEmpty.classList.add('hidden');
+
+            try {
+                const response = await fetch('../logic/get-archived-exams.php');
+                const result = await response.json();
+
+                if (result.success) {
+                    if (result.data.length === 0) {
+                        archiveEmpty.classList.remove('hidden');
+                    } else {
+                        displayArchivedExams(result.data);
+                        archiveContent.classList.remove('hidden');
+                    }
+                } else {
+                    showToast('Gagal memuat arsip ujian', 'error');
+                }
+            } catch (error) {
+                showToast('Terjadi kesalahan saat memuat arsip', 'error');
+            } finally {
+                archiveLoader.classList.add('hidden');
+            }
+        }
+
+        function displayArchivedExams(exams) {
+            archiveContent.innerHTML = exams.map(exam => `
+                <div class="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                    <div class="flex items-start justify-between mb-2">
+                        <h4 class="font-medium text-gray-800 text-sm line-clamp-2">${escapeHtml(exam.namaUjian)}</h4>
+                        <button onclick="restoreExam(${exam.id})" class="text-orange hover:text-orange-600 text-xs flex items-center">
+                            <i class="ti ti-restore mr-1"></i>
+                            Pulihkan
+                        </button>
+                    </div>
+                    <div class="text-xs text-gray-600 space-y-1">
+                        <div class="flex items-center">
+                            <i class="ti ti-calendar w-3 h-3 mr-1"></i>
+                            ${new Date(exam.tanggalUjian).toLocaleDateString('id-ID')}
+                        </div>
+                        <div class="flex items-center">
+                            <i class="ti ti-users w-3 h-3 mr-1"></i>
+                            ${escapeHtml(exam.namaKelas || '-')}
+                        </div>
+                        <div class="flex items-center">
+                            <i class="ti ti-clock w-3 h-3 mr-1"></i>
+                            Diarsipkan: ${new Date(exam.updatedAt || exam.dibuat).toLocaleDateString('id-ID')}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function escapeHtml(unsafe) {
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        async function restoreExam(examId) {
+            if (!confirm('Pulihkan ujian ini dari arsip?')) return;
+
+            try {
+                const response = await fetch('../logic/restore-exam.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        ujian_id: examId
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showToast('Ujian berhasil dipulihkan', 'success');
+                    loadArchivedExams(); // Reload archive
+                    // Optionally reload main page to show restored exam
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showToast(result.message || 'Gagal memulihkan ujian', 'error');
+                }
+            } catch (error) {
+                showToast('Terjadi kesalahan saat memulihkan ujian', 'error');
+            }
+        }
+
+        // Event listeners
+        if (archiveBtn) {
+            archiveBtn.addEventListener('click', openArchiveSidebar);
+        }
+
+        if (closeArchiveBtn) {
+            closeArchiveBtn.addEventListener('click', closeArchiveSidebar);
+        }
+
+        if (archiveBackdrop) {
+            archiveBackdrop.addEventListener('click', closeArchiveSidebar);
+        }
+
+        // Close archive on escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !archiveSidebar.classList.contains('translate-x-full')) {
+                closeArchiveSidebar();
+            }
+        });
     </script>
     <style>
         @keyframes fade-in {

@@ -29,40 +29,6 @@ $soalList = $soalLogic->getSoalByUjian($ujian_id);
 // Ambil hasil ujian siswa
 $hasilUjian = $ujianLogic->getHasilUjian($ujian_id);
 
-// Demo data untuk preview UI (hapus jika sudah ada data real)
-$originalHasilUjian = $hasilUjian;
-if (empty($hasilUjian)) {
-    $hasilUjian = [
-        [
-            'id' => 1,
-            'siswa_id' => 1,
-            'namaLengkap' => 'Ahmad Budi Santoso',
-            'totalNilai' => 85.5,
-            'jumlahBenar' => 17,
-            'jumlahSalah' => 3,
-            'status' => 'selesai'
-        ],
-        [
-            'id' => 2,
-            'siswa_id' => 2,
-            'namaLengkap' => 'Siti Nurhaliza',
-            'totalNilai' => 92.0,
-            'jumlahBenar' => 18,
-            'jumlahSalah' => 2,
-            'status' => 'selesai'
-        ],
-        [
-            'id' => 3,
-            'siswa_id' => 3,
-            'namaLengkap' => 'Muhammad Rizki',
-            'totalNilai' => 0,
-            'jumlahBenar' => 5,
-            'jumlahSalah' => 2,
-            'status' => 'sedang_mengerjakan'
-        ]
-    ];
-}
-
 // Debug: uncomment untuk melihat struktur data
 // echo '<pre>'; var_dump($hasilUjian); echo '</pre>'; exit;
 
@@ -212,15 +178,49 @@ $autoScore = (int)($ujian['autoScore'] ?? 0);
 
         /* Modal Styles */
         .modal {
-            display: none;
             position: fixed;
             z-index: 1000;
             left: 0;
             top: 0;
             width: 100%;
             height: 100%;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .modal.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-backdrop {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
             background: rgba(0, 0, 0, 0.5);
             backdrop-filter: blur(4px);
+        }
+
+        .modal-dialog {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .modal-dialog > div {
+            transform: translateY(-20px) scale(0.95);
+            transition: transform 0.3s ease;
+        }
+
+        .modal.show .modal-dialog > div {
+            transform: translateY(0) scale(1);
         }
 
         .modal-content {
@@ -233,6 +233,26 @@ $autoScore = (int)($ujian['autoScore'] ?? 0);
             max-height: 85vh;
             overflow-y: auto;
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            transform: translateY(-20px);
+            transition: transform 0.3s ease;
+        }
+
+        .modal.show .modal-content {
+            transform: translateY(0);
+        }
+
+        /* Dialog Styles */
+        dialog {
+            margin: auto;
+            padding: 0;
+            border: none;
+            border-radius: 0.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+
+        dialog::backdrop {
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
         }
 
         .close {
@@ -705,9 +725,24 @@ $autoScore = (int)($ujian['autoScore'] ?? 0);
                                 <div class="progress-container">
                                     <div class="progress-bar" id="progress-bar" style="width: 0%"></div>
                                 </div>
-                                <div class="relative bg-gray-50 rounded-lg p-6 min-h-[400px]" id="swipe-container">
-                                    <!-- Cards will be populated by JavaScript -->
-                                    <div class="text-center text-gray-500">Memuat data koreksi...</div>
+                                
+                                <!-- Swipe Container with Arrow Navigation -->
+                                <div class="flex items-center gap-4">
+                                    <!-- Left Arrow -->
+                                    <button onclick="prevSwipeCard()" class="p-3 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors shadow-sm" id="btn-prev-swipe">
+                                        <i class="ti ti-chevron-left text-xl text-gray-600"></i>
+                                    </button>
+                                    
+                                    <!-- Main Card Container -->
+                                    <div class="flex-1 relative bg-gray-50 rounded-lg p-6 min-h-[400px]" id="swipe-container">
+                                        <!-- Cards will be populated by JavaScript -->
+                                        <div class="text-center text-gray-500">Memuat data koreksi...</div>
+                                    </div>
+                                    
+                                    <!-- Right Arrow -->
+                                    <button onclick="nextSwipeCard()" class="p-3 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors shadow-sm" id="btn-next-swipe">
+                                        <i class="ti ti-chevron-right text-xl text-gray-600"></i>
+                                    </button>
                                 </div>
                                 <div class="flex justify-center space-x-4 mt-4">
                                     <button onclick="swipeAnswer(false)" class="px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-medium">
@@ -719,6 +754,19 @@ $autoScore = (int)($ujian['autoScore'] ?? 0);
                                     <button onclick="showScoreInput()" class="px-6 py-3 bg-orange text-white rounded-lg hover:bg-orange-600 transition-colors font-medium">
                                         <i class="ti ti-edit"></i> Input Nilai
                                     </button>
+                                </div>
+                                
+                                <!-- Keyboard Shortcuts Info -->
+                                <div class="mt-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                    <div class="text-xs text-gray-600 text-center">
+                                        <span class="font-semibold">Keyboard Shortcuts:</span>
+                                        <div class="flex justify-center gap-6 mt-1 flex-wrap">
+                                            <span><kbd class="px-1 py-0.5 bg-white border rounded text-xs">↑/↓</kbd> Navigasi</span>
+                                            <span><kbd class="px-1 py-0.5 bg-white border rounded text-xs">←</kbd> Salah</span>
+                                            <span><kbd class="px-1 py-0.5 bg-white border rounded text-xs">→</kbd> Benar</span>
+                                            <span><kbd class="px-1 py-0.5 bg-white border rounded text-xs">Alt+↓</kbd> Input Nilai</span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         <?php elseif ($mode_koreksi === 'formulir'): ?>
@@ -789,17 +837,6 @@ $autoScore = (int)($ujian['autoScore'] ?? 0);
                                         </div>
                                     </div>
                                 </div>
-
-                                <?php if (empty($originalHasilUjian)): ?>
-                                    <div class="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                                        <div class="flex items-center">
-                                            <i class="ti ti-info-circle text-yellow-600 mr-2"></i>
-                                            <span class="text-sm text-yellow-800">
-                                                <strong>Preview Mode:</strong> Menampilkan data demo karena belum ada siswa yang mengerjakan ujian.
-                                            </span>
-                                        </div>
-                                    </div>
-                                <?php endif; ?>
 
                                 <?php if (empty($hasilUjian)): ?>
                                     <div class="p-8 border border-dashed rounded-lg text-center text-gray-500 bg-gray-50">
@@ -1043,17 +1080,54 @@ $autoScore = (int)($ujian['autoScore'] ?? 0);
     </div>
 
     <!-- Modal Input Nilai -->
-    <div id="modal-score" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="closeScoreModal()">&times;</span>
-            <h2 class="text-xl font-bold mb-4">Input Nilai</h2>
-            <div id="score-content">
-                <label class="block text-sm font-medium text-gray-700 mb-2">Nilai (0-100):</label>
-                <input type="number" id="score-input" min="0" max="100" class="form-input mb-4">
-                <button onclick="saveManualScore()" class="btn-orange">
-                    <i class="ti ti-check"></i>
-                    <span>Simpan Nilai</span>
-                </button>
+    <div id="modal-score" class="modal" style="display: none;">
+        <div class="modal-backdrop" onclick="closeScoreModal()"></div>
+        <div class="modal-dialog">
+            <div class="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-md">
+                <div class="bg-white px-5 pt-6 pb-5 sm:p-7 sm:pb-5">
+                    <div class="sm:flex sm:items-start">
+                        <div class="mx-auto flex size-14 bg-orange-100 shrink-0 items-center justify-center rounded-full sm:mx-0 sm:size-12">
+                            <span class="ti ti-edit text-xl text-orange-600"></span>
+                        </div>
+                        <div class="mt-4 text-center sm:mt-0 sm:ml-5 sm:text-left">
+                            <h3 id="score-dialog-title" class="text-lg font-semibold text-gray-900">Input Nilai</h3>
+                            <div class="">
+                                <p class="text-base text-gray-500">Masukkan nilai untuk jawaban siswa</p>
+                                <p id="score-soal-info" class="text-sm text-gray-700 mt-1 font-medium"></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form id="score-form" class="mt-6" onsubmit="saveManualScore(event)">
+                        <div class="space-y-5">
+                            <div>
+                                <label for="score-input" class="block text-base font-medium text-gray-700 mb-2" id="score-label">
+                                    Nilai (0-100)
+                                </label>
+                                <input type="number" id="score-input" name="score" 
+                                    min="0" max="100" step="0.1" required
+                                    class="mt-1 block w-full px-3 py-3 rounded-md border-2 border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-base"
+                                    placeholder="Masukkan nilai">
+                                <div class="text-left mt-1 text-xs text-amber-700">
+                                    <i class="ti ti-info-circle mr-1"></i>
+                                    <span id="score-info-text">Nilai maksimal untuk soal ini adalah 100 poin</span>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="bg-gray-50 px-5 py-5 sm:px-6 flex gap-3">
+                    <button type="button" onclick="closeScoreModal()"
+                        class="flex-1 inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-3 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500">
+                        Batal
+                    </button>
+                    <button type="submit" form="score-form"
+                        class="flex-1 inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-3 bg-orange-600 text-base font-medium text-white hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500">
+                        <i class="ti ti-check mr-2"></i>
+                        Simpan Nilai
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -1064,6 +1138,22 @@ $autoScore = (int)($ujian['autoScore'] ?? 0);
         let currentKoreksiData = null;
         const API_URL = '../logic/hasil-ujian-api.php';
         const ujianId = <?= $ujian_id ?>;
+
+        // Helper function to format numbers (remove unnecessary decimal places)
+        function formatNumber(value) {
+            if (value === null || value === undefined || value === '') {
+                return 0;
+            }
+            const num = parseFloat(value);
+            if (isNaN(num)) return 0;
+            
+            // If it's a whole number, return without decimals
+            if (num % 1 === 0) {
+                return num.toString();
+            }
+            // Otherwise, keep up to 2 decimal places but remove trailing zeros
+            return num.toFixed(2).replace(/\.?0+$/, '');
+        }
 
         // Show toast notification
         function showToast(message, type = 'success') {
@@ -1152,15 +1242,17 @@ $autoScore = (int)($ujian['autoScore'] ?? 0);
                 }
             }
             
-            // Close modals
+            // Close modal detail when clicking outside
             const modalDetail = document.getElementById('modal-detail');
-            const modalScore = document.getElementById('modal-score');
-            
             if (event.target === modalDetail) {
-                modalDetail.style.display = 'none';
+                closeModal();
             }
-            if (event.target === modalScore) {
-                modalScore.style.display = 'none';
+            
+            // Close score modal when clicking backdrop
+            const modalScore = document.getElementById('modal-score');
+            const modalBackdrop = event.target.classList.contains('modal-backdrop');
+            if (event.target === modalScore || modalBackdrop) {
+                closeScoreModal();
             }
         }
 
@@ -1202,7 +1294,7 @@ $autoScore = (int)($ujian['autoScore'] ?? 0);
                     <div class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                         <h3 class="text-lg font-semibold text-blue-900 mb-2">${student.nama}</h3>
                         <div class="grid grid-cols-2 gap-4 text-sm text-blue-700">
-                            <div>Nilai Saat Ini: <span class="font-medium">${student.nilai || 0}</span></div>
+                            <div>Nilai Saat Ini: <span class="font-medium">${formatNumber(student.nilai)}</span></div>
                             <div>Status: <span class="font-medium">${student.status || 'belum_dinilai'}</span></div>
                         </div>
                     </div>
@@ -1241,9 +1333,9 @@ $autoScore = (int)($ujian['autoScore'] ?? 0);
                             
                             ${jawaban.tipeSoal === 'pilihan_ganda' ? `
                                 <div class="mb-4">
-                                    <div class="text-sm text-gray-600 mb-2">Pilihan yang tersedia:</div>
-                                    <div class="space-y-1 text-sm">
-                                        ${pilihanOptions || 'Tidak ada pilihan'}
+                                    <div class="text-sm text-gray-600 mb-2">Jawaban yang Benar:</div>
+                                    <div class="px-4 py-2 bg-green-50 border-l-4 border-green-400 rounded-r-lg">
+                                        <span class="font-semibold text-green-800">${jawaban.kunciJawaban || 'Tidak ada kunci jawaban'}</span>
                                     </div>
                                 </div>
                             ` : ''}
@@ -1258,7 +1350,7 @@ $autoScore = (int)($ujian['autoScore'] ?? 0);
                                 </div>
                             </div>
                             
-                            ${jawaban.tipeSoal === 'essay' || jawaban.tipeSoal === 'uraian' ? `
+                            ${jawaban.tipeSoal === 'jawaban_panjang' || jawaban.tipeSoal === 'jawaban_singkat' ? `
                                 <div class="answer-section">
                                     <div class="text-sm font-medium text-gray-700 mb-2">Kunci Jawaban:</div>
                                     <div class="student-answer">
@@ -1286,11 +1378,11 @@ $autoScore = (int)($ujian['autoScore'] ?? 0);
                                     <div class="flex items-center gap-2 ml-auto">
                                         <label class="text-sm font-medium text-gray-700">Poin:</label>
                                         <input type="number" min="0" max="${jawaban.poin_soal || 100}" 
-                                               value="${jawaban.poin || 0}" 
+                                               value="${formatNumber(jawaban.poin)}" 
                                                class="point-input" 
                                                onchange="updateQuestionScore(${jawaban.soal_id}, document.querySelector('input[name=benar_${jawaban.soal_id}]:checked')?.value || 0, this.value)"
                                                ${isDisabled ? 'disabled' : ''}>
-                                        <span class="text-xs text-gray-500">/ ${jawaban.poin_soal || 100}</span>
+                                        <span class="text-xs text-gray-500">/ ${formatNumber(jawaban.poin_soal)}</span>
                                     </div>
                                 </div>
                                 ${isDisabled ? `
@@ -1401,7 +1493,7 @@ $autoScore = (int)($ujian['autoScore'] ?? 0);
                 content += `
                     <div class="student-item ${activeClass}" onclick="selectStudent(${index})">
                         <div class="student-name">${student.nama}</div>
-                        <div class="student-score">${student.nilai || 0}</div>
+                        <div class="student-score">${formatNumber(student.nilai)}</div>
                     </div>
                 `;
             });
@@ -1416,6 +1508,20 @@ $autoScore = (int)($ujian['autoScore'] ?? 0);
             
             if (mode === 'formulir') {
                 loadFormulirForStudent(index);
+            } else if (mode === 'swipe') {
+                // For swipe mode, find first question of selected student
+                const studentData = studentList[currentStudentIndex];
+                if (studentData && currentSwipeData.length > 0) {
+                    const firstQuestionIndex = currentSwipeData.findIndex(item => 
+                        item.ujian_siswa_id === studentData.ujian_siswa_id
+                    );
+                    if (firstQuestionIndex !== -1) {
+                        currentSwipeIndex = firstQuestionIndex;
+                        updateSwipeCard();
+                        updateSwipeNavigation();
+                    }
+                }
+                updateSwipeStudentNavigation();
             }
             updateStudentList();
         }
@@ -1466,9 +1572,27 @@ $autoScore = (int)($ujian['autoScore'] ?? 0);
             const result = await apiCall('get_swipe_data');
 
             if (result.success) {
-                currentSwipeData = result.data.filter(item =>
+                // Filter data based on auto score setting
+                let filteredData = result.data.filter(item =>
                     !<?= $autoScore ?> || item.tipeSoal !== 'pilihan_ganda'
                 );
+                
+                // Sort data: prioritize ungraded questions (benar is null or empty)
+                currentSwipeData = filteredData.sort((a, b) => {
+                    // Prioritize ungraded questions
+                    const aUngraded = (a.benar === null || a.benar === '' || a.poin_jawaban === null || a.poin_jawaban === 0);
+                    const bUngraded = (b.benar === null || b.benar === '' || b.poin_jawaban === null || b.poin_jawaban === 0);
+                    
+                    if (aUngraded && !bUngraded) return -1;
+                    if (!aUngraded && bUngraded) return 1;
+                    
+                    // If both have same grading status, sort by student name then question number
+                    if (a.siswa_nama !== b.siswa_nama) {
+                        return a.siswa_nama.localeCompare(b.siswa_nama);
+                    }
+                    return a.nomorSoal - b.nomorSoal;
+                });
+                
                 currentSwipeIndex = 0;
                 
                 // Load student list for sidebar
@@ -1476,9 +1600,22 @@ $autoScore = (int)($ujian['autoScore'] ?? 0);
                 if (studentsResult.success) {
                     studentList = studentsResult.data;
                     updateStudentList();
+                    
+                    // Set current student based on first card
+                    if (currentSwipeData.length > 0) {
+                        const firstCard = currentSwipeData[0];
+                        const studentIndex = studentList.findIndex(s => s.ujian_siswa_id === firstCard.ujian_siswa_id);
+                        if (studentIndex !== -1) {
+                            currentStudentIndex = studentIndex;
+                        }
+                    }
+                    
+                    // Update student navigation
+                    updateSwipeStudentNavigation();
                 }
                 
                 updateSwipeCard();
+                updateSwipeNavigation();
             } else {
                 showToast('Gagal memuat data', 'error');
             }
@@ -1498,8 +1635,10 @@ $autoScore = (int)($ujian['autoScore'] ?? 0);
                         currentSwipeIndex = firstQuestionIndex;
                         updateSwipeCard();
                         updateStudentList();
+                        updateSwipeNavigation();
                     }
                 }
+                updateSwipeStudentNavigation();
             }
         }
 
@@ -1516,8 +1655,10 @@ $autoScore = (int)($ujian['autoScore'] ?? 0);
                         currentSwipeIndex = firstQuestionIndex;
                         updateSwipeCard();
                         updateStudentList();
+                        updateSwipeNavigation();
                     }
                 }
+                updateSwipeStudentNavigation();
             }
         }
 
@@ -1535,6 +1676,38 @@ $autoScore = (int)($ujian['autoScore'] ?? 0);
             }
             if (progressSpan) {
                 progressSpan.textContent = `${currentStudentIndex + 1} / ${studentList.length}`;
+            }
+        }
+
+        // Arrow navigation functions for swipe mode
+        function prevSwipeCard() {
+            if (currentSwipeIndex > 0) {
+                currentSwipeIndex--;
+                updateSwipeCard();
+                updateSwipeNavigation();
+            }
+        }
+
+        function nextSwipeCard() {
+            if (currentSwipeIndex < currentSwipeData.length - 1) {
+                currentSwipeIndex++;
+                updateSwipeCard();
+                updateSwipeNavigation();
+            }
+        }
+
+        // Update arrow button states
+        function updateSwipeNavigation() {
+            const prevBtn = document.getElementById('btn-prev-swipe');
+            const nextBtn = document.getElementById('btn-next-swipe');
+            
+            if (prevBtn) {
+                prevBtn.disabled = currentSwipeIndex === 0;
+                prevBtn.style.opacity = currentSwipeIndex === 0 ? '0.5' : '1';
+            }
+            if (nextBtn) {
+                nextBtn.disabled = currentSwipeIndex >= currentSwipeData.length - 1;
+                nextBtn.style.opacity = currentSwipeIndex >= currentSwipeData.length - 1 ? '0.5' : '1';
             }
         }
 
@@ -1563,6 +1736,17 @@ $autoScore = (int)($ujian['autoScore'] ?? 0);
             }
 
             const data = currentSwipeData[currentSwipeIndex];
+            
+            // Update current student index based on current card
+            if (studentList.length > 0) {
+                const studentIndex = studentList.findIndex(s => s.ujian_siswa_id === data.ujian_siswa_id);
+                if (studentIndex !== -1) {
+                    currentStudentIndex = studentIndex;
+                    updateSwipeStudentNavigation();
+                    updateStudentList();
+                }
+            }
+            
             const container = document.getElementById('swipe-container');
 
             let cardContent = `
@@ -1606,7 +1790,7 @@ $autoScore = (int)($ujian['autoScore'] ?? 0);
                             <i class="ti ti-star mr-1"></i>
                             Poin Maksimal:
                         </h5>
-                        <p class="text-gray-800 font-medium">${data.poin} poin</p>
+                        <p class="text-gray-800 font-medium">${formatNumber(data.poin)} poin</p>
                     </div>`;
             } else {
                 cardContent += `
@@ -1627,12 +1811,13 @@ $autoScore = (int)($ujian['autoScore'] ?? 0);
                                     data.benar === 0 ? '<span class="text-red-600 font-semibold">✗ Salah</span>' : 
                                     '<span class="text-gray-600">? Belum dinilai</span>'}
                         </p>
-                        <p class="text-sm text-gray-600">Poin: <span class="font-medium">${data.poin_jawaban || 0}</span></p>
+                        <p class="text-sm text-gray-600">Poin: <span class="font-medium">${formatNumber(data.poin_jawaban)}</span></p>
                     </div>
                 </div>`;
 
             container.innerHTML = cardContent;
             updateProgress();
+            updateSwipeNavigation();
         }
 
         // Update progress bar
@@ -1660,25 +1845,64 @@ $autoScore = (int)($ujian['autoScore'] ?? 0);
             if (currentSwipeIndex >= currentSwipeData.length) return;
 
             const data = currentSwipeData[currentSwipeIndex];
-            document.getElementById('score-input').max = data.poin;
-            document.getElementById('score-input').value = data.poin_jawaban || 0;
-            document.getElementById('modal-score').style.display = 'block';
+            const maxScore = parseFloat(data.poin) || 100; // Gunakan poin per soal, bukan total ujian
+            
+            // Update informasi soal
+            document.getElementById('score-soal-info').textContent = `Soal ${data.nomorSoal} - ${data.tipeSoal.replace('_', ' ')}`;
+            
+            // Update label dan max value berdasarkan poin soal
+            document.getElementById('score-label').textContent = `Nilai (0-${formatNumber(maxScore)})`;
+            document.getElementById('score-input').max = maxScore;
+            document.getElementById('score-input').value = formatNumber(data.poin_jawaban || 0);
+            document.getElementById('score-info-text').textContent = `Nilai maksimal untuk soal ini adalah ${formatNumber(maxScore)} poin`;
+            
+            // Show modal with fade effect
+            const modal = document.getElementById('modal-score');
+            modal.style.display = 'block';
+            setTimeout(() => {
+                modal.classList.add('show');
+            }, 10);
         }
 
-        // Close score modal
+        // Close score modal with fade effect
         function closeScoreModal() {
-            document.getElementById('modal-score').style.display = 'none';
+            const modal = document.getElementById('modal-score');
+            modal.classList.remove('show');
+            setTimeout(() => {
+                modal.style.display = 'none';
+            }, 300);
         }
 
-        // Save manual score
-        async function saveManualScore() {
+        // Handle keyboard events for modal
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                const modal = document.getElementById('modal-score');
+                if (modal.classList.contains('show')) {
+                    closeScoreModal();
+                }
+            }
+        });
+
+        // Save manual score - updated to handle form submission
+        async function saveManualScore(event) {
+            if (event) {
+                event.preventDefault();
+            }
+            
             const score = parseFloat(document.getElementById('score-input').value);
+            const data = currentSwipeData[currentSwipeIndex];
+            const maxScore = parseFloat(data.poin) || 100; // Gunakan poin per soal
+            
             if (isNaN(score)) {
                 showToast('Masukkan nilai yang valid', 'error');
                 return;
             }
+            
+            if (score < 0 || score > maxScore) {
+                showToast(`Nilai harus antara 0 dan ${formatNumber(maxScore)}`, 'error');
+                return;
+            }
 
-            const data = currentSwipeData[currentSwipeIndex];
             const benar = score > 0 ? 1 : 0;
 
             await saveScore(data.ujian_siswa_id, data.soal_id, benar, score);
@@ -1756,22 +1980,32 @@ $autoScore = (int)($ujian['autoScore'] ?? 0);
                             ` : ''}
                             
                             <div class="flex justify-between text-sm">
-                                <span class="text-gray-600">Poin: <span class="font-medium">${jawaban.poin_jawaban || 0}/${jawaban.poin}</span></span>
+                                <span class="text-gray-600">Poin: <span class="font-medium">${formatNumber(jawaban.poin_jawaban)}/${formatNumber(jawaban.poin_soal)}</span></span>
                                 <span class="text-gray-600 capitalize">${jawaban.tipeSoal.replace('_', ' ')}</span>
                             </div>
                         </div>`;
                 });
 
                 document.getElementById('detail-content').innerHTML = content;
-                document.getElementById('modal-detail').style.display = 'block';
+                
+                // Show modal with fade effect
+                const modal = document.getElementById('modal-detail');
+                modal.style.display = 'block';
+                setTimeout(() => {
+                    modal.classList.add('show');
+                }, 10);
             } else {
                 showToast('Gagal memuat detail jawaban', 'error');
             }
         }
 
-        // Close modal
+        // Close modal with fade effect
         function closeModal() {
-            document.getElementById('modal-detail').style.display = 'none';
+            const modal = document.getElementById('modal-detail');
+            modal.classList.remove('show');
+            setTimeout(() => {
+                modal.style.display = 'none';
+            }, 300);
         }
 
         // Export to Excel
@@ -1797,13 +2031,32 @@ $autoScore = (int)($ujian['autoScore'] ?? 0);
 
             switch (event.key) {
                 case 'ArrowLeft':
-                    swipeAnswer(false);
+                    // If Ctrl is pressed, navigate to previous card, otherwise mark as incorrect
+                    if (event.ctrlKey) {
+                        prevSwipeCard();
+                    } else {
+                        swipeAnswer(false);
+                    }
                     break;
                 case 'ArrowRight':
-                    swipeAnswer(true);
+                    // If Ctrl is pressed, navigate to next card, otherwise mark as correct
+                    if (event.ctrlKey) {
+                        nextSwipeCard();
+                    } else {
+                        swipeAnswer(true);
+                    }
+                    break;
+                case 'ArrowUp':
+                    // Navigate to previous card
+                    prevSwipeCard();
                     break;
                 case 'ArrowDown':
-                    showScoreInput();
+                    // Navigate to next card or show score input if Alt is pressed
+                    if (event.altKey) {
+                        showScoreInput();
+                    } else {
+                        nextSwipeCard();
+                    }
                     break;
                 case 'Escape':
                     closeScoreModal();
