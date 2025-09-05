@@ -266,38 +266,70 @@ if (!$dashboardData) {
 
                                     <!-- Assignment Content (if it's an assignment post) -->
                                     <?php if ($post['tipePost'] === 'tugas' || $post['tipe_postingan'] === 'assignment'): ?>
-                                        <div class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                                            <div class="flex items-start justify-between">
-                                                <div class="flex-1">
-                                                    <div class="flex items-center mb-2">
-                                                        <i class="ti ti-clipboard-text text-blue-600 mr-2"></i>
-                                                        <h4 class="font-semibold text-blue-900">Tugas</h4>
+                                        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 mt-3" data-assignment-id="<?php echo $post['assignment_id'] ?? 0; ?>">
+                                            <div class="flex items-start space-x-3">
+                                                <div class="flex-shrink-0">
+                                                    <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                                                        <i class="ti ti-clipboard-text text-blue-600 text-xl"></i>
+                                                    </div>
+                                                </div>
+                                                <div class="flex-1 min-w-0">
+                                                    <div class="flex items-start justify-between mb-3">
+                                                        <h3 class="text-xl font-bold text-gray-900 flex items-center">
+                                                            <i class="ti ti-assignment text-blue-600 mr-2"></i>
+                                                            <?php echo isset($post['assignment_title']) ? htmlspecialchars($post['assignment_title']) : 'Tugas'; ?>
+                                                        </h3>
+                                                    </div>
+                                                    
+                                                    <!-- Assignment Details Grid -->
+                                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
                                                         <?php if (isset($post['assignment_deadline']) && $post['assignment_deadline']): ?>
-                                                            <span class="ml-3 text-sm text-gray-600">
-                                                                <i class="ti ti-clock mr-1"></i>
-                                                                Deadline: <?php echo date('d M Y, H:i', strtotime($post['assignment_deadline'])); ?>
-                                                            </span>
+                                                            <?php 
+                                                            $isExpired = strtotime($post['assignment_deadline']) < time();
+                                                            ?>
+                                                            <div class="flex items-center space-x-2 p-3 bg-white rounded-lg border <?php echo $isExpired ? 'border-red-200 bg-red-50' : 'border-gray-200'; ?>">
+                                                                <div class="flex-shrink-0">
+                                                                    <i class="ti ti-calendar-due text-lg <?php echo $isExpired ? 'text-red-500' : 'text-orange-500'; ?>"></i>
+                                                                </div>
+                                                                <div class="flex-1 min-w-0">
+                                                                    <div class="text-xs font-medium text-gray-500 uppercase tracking-wide">Deadline</div>
+                                                                    <div class="text-sm font-semibold <?php echo $isExpired ? 'text-red-700' : 'text-gray-900'; ?> truncate">
+                                                                        <span class="hidden sm:inline"><?php echo date('l, d M Y H:i', strtotime($post['assignment_deadline'])); ?></span>
+                                                                        <span class="sm:hidden"><?php echo date('d M, H:i', strtotime($post['assignment_deadline'])); ?></span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        <?php endif; ?>
+                                                        
+                                                        <?php if (isset($post['assignment_max_score']) && $post['assignment_max_score']): ?>
+                                                            <div class="flex items-center space-x-2 p-3 bg-white rounded-lg border border-gray-200">
+                                                                <div class="flex-shrink-0">
+                                                                    <i class="ti ti-trophy text-lg text-yellow-500"></i>
+                                                                </div>
+                                                                <div class="flex-1">
+                                                                    <div class="text-xs font-medium text-gray-500 uppercase tracking-wide">Nilai Maksimal</div>
+                                                                    <div class="text-sm font-semibold text-gray-900"><?php echo $post['assignment_max_score']; ?> Poin</div>
+                                                                </div>
+                                                            </div>
                                                         <?php endif; ?>
                                                     </div>
-
-                                                    <?php if (isset($post['assignment_title']) && $post['assignment_title']): ?>
-                                                        <h5 class="font-medium text-gray-900 mb-2"><?php echo htmlspecialchars($post['assignment_title']); ?></h5>
-                                                    <?php endif; ?>
-
-                                                    <?php if (isset($post['assignment_description']) && $post['assignment_description']): ?>
-                                                        <p class="text-sm text-gray-700 mb-3"><?php echo htmlspecialchars($post['assignment_description']); ?></p>
-                                                    <?php endif; ?>
-
-                                                    <!-- Assignment File Download -->
+                                                    
                                                     <?php if (isset($post['assignment_file_path']) && $post['assignment_file_path']): ?>
-                                                        <div class="flex items-center p-2 bg-white border border-gray-200 rounded-lg mb-3">
-                                                            <i class="ti ti-file text-gray-600 mr-2"></i>
-                                                            <span class="text-sm text-gray-700 flex-1">File tugas tersedia</span>
-                                                            <a href="../../<?php echo htmlspecialchars($post['assignment_file_path']); ?>"
-                                                                target="_blank"
-                                                                class="text-blue-600 hover:text-blue-800 text-sm font-medium">
-                                                                Download
-                                                            </a>
+                                                        <div class="p-3 bg-white rounded-lg border border-gray-200">
+                                                            <div class="flex items-center space-x-3">
+                                                                <div class="flex-shrink-0">
+                                                                    <i class="ti ti-file text-blue-600 text-xl"></i>
+                                                                </div>
+                                                                <div class="flex-1 min-w-0">
+                                                                    <div class="text-xs font-medium text-gray-500 uppercase tracking-wide">File Tugas</div>
+                                                                    <div class="text-sm font-semibold text-gray-900 truncate"><?php echo basename($post['assignment_file_path']); ?></div>
+                                                                </div>
+                                                                <a href="../../<?php echo htmlspecialchars($post['assignment_file_path']); ?>" target="_blank" 
+                                                                   class="flex items-center space-x-1 bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex-shrink-0">
+                                                                    <i class="ti ti-download"></i>
+                                                                    <span class="hidden sm:inline">Download</span>
+                                                                </a>
+                                                            </div>
                                                         </div>
                                                     <?php endif; ?>
                                                 </div>
@@ -383,7 +415,7 @@ if (!$dashboardData) {
                                                                 <i class="ti ti-check"></i>
                                                                 Terkumpul
                                                             </span>
-                                                            <span class="flex itetanpa reload (update progres realtime settanpa reload (update progres realtime setelah submit)elah submit)ms-center gap-1 <?php echo $rightState; ?>">
+                                                            <span class="flex items-center gap-1 <?php echo $rightState; ?>">
                                                                 <i class="ti ti-star"></i>
                                                                 Dinilai
                                                             </span>

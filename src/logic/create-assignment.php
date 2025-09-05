@@ -87,8 +87,8 @@ try {
     
     $assignment_id = $pdo->lastInsertId();
     
-    // Create a special post for this assignment
-    $konten_post = "📋 **Tugas Baru: {$judul}**\n\n{$deskripsi}\n\n⏰ **Deadline:** " . date('d M Y H:i', strtotime($deadline)) . "\n🎯 **Nilai Maksimal:** {$nilai_maksimal}";
+    // Create a special post for this assignment - only description in content
+    $konten_post = "{$deskripsi}";
     
     $stmt = $pdo->prepare("
         INSERT INTO postingan_kelas (kelas_id, user_id, konten, tipe_postingan, assignment_id, dibuat) 

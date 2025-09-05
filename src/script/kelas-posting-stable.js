@@ -348,6 +348,14 @@ class KelasPosting {
         const postDate = new Date(post.dibuat);
         const timeAgo = this.getTimeAgo(postDate);
         
+        // Debug: Log post data untuk troubleshooting
+        console.log('🔍 Creating post element:', {
+            id: post.id,
+            konten: post.konten,
+            tipePost: post.tipePost,
+            namaPenulis: post.namaPenulis
+        });
+        
         // Build profile photo HTML for post author
         let profilePhotoHtml = '';
         if (post.fotoProfil && post.fotoProfil.trim() !== '') {
@@ -1139,53 +1147,65 @@ class KelasPosting {
 
         // Assignment header with info
         let assignmentHeader = `
-            <div class="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-lg p-4 mt-3" data-assignment-id="${post.assignment_id}">
+            <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 mt-3" data-assignment-id="${post.assignment_id}">
                 <div class="flex items-start space-x-3">
                     <div class="flex-shrink-0">
-                        <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                            <i class="ti ti-clipboard-text text-purple-600 text-lg"></i>
+                        <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                            <i class="ti ti-clipboard-text text-blue-600 text-xl"></i>
                         </div>
                     </div>
                     <div class="flex-1 min-w-0">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-2">${this.escapeHtml(post.assignment_title)}</h3>
+                        <div class="flex items-start justify-between mb-3">
+                            <h3 class="text-xl font-bold text-gray-900 flex items-center">
+                                <i class="ti ti-assignment text-blue-600 mr-2"></i>
+                                ${this.escapeHtml(post.assignment_title)}
+                            </h3>
+                        </div>
                         
-                        ${post.assignment_description ? `
-                            <div class="text-sm text-gray-700 mb-3">
-                                <i class="ti ti-align-left mr-2"></i>${this.escapeHtml(post.assignment_description)}
-                            </div>
-                        ` : ''}
-                        
-                        <div class="flex flex-wrap gap-4 text-sm">
+                        <!-- Assignment Details Grid -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
                             ${post.assignment_deadline ? `
-                                <div class="flex items-center text-gray-600 min-w-0">
-                                    <i class="ti ti-calendar-due mr-2 text-red-500 flex-shrink-0"></i>
-                                    <span class="${isDeadlinePassed ? 'text-red-600 font-medium' : ''} truncate">
-                                        <span class="hidden sm:inline">${formatDeadline(post.assignment_deadline)}</span>
-                                        <span class="sm:hidden">${formatDeadlineMobile(post.assignment_deadline)}</span>
-                                    </span>
+                                <div class="flex items-center space-x-2 p-3 bg-white rounded-lg border ${isDeadlinePassed ? 'border-red-200 bg-red-50' : 'border-gray-200'}">
+                                    <div class="flex-shrink-0">
+                                        <i class="ti ti-calendar-due text-lg ${isDeadlinePassed ? 'text-red-500' : 'text-orange-500'}"></i>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="text-xs font-medium text-gray-500 uppercase tracking-wide">Deadline</div>
+                                        <div class="text-sm font-semibold ${isDeadlinePassed ? 'text-red-700' : 'text-gray-900'} truncate">
+                                            <span class="hidden sm:inline">${formatDeadline(post.assignment_deadline)}</span>
+                                            <span class="sm:hidden">${formatDeadlineMobile(post.assignment_deadline)}</span>
+                                        </div>
+                                    </div>
                                 </div>
                             ` : ''}
                             
                             ${post.assignment_max_score ? `
-                                <div class="flex items-center text-gray-600 flex-shrink-0">
-                                    <i class="ti ti-trophy mr-2 text-yellow-500"></i>
-                                    <span class="whitespace-nowrap">Nilai Maks: ${post.assignment_max_score}</span>
+                                <div class="flex items-center space-x-2 p-3 bg-white rounded-lg border border-gray-200">
+                                    <div class="flex-shrink-0">
+                                        <i class="ti ti-trophy text-lg text-yellow-500"></i>
+                                    </div>
+                                    <div class="flex-1">
+                                        <div class="text-xs font-medium text-gray-500 uppercase tracking-wide">Nilai Maksimal</div>
+                                        <div class="text-sm font-semibold text-gray-900">${post.assignment_max_score} Poin</div>
+                                    </div>
                                 </div>
                             ` : ''}
                         </div>
                         
                         ${post.assignment_file_path ? `
-                            <div class="mt-3 p-3 bg-white rounded-lg border border-gray-200">
+                            <div class="p-3 bg-white rounded-lg border border-gray-200">
                                 <div class="flex items-center space-x-3">
-                                    <i class="${getFileIcon(post.assignment_file_path)} text-blue-600 text-lg flex-shrink-0"></i>
+                                    <div class="flex-shrink-0">
+                                        <i class="${getFileIcon(post.assignment_file_path)} text-blue-600 text-xl"></i>
+                                    </div>
                                     <div class="flex-1 min-w-0">
-                                        <div class="text-sm font-medium text-gray-900">File Tugas</div>
-                                        <div class="text-xs text-gray-500 truncate">${post.assignment_file_path.split('/').pop()}</div>
+                                        <div class="text-xs font-medium text-gray-500 uppercase tracking-wide">File Tugas</div>
+                                        <div class="text-sm font-semibold text-gray-900 truncate">${post.assignment_file_path.split('/').pop()}</div>
                                     </div>
                                     <a href="/lms${post.assignment_file_path.startsWith('/') ? '' : '/'}${post.assignment_file_path}" target="_blank" 
-                                       class="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center flex-shrink-0">
+                                       class="flex items-center space-x-1 bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex-shrink-0">
                                         <i class="ti ti-download"></i>
-                                        <span class="ml-1 hidden sm:inline">Download</span>
+                                        <span class="hidden sm:inline">Download</span>
                                     </a>
                                 </div>
                             </div>
