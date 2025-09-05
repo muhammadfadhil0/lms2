@@ -14,7 +14,25 @@
                 <span class="text-xs">Ujian</span>
             </a>
             <button onclick="toggleMobileProfile()" class="flex flex-col items-center p-2 text-gray-500 hover:text-gray-700">
-                <i class="ti ti-user text-xl mb-1"></i>
+                <!-- Profile Photo or Icon -->
+                <div class="w-6 h-6 rounded-full flex items-center justify-center overflow-hidden bg-gray-100 mb-1">
+                    <?php if (isset($_SESSION['user']['foto_profil']) && !empty($_SESSION['user']['foto_profil'])): ?>
+                        <?php
+                        $fotoProfil = $_SESSION['user']['foto_profil'];
+                        // Check if it already contains the full path
+                        if (strpos($fotoProfil, 'uploads/profile/') === 0) {
+                            $photoPath = '../../' . $fotoProfil;
+                        } else {
+                            $photoPath = '../../uploads/profile/' . $fotoProfil;
+                        }
+                        ?>
+                        <img src="<?php echo htmlspecialchars($photoPath); ?>" 
+                             alt="Profile Photo" 
+                             class="w-full h-full object-cover">
+                    <?php else: ?>
+                        <i class="ti ti-user text-xl"></i>
+                    <?php endif; ?>
+                </div>
                 <span class="text-xs">Profile</span>
             </button>
         </div>
@@ -31,18 +49,56 @@
                     </button>
                 </div>
                 <div class="flex items-center mb-4">
-                    <img src="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'><circle cx='20' cy='20' r='20' fill='%23e5e7eb'/><circle cx='20' cy='15' r='6' fill='%239ca3af'/><path d='M8 32c0-6.627 5.373-12 12-12s12 5.373 12 12' fill='%239ca3af'/></svg>" alt="Profile" class="w-12 h-12 rounded-full">
+                    <!-- Profile Photo -->
+                    <div class="w-12 h-12 rounded-full flex items-center justify-center overflow-hidden bg-gray-100">
+                        <?php if (isset($_SESSION['user']['foto_profil']) && !empty($_SESSION['user']['foto_profil'])): ?>
+                            <?php
+                            $fotoProfil = $_SESSION['user']['foto_profil'];
+                            // Check if it already contains the full path
+                            if (strpos($fotoProfil, 'uploads/profile/') === 0) {
+                                $photoPath = '../../' . $fotoProfil;
+                            } else {
+                                $photoPath = '../../uploads/profile/' . $fotoProfil;
+                            }
+                            ?>
+                            <img src="<?php echo htmlspecialchars($photoPath); ?>" 
+                                 alt="Profile Photo" 
+                                 class="w-full h-full object-cover">
+                        <?php else: ?>
+                            <!-- Fallback SVG avatar -->
+                            <svg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 48 48'>
+                                <circle cx='24' cy='24' r='24' fill='#e5e7eb'/>
+                                <circle cx='24' cy='18' r='7' fill='#9ca3af'/>
+                                <path d='M8 40c0-8 7.163-14.5 16-14.5s16 6.5 16 14.5' fill='#9ca3af'/>
+                            </svg>
+                        <?php endif; ?>
+                    </div>
                     <div class="ml-3">
-                        <p class="font-medium text-gray-800">John Doe</p>
-                        <p class="text-sm text-gray-500">Student</p>
+                        <p class="font-medium text-gray-800"><?php echo htmlspecialchars($_SESSION['user']['namaLengkap'] ?? 'User'); ?></p>
+                        <p class="text-sm text-gray-500"><?php 
+                            $userRole = $_SESSION['user']['role'] ?? 'siswa';
+                            switch ($userRole) {
+                                case 'admin':
+                                    echo 'Administrator';
+                                    break;
+                                case 'guru':
+                                    echo 'Guru';
+                                    break;
+                                case 'siswa':
+                                    echo 'Siswa';
+                                    break;
+                                default:
+                                    echo 'User';
+                            }
+                        ?></p>
                     </div>
                 </div>
                 <div class="space-y-2">
-                    <a href="#" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50">
+                    <a href="settings.php" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50">
                         <i class="ti ti-user text-gray-500"></i>
                         <span class="text-gray-700">Profile</span>
                     </a>
-                    <a href="#" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50">
+                    <a href="settings.php" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50">
                         <i class="ti ti-settings text-gray-500"></i>
                         <span class="text-gray-700">Settings</span>
                     </a>

@@ -5,9 +5,10 @@ require_once 'settings-logic.php';
 // Set header untuk JSON response
 header('Content-Type: application/json');
 
-// Enable error reporting untuk development
+// Disable error display untuk JSON response yang bersih
 error_reporting(E_ALL);
-ini_set('display_errors', 1);
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
 
 // Fungsi untuk mengirim response JSON
 function sendResponse($success, $message, $data = null) {
@@ -118,17 +119,66 @@ try {
                 sendResponse(false, 'Method tidak diizinkan');
             }
             
+            // Validasi file upload
             if (!isset($_FILES['profile_photo']) || $_FILES['profile_photo']['error'] !== UPLOAD_ERR_OK) {
-                sendResponse(false, 'File tidak ditemukan atau error upload');
+                $errorMsg = 'File tidak ditemukan atau error upload';
+                
+                if (isset($_FILES['profile_photo']['error'])) {
+                    $error_code = $_FILES['profile_photo']['error'];
+                    switch ($error_code) {
+                        case UPLOAD_ERR_INI_SIZE:
+                            $errorMsg = 'File terlalu besar (melebihi upload_max_filesize)';
+                            break;
+                        case UPLOAD_ERR_FORM_SIZE:
+                            $errorMsg = 'File terlalu besar (melebihi MAX_FILE_SIZE)';
+                            break;
+                        case UPLOAD_ERR_PARTIAL:
+                            $errorMsg = 'File hanya terupload sebagian';
+                            break;
+                        case UPLOAD_ERR_NO_FILE:
+                            $errorMsg = 'Tidak ada file yang diupload';
+                            break;
+                        case UPLOAD_ERR_NO_TMP_DIR:
+                            $errorMsg = 'Tidak ada folder temporary';
+                            break;
+                        case UPLOAD_ERR_CANT_WRITE:
+                            $errorMsg = 'Gagal menulis file ke disk';
+                            break;
+                        case UPLOAD_ERR_EXTENSION:
+                            $errorMsg = 'Upload dihentikan oleh extension';
+                            break;
+                        default:
+                            $errorMsg = 'Unknown upload error (code: ' . $error_code . ')';
+                            break;
+                    }
+                }
+                
+                sendResponse(false, $errorMsg);
             }
             
+            // Upload menggunakan SettingsLogic
             $result = $settingsLogic->uploadFotoProfil($user_id, $_FILES['profile_photo']);
             
             if ($result['success']) {
-                $settingsLogic->logActivity($user_id, 'upload_photo', 'User uploaded new profile photo');
+                $settingsLogic->logActivity($user_id, 'upload_photo', 'User uploaded profile photo');
             }
             
-            sendResponse($result['success'], $result['message'], $result['fileName'] ?? null);
+            sendResponse($result['success'], $result['message'], $result);
+            break;
+            
+        case 'delete_photo':
+            // Validasi method POST
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+                sendResponse(false, 'Method tidak diizinkan');
+            }
+            
+            $result = $settingsLogic->deleteFotoProfil($user_id);
+            
+            if ($result['success']) {
+                $settingsLogic->logActivity($user_id, 'delete_photo', 'User deleted profile photo');
+            }
+            
+            sendResponse($result['success'], $result['message']);
             break;
             
         case 'change_password':
@@ -185,4 +235,3 @@ try {
     error_log("Settings API Error: " . $e->getMessage());
     sendResponse(false, 'Terjadi kesalahan sistem');
 }
-?>

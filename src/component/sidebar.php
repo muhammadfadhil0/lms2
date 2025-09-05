@@ -86,8 +86,24 @@ $navigationItems = getNavigationItems($userRole);
     <div class="p-4 border-t border-gray-200">
         <div class="relative">
             <button onclick="toggleProfileDropdown()" class="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors group min-h-[64px]">
-                <!-- Profile Avatar with Role-based Colors -->
-                <div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 <?php
+                <!-- Profile Photo -->
+                <div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden bg-gray-100">
+                    <?php if (isset($_SESSION['user']['foto_profil']) && !empty($_SESSION['user']['foto_profil'])): ?>
+                        <?php
+                        $fotoProfil = $_SESSION['user']['foto_profil'];
+                        // Check if it already contains the full path
+                        if (strpos($fotoProfil, 'uploads/profile/') === 0) {
+                            $photoPath = '../../' . $fotoProfil;
+                        } else {
+                            $photoPath = '../../uploads/profile/' . $fotoProfil;
+                        }
+                        ?>
+                        <img src="<?php echo htmlspecialchars($photoPath); ?>" 
+                             alt="Profile Photo" 
+                             class="w-full h-full object-cover">
+                    <?php else: ?>
+                        <!-- Fallback icon with role-based colors -->
+                        <div class="w-full h-full rounded-full flex items-center justify-center <?php
                                                                                                     switch ($userRole) {
                                                                                                         case 'admin':
                                                                                                             echo 'bg-red-100 text-red-600';
@@ -102,21 +118,23 @@ $navigationItems = getNavigationItems($userRole);
                                                                                                             echo 'bg-gray-100 text-gray-600';
                                                                                                     }
                                                                                                     ?>">
-                    <i class="<?php
-                                switch ($userRole) {
-                                    case 'admin':
-                                        echo 'ti ti-shield-check';
-                                        break;
-                                    case 'guru':
-                                        echo 'ti ti-school';
-                                        break;
-                                    case 'siswa':
-                                        echo 'ti ti-user';
-                                        break;
-                                    default:
-                                        echo 'ti ti-user';
-                                }
-                                ?> text-lg"></i>
+                            <i class="<?php
+                                        switch ($userRole) {
+                                            case 'admin':
+                                                echo 'ti ti-shield-check';
+                                                break;
+                                            case 'guru':
+                                                echo 'ti ti-school';
+                                                break;
+                                            case 'siswa':
+                                                echo 'ti ti-user';
+                                                break;
+                                            default:
+                                                echo 'ti ti-user';
+                                        }
+                                        ?> text-lg"></i>
+                        </div>
+                    <?php endif; ?>
                 </div>
                 <div id="profileTextContainer" class="flex-1 text-left transition-all duration-300 ease-in-out overflow-hidden whitespace-nowrap">
                     <div class="nav-text">

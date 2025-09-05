@@ -89,7 +89,7 @@ class SettingsLogic {
     public function uploadFotoProfil($user_id, $file) {
         try {
             // Validasi file
-            $allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+            $allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
             $maxSize = 2 * 1024 * 1024; // 2MB
             
             if (!in_array($file['type'], $allowedTypes)) {
@@ -103,7 +103,7 @@ class SettingsLogic {
             // Buat nama file unik
             $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
             $fileName = 'profile_' . $user_id . '_' . time() . '.' . $extension;
-            $uploadDir = '../../uploads/profile/';
+            $uploadDir = '/opt/lampp/htdocs/lms/uploads/profile/';
             $uploadPath = $uploadDir . $fileName;
             
             // Buat direktori jika belum ada
@@ -113,18 +113,31 @@ class SettingsLogic {
             
             // Hapus foto profil lama jika ada
             $oldPhoto = $this->getFotoProfil($user_id);
-            if ($oldPhoto && file_exists($uploadDir . basename($oldPhoto))) {
-                unlink($uploadDir . basename($oldPhoto));
+            if ($oldPhoto && strpos($oldPhoto, 'uploads/profile/') === 0) {
+                $oldPhotoPath = '/opt/lampp/htdocs/lms/' . $oldPhoto;
+                if (file_exists($oldPhotoPath)) {
+                    unlink($oldPhotoPath);
+                }
             }
             
             // Upload file baru
             if (move_uploaded_file($file['tmp_name'], $uploadPath)) {
-                // Update database
+                // Update database dengan relative path
+                $relativePath = 'uploads/profile/' . $fileName;
                 $sql = "UPDATE users SET fotoProfil = ? WHERE id = ?";
                 $stmt = $this->conn->prepare($sql);
-                $stmt->bind_param("si", $fileName, $user_id);
+                $stmt->bind_param("si", $relativePath, $user_id);
                 
                 if ($stmt->execute()) {
+                    // Update session data jika berhasil
+                    if (session_status() == PHP_SESSION_NONE) {
+                        session_start();
+                    }
+                    
+                    if (isset($_SESSION['user'])) {
+                        $_SESSION['user']['foto_profil'] = $relativePath;
+                    }
+                    
                     return [
                         'success' => true, 
                         'message' => 'Foto profil berhasil diperbarui',
@@ -137,6 +150,48 @@ class SettingsLogic {
                 }
             } else {
                 return ['success' => false, 'message' => 'Gagal mengupload file'];
+            }
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => 'Error: ' . $e->getMessage()];
+        }
+    }
+    
+    // Delete foto profil
+    public function deleteFotoProfil($user_id) {
+        try {
+            // Get current photo filename
+            $currentPhoto = $this->getFotoProfil($user_id);
+            
+            // Update database to remove photo reference
+            $sql = "UPDATE users SET fotoProfil = NULL WHERE id = ?";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bind_param("i", $user_id);
+            
+            if ($stmt->execute()) {
+                // Delete physical file if exists
+                if ($currentPhoto && !empty($currentPhoto)) {
+                    $uploadDir = '../../uploads/profile/';
+                    $filePath = $uploadDir . basename($currentPhoto);
+                    if (file_exists($filePath)) {
+                        unlink($filePath);
+                    }
+                }
+                
+                // Update session
+                if (session_status() == PHP_SESSION_NONE) {
+                    session_start();
+                }
+                
+                if (isset($_SESSION['user'])) {
+                    $_SESSION['user']['foto_profil'] = null;
+                }
+                
+                return [
+                    'success' => true, 
+                    'message' => 'Foto profil berhasil dihapus'
+                ];
+            } else {
+                return ['success' => false, 'message' => 'Gagal menghapus foto profil dari database'];
             }
         } catch (Exception $e) {
             return ['success' => false, 'message' => 'Error: ' . $e->getMessage()];
@@ -214,7 +269,14 @@ class SettingsLogic {
                 
                 // URL foto profil
                 if ($user['fotoProfil']) {
-                    $user['fotoProfil_url'] = '../../uploads/profile/' . $user['fotoProfil'];
+                    // Check if fotoProfil already contains the full path
+                    if (strpos($user['fotoProfil'], 'uploads/profile/') === 0) {
+                        // Already has the correct path structure
+                        $user['fotoProfil_url'] = '../../' . $user['fotoProfil'];
+                    } else {
+                        // Legacy format - just filename
+                        $user['fotoProfil_url'] = '../../uploads/profile/' . $user['fotoProfil'];
+                    }
                 } else {
                     // Use inline SVG instead of external API
                     $initial = substr($user['namaLengkap'], 0, 1);
@@ -435,4 +497,3 @@ class SettingsLogic {
         }
     }
 }
-?>
