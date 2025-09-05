@@ -1,7 +1,7 @@
-<?php 
+<?php
 session_start();
-require 'modal-logout.php'; 
-require '../logic/active-page-sidebar.php'; 
+require 'modal-logout.php';
+require '../logic/active-page-sidebar.php';
 
 // Get user role from session
 $userRole = $_SESSION['user']['role'] ?? 'siswa';
@@ -9,18 +9,24 @@ $userName = $_SESSION['user']['namaLengkap'] ?? 'User';
 $userEmail = $_SESSION['user']['email'] ?? '';
 
 // Function to get role display name
-function getRoleDisplayName($role) {
-    switch($role) {
-        case 'admin': return 'Administrator';
-        case 'guru': return 'Guru';
-        case 'siswa': return 'Siswa';
-        default: return 'User';
+function getRoleDisplayName($role)
+{
+    switch ($role) {
+        case 'admin':
+            return 'Administrator';
+        case 'guru':
+            return 'Guru';
+        case 'siswa':
+            return 'Siswa';
+        default:
+            return 'User';
     }
 }
 
 // Function to get role-based navigation items
-function getNavigationItems($role) {
-    switch($role) {
+function getNavigationItems($role)
+{
+    switch ($role) {
         case 'admin':
             return [
                 ['href' => '../front/admin-dashboard.php', 'icon' => 'ti ti-dashboard', 'text' => 'Dashboard', 'page' => 'dashboard'],
@@ -34,14 +40,15 @@ function getNavigationItems($role) {
             return [
                 ['href' => '../front/beranda-guru.php', 'icon' => 'ti ti-home', 'text' => 'Beranda', 'page' => 'beranda'],
                 ['href' => '../front/ujian-guru.php', 'icon' => 'ti ti-clipboard-check', 'text' => 'Ujian', 'page' => 'ujian'],
-                ['href' => '../front/pingo.php', 'icon' => 'ti ti-robot', 'text' => 'Pingo AI', 'page' => 'pingo']
+                ['href' => '../front/pingo.php', 'icon' => 'ti ti-sparkles', 'text' => 'Pingo AI', 'page' => 'pingo']
             ];
         case 'siswa':
         default:
             return [
                 ['href' => '../front/beranda-user.php', 'icon' => 'ti ti-home', 'text' => 'Beranda', 'page' => 'beranda'],
+                ['href' => '../front/kelas-beranda-user.php', 'icon' => 'ti ti-book', 'text' => 'Kelas', 'page' => 'kelas'],
                 ['href' => '../front/ujian-user.php', 'icon' => 'ti ti-clipboard-check', 'text' => 'Ujian', 'page' => 'ujian'],
-                ['href' => '../front/pingo.php', 'icon' => 'ti ti-robot', 'text' => 'Pingo AI', 'page' => 'pingo']
+                ['href' => '../front/pingo.php', 'icon' => 'ti ti-sparkles', 'text' => 'Pingo AI', 'page' => 'pingo']
             ];
     }
 }
@@ -65,12 +72,12 @@ $navigationItems = getNavigationItems($userRole);
     <nav class="flex-1 p-4">
         <ul class="space-y-2">
             <?php foreach ($navigationItems as $item): ?>
-            <li>
-                <a href="<?php echo $item['href']; ?>" class="buttonSidebar flex items-center space-x-3 p-3 rounded-lg <?php echo isActivePage($item['page'], $currentPage) ? 'bg-orange text-white' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'; ?> font-medium group transition-colors">
-                    <i class="<?php echo $item['icon']; ?> iconSidebar text-xl flex-shrink-0"></i>
-                    <span class="nav-text transition-all duration-300 ease-in-out overflow-hidden whitespace-nowrap"><?php echo $item['text']; ?></span>
-                </a>
-            </li>
+                <li>
+                    <a href="<?php echo $item['href']; ?>" class="buttonSidebar flex items-center space-x-3 p-3 rounded-lg <?php echo isActivePage($item['page'], $currentPage) ? 'bg-orange text-white' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800'; ?> font-medium group transition-colors">
+                        <i class="<?php echo $item['icon']; ?> iconSidebar text-xl flex-shrink-0"></i>
+                        <span class="nav-text transition-all duration-300 ease-in-out overflow-hidden whitespace-nowrap"><?php echo $item['text']; ?></span>
+                    </a>
+                </li>
             <?php endforeach; ?>
         </ul>
     </nav>
@@ -80,22 +87,36 @@ $navigationItems = getNavigationItems($userRole);
         <div class="relative">
             <button onclick="toggleProfileDropdown()" class="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors group min-h-[64px]">
                 <!-- Profile Avatar with Role-based Colors -->
-                <div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 <?php 
-                    switch($userRole) {
-                        case 'admin': echo 'bg-red-100 text-red-600'; break;
-                        case 'guru': echo 'bg-blue-100 text-blue-600'; break;
-                        case 'siswa': echo 'bg-green-100 text-green-600'; break;
-                        default: echo 'bg-gray-100 text-gray-600';
-                    }
-                ?>">
-                    <i class="<?php 
-                        switch($userRole) {
-                            case 'admin': echo 'ti ti-shield-check'; break;
-                            case 'guru': echo 'ti ti-school'; break;
-                            case 'siswa': echo 'ti ti-user'; break;
-                            default: echo 'ti ti-user';
-                        }
-                    ?> text-lg"></i>
+                <div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 <?php
+                                                                                                    switch ($userRole) {
+                                                                                                        case 'admin':
+                                                                                                            echo 'bg-red-100 text-red-600';
+                                                                                                            break;
+                                                                                                        case 'guru':
+                                                                                                            echo 'bg-blue-100 text-blue-600';
+                                                                                                            break;
+                                                                                                        case 'siswa':
+                                                                                                            echo 'bg-green-100 text-green-600';
+                                                                                                            break;
+                                                                                                        default:
+                                                                                                            echo 'bg-gray-100 text-gray-600';
+                                                                                                    }
+                                                                                                    ?>">
+                    <i class="<?php
+                                switch ($userRole) {
+                                    case 'admin':
+                                        echo 'ti ti-shield-check';
+                                        break;
+                                    case 'guru':
+                                        echo 'ti ti-school';
+                                        break;
+                                    case 'siswa':
+                                        echo 'ti ti-user';
+                                        break;
+                                    default:
+                                        echo 'ti ti-user';
+                                }
+                                ?> text-lg"></i>
                 </div>
                 <div id="profileTextContainer" class="flex-1 text-left transition-all duration-300 ease-in-out overflow-hidden whitespace-nowrap">
                     <div class="nav-text">
@@ -113,52 +134,66 @@ $navigationItems = getNavigationItems($userRole);
                     <p class="text-sm font-medium text-gray-800"><?php echo htmlspecialchars($userName); ?></p>
                     <p class="text-xs text-gray-500"><?php echo htmlspecialchars($userEmail); ?></p>
                     <div class="flex items-center mt-2">
-                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium <?php 
-                            switch($userRole) {
-                                case 'admin': echo 'bg-red-100 text-red-800'; break;
-                                case 'guru': echo 'bg-blue-100 text-blue-800'; break;
-                                case 'siswa': echo 'bg-green-100 text-green-800'; break;
-                                default: echo 'bg-gray-100 text-gray-800';
-                            }
-                        ?>">
-                            <i class="<?php 
-                                switch($userRole) {
-                                    case 'admin': echo 'ti ti-shield-check'; break;
-                                    case 'guru': echo 'ti ti-school'; break;
-                                    case 'siswa': echo 'ti ti-user'; break;
-                                    default: echo 'ti ti-user';
-                                }
-                            ?> mr-1"></i>
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium <?php
+                                                                                                            switch ($userRole) {
+                                                                                                                case 'admin':
+                                                                                                                    echo 'bg-red-100 text-red-800';
+                                                                                                                    break;
+                                                                                                                case 'guru':
+                                                                                                                    echo 'bg-blue-100 text-blue-800';
+                                                                                                                    break;
+                                                                                                                case 'siswa':
+                                                                                                                    echo 'bg-green-100 text-green-800';
+                                                                                                                    break;
+                                                                                                                default:
+                                                                                                                    echo 'bg-gray-100 text-gray-800';
+                                                                                                            }
+                                                                                                            ?>">
+                            <i class="<?php
+                                        switch ($userRole) {
+                                            case 'admin':
+                                                echo 'ti ti-shield-check';
+                                                break;
+                                            case 'guru':
+                                                echo 'ti ti-school';
+                                                break;
+                                            case 'siswa':
+                                                echo 'ti ti-user';
+                                                break;
+                                            default:
+                                                echo 'ti ti-user';
+                                        }
+                                        ?> mr-1"></i>
                             <?php echo getRoleDisplayName($userRole); ?>
                         </span>
                     </div>
                 </div>
-                
+
                 <!-- Menu Items -->
                 <a href="../front/settings.php" class="flex items-center space-x-2 p-3 hover:bg-gray-50 transition-colors">
                     <i class="ti ti-settings text-gray-500"></i>
                     <span class="text-sm text-gray-700">Pengaturan</span>
                 </a>
-                
+
                 <?php if ($userRole === 'admin'): ?>
-                <a href="../front/admin-profile.php" class="flex items-center space-x-2 p-3 hover:bg-gray-50 transition-colors">
-                    <i class="ti ti-user-cog text-gray-500"></i>
-                    <span class="text-sm text-gray-700">Profil Admin</span>
-                </a>
+                    <a href="../front/admin-profile.php" class="flex items-center space-x-2 p-3 hover:bg-gray-50 transition-colors">
+                        <i class="ti ti-user-cog text-gray-500"></i>
+                        <span class="text-sm text-gray-700">Profil Admin</span>
+                    </a>
                 <?php endif; ?>
-                
+
                 <?php if ($userRole === 'guru'): ?>
-                <a href="../front/guru-profile.php" class="flex items-center space-x-2 p-3 hover:bg-gray-50 transition-colors">
-                    <i class="ti ti-id-badge text-gray-500"></i>
-                    <span class="text-sm text-gray-700">Profil Guru</span>
-                </a>
+                    <a href="../front/guru-profile.php" class="flex items-center space-x-2 p-3 hover:bg-gray-50 transition-colors">
+                        <i class="ti ti-id-badge text-gray-500"></i>
+                        <span class="text-sm text-gray-700">Profil Guru</span>
+                    </a>
                 <?php endif; ?>
-                
+
                 <a href="../front/help.php" class="flex items-center space-x-2 p-3 hover:bg-gray-50 transition-colors">
                     <i class="ti ti-help text-gray-500"></i>
                     <span class="text-sm text-gray-700">Bantuan</span>
                 </a>
-                
+
                 <hr class="border-gray-200">
                 <button command="show-modal" commandfor="logout-modal" class="w-full flex items-center space-x-2 p-3 hover:bg-gray-50 transition-colors text-red-600">
                     <i class="ti ti-logout text-red-500"></i>
@@ -172,11 +207,11 @@ $navigationItems = getNavigationItems($userRole);
 <script src="../script/script-sidebar-collaps.js"></script>
 <script src="../script/sidebar-roles.js"></script>
 <script>
-// Add user role data attribute for JavaScript
-document.addEventListener('DOMContentLoaded', function() {
-    const sidebar = document.getElementById('sidebar');
-    if (sidebar) {
-        sidebar.setAttribute('data-user-role', '<?php echo $userRole; ?>');
-    }
-});
+    // Add user role data attribute for JavaScript
+    document.addEventListener('DOMContentLoaded', function() {
+        const sidebar = document.getElementById('sidebar');
+        if (sidebar) {
+            sidebar.setAttribute('data-user-role', '<?php echo $userRole; ?>');
+        }
+    });
 </script>

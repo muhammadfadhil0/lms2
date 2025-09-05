@@ -153,7 +153,7 @@ class PostinganLogic {
     // Mendapatkan komentar postingan
     public function getKomentarPostingan($postingan_id) {
         try {
-            $sql = "SELECT k.*, u.namaLengkap as namaKomentator, u.role
+            $sql = "SELECT k.*, u.namaLengkap as nama_penulis, u.role
                     FROM komentar_postingan k
                     JOIN users u ON k.user_id = u.id
                     WHERE k.postingan_id = ?

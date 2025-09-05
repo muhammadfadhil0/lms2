@@ -277,5 +277,75 @@ class DashboardLogic {
             return [];
         }
     }
+    
+    // Get recent posts from all classes for a student
+    public function getPostinganTerbaruSiswa($siswa_id, $limit = 10) {
+        try {
+            $sql = "SELECT p.*, 
+                           u.namaLengkap as namaPenulis, 
+                           u.role as rolePenulis,
+                           k.namaKelas, 
+                           k.restrict_comments,
+                           COUNT(DISTINCT l.id) as jumlahLike,
+                           COUNT(DISTINCT kom.id) as jumlahKomentar,
+                           MAX(CASE WHEN l.user_id = ? THEN 1 ELSE 0 END) as userLiked,
+                           t.id as assignment_id,
+                           t.judul as assignment_title,
+                           t.deskripsi as assignment_description,
+                           t.deadline as assignment_deadline,
+                           t.nilai_maksimal as assignment_max_score,
+                           t.file_path as assignment_file_path,
+                           pt.status as student_status,
+                           pt.nilai as student_score
+                    FROM postingan_kelas p
+                    JOIN users u ON p.user_id = u.id
+                    JOIN kelas k ON p.kelas_id = k.id
+                    JOIN kelas_siswa ks ON k.id = ks.kelas_id
+                    LEFT JOIN like_postingan l ON p.id = l.postingan_id
+                    LEFT JOIN komentar_postingan kom ON p.id = kom.postingan_id
+                    LEFT JOIN tugas t ON p.assignment_id = t.id
+                    LEFT JOIN pengumpulan_tugas pt ON t.id = pt.assignment_id AND pt.siswa_id = ?
+                    WHERE ks.siswa_id = ? AND ks.status = 'aktif' AND k.status = 'aktif'
+                    GROUP BY p.id
+                    ORDER BY p.dibuat DESC
+                    LIMIT ?";
+            
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bind_param("iiii", $siswa_id, $siswa_id, $siswa_id, $limit);
+            $stmt->execute();
+            
+            $postingan = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+            
+            // Get images for each post
+            foreach ($postingan as &$post) {
+                $post['gambar'] = $this->getGambarPostingan($post['id']);
+                
+                // Convert assignment file path to URL if exists
+                if ($post['assignment_file_path']) {
+                    // Convert absolute path to relative URL for web access
+                    $webRoot = '/opt/lampp/htdocs';
+                    $post['assignment_file_path'] = str_replace($webRoot, '', $post['assignment_file_path']);
+                }
+            }
+            
+            return $postingan;
+        } catch (Exception $e) {
+            return [];
+        }
+    }
+    
+    // Helper function to get post images
+    private function getGambarPostingan($postingan_id) {
+        try {
+            $sql = "SELECT nama_file, path_gambar, ukuran_file FROM postingan_gambar WHERE postingan_id = ? ORDER BY urutan";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bind_param("i", $postingan_id);
+            $stmt->execute();
+            
+            return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        } catch (Exception $e) {
+            return [];
+        }
+    }
 }
 ?>

@@ -1204,6 +1204,20 @@ class KelasPosting {
                                         Kumpulkan Tugas
                                     </button>
                                 </div>
+                                <!-- Progress (pending) -->
+                                <div class="mt-2">
+                                    <div class="flex justify-between text-[10px] sm:text-xs font-medium mb-1 text-gray-500">
+                                        <span class="text-gray-400">Terkumpul</span>
+                                        <span class="text-gray-400">Dinilai</span>
+                                    </div>
+                                    <div class="relative h-2 bg-gray-200 rounded-full">
+                                        <div class="absolute inset-y-0 left-0 bg-green-500 rounded-full" style="width:0%"></div>
+                                        <div class="absolute -top-1 w-4 h-4 bg-white border-2 border-gray-300 rounded-full shadow left-0 translate-x-[-2px] flex items-center justify-center">
+                                            <i class="ti ti-circle-dashed text-gray-300 text-[10px]"></i>
+                                        </div>
+                                        <div class="absolute -top-1 w-4 h-4 bg-white border-2 border-gray-300 rounded-full shadow right-0 translate-x-[2px]"></div>
+                                    </div>
+                                </div>
                                 
                                 <!-- Hidden submission form -->
                                 <div id="submission-form-${post.assignment_id}" class="hidden mt-4 space-y-4">

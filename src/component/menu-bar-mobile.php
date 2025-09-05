@@ -5,13 +5,13 @@
                 <i class="ti ti-home text-xl mb-1"></i>
                 <span class="text-xs">Beranda</span>
             </a>
+            <a href="kelas-beranda-user.php" class="flex flex-col items-center p-2 <?php echo ($currentPage == 'kelas') ? 'text-orange bg-orange-tipis' : 'text-gray-500 hover:text-gray-700'; ?>">
+                <i class="ti ti-book text-xl mb-1"></i>
+                <span class="text-xs">Kelas</span>
+            </a>
             <a href="ujian-user.php" class="flex flex-col items-center p-2 <?php echo ($currentPage == 'ujian') ? 'text-orange bg-orange-tipis' : 'text-gray-500 hover:text-gray-700'; ?>">
                 <i class="ti ti-clipboard-check text-xl mb-1"></i>
                 <span class="text-xs">Ujian</span>
-            </a>
-            <a href="#" class="flex flex-col items-center p-2 <?php echo ($currentPage == 'ai') ? 'text-orange bg-orange-tipis' : 'text-gray-500 hover:text-gray-700'; ?>">
-                <i class="ti ti-robot text-xl mb-1"></i>
-                <span class="text-xs">AI</span>
             </a>
             <button onclick="toggleMobileProfile()" class="flex flex-col items-center p-2 text-gray-500 hover:text-gray-700">
                 <i class="ti ti-user text-xl mb-1"></i>
