@@ -31,7 +31,7 @@
                     </button>
                 </div>
                 <div class="flex items-center mb-4">
-                    <img src="https://via.placeholder.com/40" alt="Profile" class="w-12 h-12 rounded-full">
+                    <img src="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'><circle cx='20' cy='20' r='20' fill='%23e5e7eb'/><circle cx='20' cy='15' r='6' fill='%239ca3af'/><path d='M8 32c0-6.627 5.373-12 12-12s12 5.373 12 12' fill='%239ca3af'/></svg>" alt="Profile" class="w-12 h-12 rounded-full">
                     <div class="ml-3">
                         <p class="font-medium text-gray-800">John Doe</p>
                         <p class="text-sm text-gray-500">Student</p>

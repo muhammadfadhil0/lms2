@@ -18,6 +18,8 @@ if (!isset($_SESSION['user'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <?php require '../../assets/head.php'; ?>
+    <link rel="stylesheet" href="../css/profile-photo-modal.css">
+    <link rel="stylesheet" href="../css/crop-photo-modal.css">
     <title>Pengaturan Akun</title>
 </head>
 <body class="bg-gray-50">
@@ -63,87 +65,92 @@ if (!isset($_SESSION['user'])) {
                     <div class="bg-white rounded-lg shadow-sm p-4 md:p-6 mb-4 md:mb-6">
                         <h3 class="text-lg font-semibold text-gray-900 mb-4 md:mb-6">Foto Profil</h3>
                         <div class="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-6">
-                            <div class="relative">
-                                <img class="w-20 h-20 md:w-24 md:h-24 rounded-full object-cover bg-gray-200" 
-                                     src="https://ui-avatars.com/api/?name=User&background=ff6347&color=fff" 
+                            <div class="relative cursor-pointer group" onclick="openProfilePhotoModal()">
+                                <img class="w-20 h-20 md:w-24 md:h-24 rounded-full object-cover bg-gray-200 transition-all group-hover:brightness-75" 
+                                     src="<?php echo isset($_SESSION['user']['foto_profil']) && !empty($_SESSION['user']['foto_profil']) ? '../../' . htmlspecialchars($_SESSION['user']['foto_profil']) : 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'96\' height=\'96\' viewBox=\'0 0 96 96\'%3E%3Crect width=\'96\' height=\'96\' fill=\'%23ff6347\'/%3E%3Ctext x=\'48\' y=\'56\' text-anchor=\'middle\' fill=\'white\' font-size=\'32\' font-family=\'Arial\'%3EU%3C/text%3E%3C/svg%3E'; ?>" 
                                      alt="Profile Photo" id="profile-preview">
+                                <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 rounded-full transition-all flex items-center justify-center">
+                                    <i class="ti ti-camera text-white text-lg opacity-0 group-hover:opacity-100 transition-opacity"></i>
+                                </div>
                                 <button class="absolute -bottom-2 -right-2 bg-orange text-white rounded-full p-2 hover:bg-orange-600 transition-colors">
-                                    <i class="ti ti-camera text-sm"></i>
+                                    <i class="ti ti-edit text-sm"></i>
                                 </button>
                             </div>
                             <div class="flex-1 text-center sm:text-left">
-                                <input type="file" id="profile-photo" class="hidden" accept="image/*">
-                                <label for="profile-photo" class="bg-orange text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors cursor-pointer inline-block text-sm md:text-base">
-                                    Pilih Foto
-                                </label>
-                                <p class="text-xs md:text-sm text-gray-500 mt-2">JPG, PNG, atau GIF (maksimal 2MB)</p>
+                                <button onclick="openSimpleProfileModal()" class="bg-orange text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors inline-block text-sm md:text-base">
+                                    <i class="ti ti-photo mr-2"></i>Ubah Foto Profil
+                                </button>
+                                <p class="text-xs md:text-sm text-gray-500 mt-2">Klik untuk upload foto profil baru</p>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Combined Profile & Account Information -->
-                    <div class="bg-white rounded-lg shadow-sm p-4 md:p-6">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-4 md:mb-6">Informasi Profil & Akun</h3>
-                        <form class="space-y-6">
-                            <!-- Personal Information Section -->
-                            <div>
-                                <h4 class="text-base font-medium text-gray-800 mb-4 pb-2 border-b border-gray-100">
-                                    <i class="ti ti-user mr-2 text-orange"></i>Informasi Pribadi
-                                </h4>
-                                <div class="space-y-4 md:space-y-6">
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-                                        <div>
-                                            <label class="block text-sm font-medium text-gray-700 mb-2">Nama Lengkap</label>
-                                            <input type="text" class="w-full border px-3 py-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-orange focus:border-transparent text-sm md:text-base" 
-                                                   value="John Doe" placeholder="Masukkan nama lengkap">
-                                        </div>
-                                        <div>
-                                            <label class="block text-sm font-medium text-gray-700 mb-2">Username</label>
-                                            <input type="text" class="w-full border px-3 py-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-orange focus:border-transparent text-sm md:text-base" 
-                                                   value="johndoe" placeholder="Masukkan username">
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Bio</label>
-                                        <textarea rows="3" class="w-full border px-3 py-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-orange focus:border-transparent text-sm md:text-base" 
-                                                  placeholder="Ceritakan sedikit tentang diri Anda"></textarea>
-                                    </div>
+                    <!-- Informasi Pribadi & Username -->
+                    <div class="bg-white rounded-lg shadow-sm p-4 md:p-6 mb-4 md:mb-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4 md:mb-6">
+                            <i class="ti ti-user mr-2 text-orange"></i>Informasi Pribadi & Username
+                        </h3>
+                        <form id="username-form" class="space-y-4 md:space-y-6">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Nama Lengkap</label>
+                                    <input type="text" name="namaLengkap" class="w-full border px-3 py-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-orange focus:border-transparent text-sm md:text-base" 
+                                           placeholder="Masukkan nama lengkap" required>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Username</label>
+                                    <input type="text" name="username" class="w-full border px-3 py-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-orange focus:border-transparent text-sm md:text-base" 
+                                           placeholder="Masukkan username" required>
                                 </div>
                             </div>
-
-                            <!-- Contact Information Section -->
                             <div>
-                                <h4 class="text-base font-medium text-gray-800 mb-4 pb-2 border-b border-gray-100">
-                                    <i class="ti ti-mail mr-2 text-orange"></i>Informasi Kontak
-                                </h4>
-                                <div class="space-y-4 md:space-y-6">
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-                                        <div>
-                                            <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                                            <input type="email" class="w-full border px-3 py-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-orange focus:border-transparent text-sm md:text-base" 
-                                                   value="john@example.com" placeholder="Masukkan email">
-                                        </div>
-                                        <div>
-                                            <label class="block text-sm font-medium text-gray-700 mb-2">Nomor Telepon</label>
-                                            <input type="tel" class="w-full border px-3 py-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-orange focus:border-transparent text-sm md:text-base" 
-                                                   value="+62 812 3456 7890" placeholder="Masukkan nomor telepon">
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Tanggal Lahir</label>
-                                        <input type="date" class="w-full md:w-1/2 border px-3 py-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-orange focus:border-transparent text-sm md:text-base" 
-                                               value="1990-01-01">
-                                    </div>
-                                </div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Bio</label>
+                                <textarea name="bio" rows="3" class="w-full border px-3 py-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-orange focus:border-transparent text-sm md:text-base" 
+                                          placeholder="Ceritakan sedikit tentang diri Anda"></textarea>
                             </div>
-
+                            
                             <!-- Save Button -->
                             <div class="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 pt-4 border-t border-gray-100">
                                 <button type="button" class="px-6 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors text-sm md:text-base">
                                     Batal
                                 </button>
                                 <button type="submit" class="px-6 py-2 bg-orange text-white rounded-lg hover:bg-orange-600 transition-colors text-sm md:text-base">
-                                    Simpan Perubahan
+                                    <i class="ti ti-device-floppy mr-2"></i>Simpan Informasi Pribadi
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Informasi Kontak -->
+                    <div class="bg-white rounded-lg shadow-sm p-4 md:p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4 md:mb-6">
+                            <i class="ti ti-mail mr-2 text-orange"></i>Informasi Kontak
+                        </h3>
+                        <form id="contact-form" class="space-y-4 md:space-y-6">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                                    <input type="email" name="email" class="w-full border px-3 py-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-orange focus:border-transparent text-sm md:text-base" 
+                                           placeholder="Masukkan email" required>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Nomor Telepon</label>
+                                    <input type="tel" name="nomorTelpon" class="w-full border px-3 py-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-orange focus:border-transparent text-sm md:text-base" 
+                                           placeholder="Masukkan nomor telepon">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Tanggal Lahir</label>
+                                <input type="date" name="tanggalLahir" class="w-full md:w-1/2 border px-3 py-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-orange focus:border-transparent text-sm md:text-base">
+                            </div>
+                            
+                            <!-- Save Button -->
+                            <div class="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 pt-4 border-t border-gray-100">
+                                <button type="button" class="px-6 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors text-sm md:text-base">
+                                    Batal
+                                </button>
+                                <button type="submit" class="px-6 py-2 bg-orange text-white rounded-lg hover:bg-orange-600 transition-colors text-sm md:text-base">
+                                    <i class="ti ti-device-floppy mr-2"></i>Simpan Informasi Kontak
                                 </button>
                             </div>
                         </form>
@@ -154,22 +161,22 @@ if (!isset($_SESSION['user'])) {
                 <div id="security-tab" class="tab-content hidden">
                     <div class="bg-white rounded-lg shadow-sm p-4 md:p-6 mb-4 md:mb-6">
                         <h3 class="text-lg font-semibold text-gray-900 mb-4 md:mb-6">Ubah Password</h3>
-                        <form class="space-y-4 md:space-y-6">
+                        <form id="password-form" class="space-y-4 md:space-y-6">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Password Saat Ini</label>
-                                <input type="password" class="w-full border px-3 py-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-orange focus:border-transparent text-sm md:text-base" 
-                                       placeholder="Masukkan password saat ini">
+                                <input type="password" name="password_lama" class="w-full border px-3 py-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-orange focus:border-transparent text-sm md:text-base" 
+                                       placeholder="Masukkan password saat ini" required>
                             </div>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-2">Password Baru</label>
-                                    <input type="password" class="w-full border px-3 py-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-orange focus:border-transparent text-sm md:text-base" 
-                                           placeholder="Masukkan password baru">
+                                    <input type="password" name="password_baru" class="w-full border px-3 py-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-orange focus:border-transparent text-sm md:text-base" 
+                                           placeholder="Masukkan password baru" required>
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-2">Konfirmasi Password Baru</label>
-                                    <input type="password" class="w-full border px-3 py-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-orange focus:border-transparent text-sm md:text-base" 
-                                           placeholder="Konfirmasi password baru">
+                                    <input type="password" name="konfirmasi_password" class="w-full border px-3 py-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-orange focus:border-transparent text-sm md:text-base" 
+                                           placeholder="Konfirmasi password baru" required>
                                 </div>
                             </div>
                             <div class="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3">
@@ -211,7 +218,12 @@ if (!isset($_SESSION['user'])) {
         </main>
     </div>
 
+    <!-- Simple Profile Photo Modal -->
+    <?php include '../component/modal-simple-profile-photo.php'; ?>
+
     <script src="../script/menu-bar-script.js"></script>
     <script src="../script/tab-settings.js"></script>
+    <script src="../script/settings.js"></script>
+    <script src="../script/simple-profile-photo.js"></script>
 </body>
 </html>
