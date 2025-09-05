@@ -2,11 +2,19 @@
 session_start();
 require 'modal-logout.php';
 require '../logic/active-page-sidebar.php';
+require '../logic/profile-photo-helper.php';
 
 // Get user role from session
 $userRole = $_SESSION['user']['role'] ?? 'siswa';
 $userName = $_SESSION['user']['namaLengkap'] ?? 'User';
 $userEmail = $_SESSION['user']['email'] ?? '';
+$userId = $_SESSION['user']['id'] ?? null;
+
+// Get fresh profile photo from database
+$freshProfilePhotoUrl = null;
+if ($userId) {
+    $freshProfilePhotoUrl = getUserProfilePhotoUrl($userId);
+}
 
 // Function to get role display name
 function getRoleDisplayName($role)
@@ -88,17 +96,8 @@ $navigationItems = getNavigationItems($userRole);
             <button onclick="toggleProfileDropdown()" class="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors group min-h-[64px]">
                 <!-- Profile Photo -->
                 <div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden bg-gray-100">
-                    <?php if (isset($_SESSION['user']['foto_profil']) && !empty($_SESSION['user']['foto_profil'])): ?>
-                        <?php
-                        $fotoProfil = $_SESSION['user']['foto_profil'];
-                        // Check if it already contains the full path
-                        if (strpos($fotoProfil, 'uploads/profile/') === 0) {
-                            $photoPath = '../../' . $fotoProfil;
-                        } else {
-                            $photoPath = '../../uploads/profile/' . $fotoProfil;
-                        }
-                        ?>
-                        <img src="<?php echo htmlspecialchars($photoPath); ?>" 
+                    <?php if ($freshProfilePhotoUrl): ?>
+                        <img src="<?php echo htmlspecialchars($freshProfilePhotoUrl); ?>" 
                              alt="Profile Photo" 
                              class="w-full h-full object-cover">
                     <?php else: ?>
@@ -224,12 +223,14 @@ $navigationItems = getNavigationItems($userRole);
 
 <script src="../script/script-sidebar-collaps.js"></script>
 <script src="../script/sidebar-roles.js"></script>
+<script src="../script/profile-sync.js"></script>
 <script>
     // Add user role data attribute for JavaScript
     document.addEventListener('DOMContentLoaded', function() {
         const sidebar = document.getElementById('sidebar');
         if (sidebar) {
             sidebar.setAttribute('data-user-role', '<?php echo $userRole; ?>');
+            sidebar.setAttribute('data-user-id', '<?php echo $_SESSION['user']['id'] ?? ''; ?>');
         }
     });
 </script>

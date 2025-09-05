@@ -31,6 +31,7 @@ $currentPage = 'beranda';
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="user-id" content="<?php echo $_SESSION['user']['id']; ?>">
         <?php require '../../assets/head.php'; ?>
         <title>Beranda</title>
     </head>
@@ -199,6 +200,7 @@ $currentPage = 'beranda';
         <script src="../script/menu-bar-script.js"></script>
         <script src="../script/dropdown-beranda-guru.js"></script>
         <script src="../script/kelas-management.js"></script>
+        <script src="../script/profile-sync.js"></script>
 
     <style src></style>
     </body>

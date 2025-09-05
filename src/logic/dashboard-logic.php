@@ -284,6 +284,7 @@ class DashboardLogic {
             $sql = "SELECT p.*, 
                            u.namaLengkap as namaPenulis, 
                            u.role as rolePenulis,
+                           u.fotoProfil as fotoProfil,
                            k.namaKelas, 
                            k.restrict_comments,
                            COUNT(DISTINCT l.id) as jumlahLike,

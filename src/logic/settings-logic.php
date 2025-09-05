@@ -74,6 +74,9 @@ class SettingsLogic {
                     $_SESSION['user']['namaLengkap'] = $data['namaLengkap'];
                     $_SESSION['user']['username'] = $data['username'];
                     $_SESSION['user']['email'] = $data['email'];
+                    $_SESSION['user']['bio'] = $data['bio'] ?? '';
+                    $_SESSION['user']['nomorTelpon'] = $data['nomorTelpon'] ?? '';
+                    $_SESSION['user']['tanggalLahir'] = $data['tanggalLahir'] ?? '';
                 }
                 
                 return ['success' => true, 'message' => 'Profil berhasil diperbarui'];
@@ -136,12 +139,14 @@ class SettingsLogic {
                     
                     if (isset($_SESSION['user'])) {
                         $_SESSION['user']['foto_profil'] = $relativePath;
+                        $_SESSION['user']['fotoProfil'] = $relativePath; // Backup field name
                     }
                     
                     return [
                         'success' => true, 
                         'message' => 'Foto profil berhasil diperbarui',
-                        'fileName' => $fileName
+                        'fileName' => $fileName,
+                        'relativePath' => $relativePath
                     ];
                 } else {
                     // Hapus file jika gagal update database

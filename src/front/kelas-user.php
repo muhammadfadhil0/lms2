@@ -94,6 +94,7 @@ $canComment = !isset($detailKelas['restrict_comments']) || !$detailKelas['restri
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="user-id" content="<?php echo $_SESSION['user']['id']; ?>">
     <?php require '../../assets/head.php'; ?>
     <link rel="stylesheet" href="../css/kelas-posting.css?v=<?php echo time(); ?>">
     <link rel="stylesheet" href="../css/image-upload.css?v=<?php echo time(); ?>">
@@ -369,6 +370,7 @@ $canComment = !isset($detailKelas['restrict_comments']) || !$detailKelas['restri
     <script src="../script/kelas-files-manager.js"></script>
     <script src="../script/list-modals-manager.js?v=<?php echo time(); ?>"></script>
     <script src="../script/kelas-posting-stable.js?v=<?php echo time(); ?>"></script>
+    <script src="../script/profile-sync.js"></script>
     <script>
         // Define user role for JavaScript access
         window.currentUserRole = '<?php echo $_SESSION['user']['role']; ?>';

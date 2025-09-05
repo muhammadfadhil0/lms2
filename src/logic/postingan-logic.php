@@ -46,7 +46,7 @@ class PostinganLogic {
     // Mendapatkan postingan berdasarkan kelas
     public function getPostinganByKelas($kelas_id, $limit = 20, $offset = 0) {
         try {
-            $sql = "SELECT p.*, u.namaLengkap as namaPenulis, u.role as rolePenulis,
+            $sql = "SELECT p.*, u.namaLengkap as namaPenulis, u.role as rolePenulis, u.fotoProfil,
                            COUNT(DISTINCT l.id) as jumlahLike,
                            COUNT(DISTINCT k.id) as jumlahKomentar,
                            t.id as assignment_id, t.judul as assignment_title, t.deskripsi as assignment_description,
@@ -153,7 +153,7 @@ class PostinganLogic {
     // Mendapatkan komentar postingan
     public function getKomentarPostingan($postingan_id) {
         try {
-            $sql = "SELECT k.*, u.namaLengkap as nama_penulis, u.role
+            $sql = "SELECT k.*, u.namaLengkap as nama_penulis, u.role, u.fotoProfil
                     FROM komentar_postingan k
                     JOIN users u ON k.user_id = u.id
                     WHERE k.postingan_id = ?
@@ -268,7 +268,7 @@ class PostinganLogic {
     // Mendapatkan komentar berdasarkan ID
     public function getKomentarById($komentar_id) {
         try {
-            $sql = "SELECT k.*, u.namaLengkap as namaKomentator, u.role
+            $sql = "SELECT k.*, u.namaLengkap as namaKomentator, u.role, u.fotoProfil
                     FROM komentar_postingan k
                     JOIN users u ON k.user_id = u.id
                     WHERE k.id = ?";

@@ -43,6 +43,7 @@ if (!$dashboardData) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="user-id" content="<?php echo $_SESSION['user']['id']; ?>">
     <?php require '../../assets/head.php'; ?>
     <link rel="stylesheet" href="../css/kelas-posting.css?v=<?php echo time(); ?>">
     <title>Beranda</title>
@@ -196,14 +197,47 @@ if (!$dashboardData) {
                 <?php if (!empty($recentPosts)): ?>
                     <div class="space-y-4">
                         <?php foreach ($recentPosts as $post): ?>
-                            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6">
+                            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6" data-user-id="<?php echo $post['user_id']; ?>">
                                 <!-- Post Header -->
                                 <div class="flex items-start justify-between mb-3">
                                     <div class="flex items-center space-x-3">
-                                        <div class="w-10 h-10 bg-orange-600 rounded-full flex items-center justify-center">
-                                            <span class="text-white font-medium text-sm">
-                                                <?php echo strtoupper(substr($post['namaPenulis'], 0, 1)); ?>
-                                            </span>
+                                        <div class="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0 bg-gray-100">
+                                            <?php if (isset($post['fotoProfil']) && !empty($post['fotoProfil'])): ?>
+                                                <?php
+                                                $fotoProfil = $post['fotoProfil'];
+                                                // Check if it already contains the full path
+                                                if (strpos($fotoProfil, 'uploads/profile/') === 0) {
+                                                    $photoPath = '../../' . $fotoProfil;
+                                                } else {
+                                                    $photoPath = '../../uploads/profile/' . $fotoProfil;
+                                                }
+                                                ?>
+                                                <img src="<?php echo htmlspecialchars($photoPath); ?>" 
+                                                     alt="Profile Photo" 
+                                                     class="w-full h-full object-cover post-profile-photo"
+                                                     onerror="this.parentElement.innerHTML='<div class=\'w-full h-full bg-orange-600 rounded-full flex items-center justify-center\'><span class=\'text-white font-medium text-sm\'><?php echo strtoupper(substr($post['namaPenulis'], 0, 1)); ?></span></div>'">
+                                            <?php else: ?>
+                                                <!-- Fallback with role-based colors -->
+                                                <div class="w-full h-full rounded-full flex items-center justify-center <?php
+                                                    switch ($post['rolePenulis']) {
+                                                        case 'admin':
+                                                            echo 'bg-red-100 text-red-600';
+                                                            break;
+                                                        case 'guru':
+                                                            echo 'bg-blue-100 text-blue-600';
+                                                            break;
+                                                        case 'siswa':
+                                                            echo 'bg-green-100 text-green-600';
+                                                            break;
+                                                        default:
+                                                            echo 'bg-orange-600 text-white';
+                                                    }
+                                                ?>">
+                                                    <span class="font-medium text-sm">
+                                                        <?php echo strtoupper(substr($post['namaPenulis'], 0, 1)); ?>
+                                                    </span>
+                                                </div>
+                                            <?php endif; ?>
                                         </div>
                                         <div>
                                             <div class="flex items-center space-x-2">
@@ -472,7 +506,7 @@ if (!$dashboardData) {
                                             <button class="comment-btn flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors"
                                                 data-post-id="<?php echo $post['id']; ?>">
                                                 <i class="ti ti-message-circle"></i>
-                                                <span class="text-sm"><?php echo $post['jumlahKomentar']; ?></span>
+                                                <span class="comment-count text-sm"><?php echo $post['jumlahKomentar']; ?></span>
                                             </button>
                                         <?php else: ?>
                                             <span class="flex items-center space-x-2 text-gray-400">
@@ -488,6 +522,39 @@ if (!$dashboardData) {
                                         Lihat Kelas
                                     </a>
                                 </div>
+
+                                <!-- Comments Section for KelasPosting compatibility -->
+                                <?php if (!$post['restrict_comments']): ?>
+                                    <!-- View All Comments Button -->
+                                    <button class="view-all-comments text-orange text-sm hover:text-orange-600 transition-colors" data-post-id="<?php echo $post['id']; ?>" style="display: none;">
+                                        Lihat komentar lainnya
+                                    </button>
+                                    
+                                    <!-- Comments Preview - Always visible if there are comments -->
+                                    <div id="comments-preview-<?php echo $post['id']; ?>" class="mt-4 pt-4 border-t border-gray-100" style="display: none;">
+                                        <!-- Preview comments (max 3) will be loaded here -->
+                                    </div>
+                                    
+                                    <!-- Quick Comment Input -->
+                                    <div id="quick-comment-<?php echo $post['id']; ?>" class="hidden mt-4 pt-4 border-t border-gray-100">
+                                        <form class="flex space-x-3" onsubmit="addQuickComment(event, <?php echo $post['id']; ?>)">
+                                            <div class="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center flex-shrink-0">
+                                                <i class="ti ti-user text-white text-sm"></i>
+                                            </div>
+                                            <div class="flex-1">
+                                                <textarea placeholder="Tulis komentar... (tekan Enter untuk mengirim)" 
+                                                    rows="2"
+                                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-sm"
+                                                    onkeydown="handleCommentKeydown(event, <?php echo $post['id']; ?>)"
+                                                    required></textarea>
+                                                <div class="flex justify-end mt-2">
+                                                    <button type="button" class="text-gray-500 text-sm mr-3" onclick="hideQuickComment(<?php echo $post['id']; ?>)">Batal</button>
+                                                    <button type="submit" class="bg-orange-600 text-white px-4 py-1.5 rounded-lg hover:bg-orange-700 text-sm">Kirim</button>
+                                                </div>
+                                            </div>
+                                        </form>
+                                    </div>
+                                <?php endif; ?>
                             </div>
                         <?php endforeach; ?>
                     </div>
@@ -500,63 +567,6 @@ if (!$dashboardData) {
                 <?php endif; ?>
             </div>
 
-            <!-- Classes Section -->
-            <div class="mb-6">
-                <div class="flex items-center justify-between mb-4">
-                    <h2 class="text-lg md:text-xl font-bold text-gray-800">Kelas Saya</h2>
-                    <a href="kelas-beranda-user.php" class="text-orange-600 hover:text-orange-700 text-sm font-medium">Lihat Semua</a>
-                </div>
-
-                <?php if (isset($dashboardData['kelasTerbaru']) && !empty($dashboardData['kelasTerbaru'])): ?>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-                        <?php foreach ($dashboardData['kelasTerbaru'] as $kelas): ?>
-                            <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
-                                <div class="h-32 sm:h-40 md:h-48 bg-gradient-to-br from-orange-400 to-orange-600 relative">
-                                    <?php if (!empty($kelas['gambarKover'])): ?>
-                                        <img src="../../<?php echo htmlspecialchars($kelas['gambarKover']); ?>" alt="<?php echo htmlspecialchars($kelas['namaKelas']); ?>" class="w-full h-full object-cover">
-                                    <?php else: ?>
-                                        <div class="w-full h-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center">
-                                            <i class="ti ti-book text-white text-4xl"></i>
-                                        </div>
-                                    <?php endif; ?>
-                                    <div class="absolute top-2 md:top-4 right-2 md:right-4">
-                                        <span class="bg-white bg-opacity-90 text-orange-600 text-xs font-medium px-2 py-1 rounded-full">
-                                            <?php echo htmlspecialchars($kelas['mataPelajaran'] ?? $kelas['namaKelas']); ?>
-                                        </span>
-                                    </div>
-                                </div>
-                                <div class="p-4 md:p-6">
-                                    <h3 class="font-semibold text-gray-800 mb-2"><?php echo htmlspecialchars($kelas['namaKelas']); ?></h3>
-                                    <p class="text-sm text-gray-600 mb-3"><?php echo htmlspecialchars($kelas['namaGuru'] ?? 'Guru'); ?></p>
-                                    <div class="flex items-center justify-between text-xs md:text-sm text-gray-600 mb-3 md:mb-4">
-                                        <span class="flex items-center">
-                                            <i class="ti ti-users mr-1"></i>
-                                            <?php echo $kelas['jumlahSiswa'] ?? 0; ?> siswa
-                                        </span>
-                                        <span class="flex items-center">
-                                            <i class="ti ti-calendar mr-1"></i>
-                                            <?php echo date('M Y', strtotime($kelas['dibuat'])); ?>
-                                        </span>
-                                    </div>
-                                    <a href="kelas-user.php?id=<?php echo $kelas['id']; ?>" class="w-full bg-orange-600 text-white py-2 px-4 rounded-lg hover:bg-orange-700 transition-colors text-sm md:font-medium inline-block text-center">
-                                        Masuk Kelas
-                                    </a>
-                                </div>
-                            </div>
-                        <?php endforeach; ?>
-                    </div>
-                <?php else: ?>
-                    <div class="text-center py-12">
-                        <i class="ti ti-book-off text-6xl text-gray-300 mb-4"></i>
-                        <h3 class="text-lg font-medium text-gray-900 mb-2">Belum bergabung dengan kelas</h3>
-                        <p class="text-gray-500 mb-4">Mulai dengan bergabung ke kelas pertama Anda</p>
-                        <button command="show-modal" commandfor="join-class-modal" class="inline-flex items-center px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors">
-                            <i class="ti ti-user-plus mr-2"></i>
-                            Gabung Kelas
-                        </button>
-                    </div>
-                <?php endif; ?>
-            </div>
         </main>
     </div>
 
@@ -568,9 +578,16 @@ if (!$dashboardData) {
     <script src="../script/kelas-management.js"></script>
     <script src="../script/photoswipe-simple.js"></script>
     <script src="../script/assignment-manager.js"></script>
+    <script src="../script/kelas-posting-stable.js?v=<?php echo time(); ?>"></script>
     <script>
         // Initialize like functionality
         document.addEventListener('DOMContentLoaded', function() {
+            // Initialize KelasPosting for comments functionality (beranda context)
+            window.kelasPosting = new KelasPosting(null, {
+                canPost: false,  // No posting in beranda
+                canComment: true // Allow commenting
+            });
+
             // Like button functionality
             document.querySelectorAll('.like-btn').forEach(btn => {
                 btn.addEventListener('click', async function() {
@@ -610,133 +627,26 @@ if (!$dashboardData) {
                 });
             });
 
-            // Comment button functionality
+            // Comment button functionality - use KelasPosting method
             document.querySelectorAll('.comment-btn').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const postId = this.dataset.postId;
-                    window.openCommentsModal(postId);
+                    if (window.kelasPosting) {
+                        window.kelasPosting.openCommentsModal(postId);
+                    }
                 });
             });
-        });
 
-        // Comments modal functions (simplified version)
-        window.openCommentsModal = function(postId) {
-            const modal = document.getElementById('comments-modal');
-            const postIdInput = document.getElementById('modal-post-id');
-
-            if (modal && postIdInput) {
-                postIdInput.value = postId;
-                modal.style.display = 'flex';
-                loadModalComments(postId);
-            }
-        };
-
-        window.closeCommentsModal = function() {
-            const modal = document.getElementById('comments-modal');
-            if (modal) {
-                modal.style.display = 'none';
-            }
-        };
-
-        function loadModalComments(postId) {
-            const container = document.getElementById('modal-comments-list');
-            if (!container) return;
-
-            container.innerHTML = `
-                <div class="text-center py-8 text-gray-500">
-                    <i class="ti ti-loader animate-spin text-2xl mb-2"></i>
-                    <p>Memuat komentar...</p>
-                </div>
-            `;
-
-            fetch(`../logic/get-komentar.php?postingan_id=${postId}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        if (data.comments.length === 0) {
-                            container.innerHTML = `
-                                <div class="text-center py-8 text-gray-500">
-                                    <i class="ti ti-message-off text-2xl mb-2"></i>
-                                    <p>Belum ada komentar</p>
-                                </div>
-                            `;
-                        } else {
-                            container.innerHTML = data.comments.map(comment => `
-                                <div class="flex space-x-3">
-                                    <div class="w-8 h-8 bg-orange-600 rounded-full flex items-center justify-center shrink-0">
-                                        <span class="text-white text-xs font-medium">
-                                            ${comment.nama_penulis.charAt(0).toUpperCase()}
-                                        </span>
-                                    </div>
-                                    <div class="flex-1">
-                                        <div class="bg-white border border-gray-200 rounded-lg p-3">
-                                            <p class="font-medium text-sm text-gray-900">${comment.nama_penulis}</p>
-                                            <p class="text-gray-800 text-sm mt-1">${comment.komentar}</p>
-                                        </div>
-                                        <p class="text-xs text-gray-500 mt-1">${new Date(comment.dibuat).toLocaleString('id-ID')}</p>
-                                    </div>
-                                </div>
-                            `).join('');
-                        }
+            // Load comments preview for all posts
+            setTimeout(() => {
+                document.querySelectorAll('[id^="comments-preview-"]').forEach(container => {
+                    const postId = container.id.replace('comments-preview-', '');
+                    if (window.kelasPosting) {
+                        console.log('Loading comments preview for post', postId);
+                        window.kelasPosting.loadCommentsPreview(postId);
                     }
-                })
-                .catch(error => {
-                    console.error('Error loading comments:', error);
-                    container.innerHTML = `
-                        <div class="text-center py-8 text-red-500">
-                            <i class="ti ti-alert-circle text-2xl mb-2"></i>
-                            <p>Gagal memuat komentar</p>
-                        </div>
-                    `;
                 });
-        }
-
-        // Handle comment form submission
-        document.getElementById('modal-comment-form')?.addEventListener('submit', async function(e) {
-            e.preventDefault();
-
-            const postId = document.getElementById('modal-post-id').value;
-            const commentInput = document.getElementById('modal-comment-input');
-            const comment = commentInput.value.trim();
-
-            if (!comment) return;
-
-            try {
-                const response = await fetch('../logic/tambah-komentar.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        postingan_id: postId,
-                        komentar: comment
-                    })
-                });
-
-                const result = await response.json();
-
-                if (result.success) {
-                    commentInput.value = '';
-                    loadModalComments(postId);
-
-                    // Update comment count in the main post
-                    const commentBtn = document.querySelector(`[data-post-id="${postId}"].comment-btn span`);
-                    if (commentBtn) {
-                        const currentCount = parseInt(commentBtn.textContent) || 0;
-                        commentBtn.textContent = currentCount + 1;
-                    }
-                }
-            } catch (error) {
-                console.error('Error adding comment:', error);
-            }
-        });
-
-        // Handle Enter key in comment textarea
-        document.getElementById('modal-comment-input')?.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                document.getElementById('modal-comment-form').dispatchEvent(new Event('submit'));
-            }
+            }, 500); // Give time for KelasPosting to fully initialize
         });
 
         // Initialize assignment manager for beranda
@@ -968,6 +878,7 @@ if (!$dashboardData) {
             }
         };
     </script>
+    <script src="../script/profile-sync.js"></script>
 </body>
 
 </html>

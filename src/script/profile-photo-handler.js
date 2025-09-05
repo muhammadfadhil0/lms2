@@ -257,11 +257,28 @@ function saveCroppedPhoto() {
                 if (data.success) {
                     showAlert('Foto profil berhasil diperbarui', 'success');
                     
-                    // Update profile image preview
-                    updateProfilePreview(canvas.toDataURL());
+                    // Get the new photo URL
+                    const newPhotoUrl = data.data && data.data.fileName ? `../../uploads/profile/${data.data.fileName}` : canvas.toDataURL();
                     
-                    // Update all profile photos in UI
-                    updateAllProfilePhotos(data.data && data.data.fileName ? `../../uploads/profile/${data.data.fileName}` : canvas.toDataURL());
+                    // Update profile image preview in settings
+                    updateProfilePreview(newPhotoUrl);
+                    
+                    // Update all profile photos in UI using ProfileSync
+                    if (window.ProfileSync) {
+                        ProfileSync.updateProfile(newPhotoUrl, data.data ? data.data.fileName : null);
+                    } else {
+                        // Fallback method
+                        updateAllProfilePhotos(newPhotoUrl);
+                    }
+                    
+                    // Update session storage for real-time updates
+                    if (data.data && data.data.fileName) {
+                        localStorage.setItem('currentUserPhoto', data.data.fileName);
+                        // Trigger event to update other tabs/windows
+                        window.dispatchEvent(new CustomEvent('profilePhotoUpdated', {
+                            detail: { photoUrl: newPhotoUrl, fileName: data.data.fileName }
+                        }));
+                    }
                     
                     // Close modal
                     closeCropModal();
@@ -316,8 +333,22 @@ function deleteCurrentPhoto() {
             // Update profile image to default
             updateProfilePreviewToDefault();
             
-            // Update all profile photos to default
-            resetAllProfilePhotosToDefault();
+            // Update all profile photos to default using ProfileSync
+            if (window.ProfileSync) {
+                const defaultAvatar = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Crect width='96' height='96' fill='%23ff6347'/%3E%3Ctext x='48' y='56' text-anchor='middle' fill='white' font-size='32' font-family='Arial'%3EU%3C/text%3E%3C/svg%3E";
+                ProfileSync.updateProfile(defaultAvatar, null);
+            } else {
+                // Fallback method
+                resetAllProfilePhotosToDefault();
+            }
+            
+            // Clear localStorage
+            localStorage.removeItem('currentUserPhoto');
+            
+            // Trigger event for other tabs
+            window.dispatchEvent(new CustomEvent('profilePhotoUpdated', {
+                detail: { photoUrl: null, fileName: null }
+            }));
         } else {
             showAlert(data.message || 'Gagal menghapus foto profil', 'error');
         }
@@ -435,43 +466,59 @@ document.addEventListener('keydown', function(event) {
 
 // Function to update all profile photos in the UI
 function updateAllProfilePhotos(photoUrl) {
+    console.log('Updating all profile photos with URL:', photoUrl);
+    
     // Update main profile preview in settings
     const profilePreview = document.getElementById('profile-preview');
     if (profilePreview) {
         profilePreview.src = photoUrl;
+        console.log('Updated profile preview in settings');
     }
     
-    // Update sidebar profile photo
-    const sidebarProfileImg = document.querySelector('#sidebar button img');
-    if (sidebarProfileImg) {
-        sidebarProfileImg.src = photoUrl;
+    // Update sidebar profile photo - look for the actual img element in sidebar
+    const sidebarProfileContainer = document.querySelector('#sidebar .w-10.h-10.rounded-full');
+    if (sidebarProfileContainer) {
+        // Remove existing content and add new image
+        sidebarProfileContainer.innerHTML = `
+            <img src="${photoUrl}" alt="Profile Photo" class="w-full h-full object-cover">
+        `;
+        console.log('Updated sidebar profile photo');
     }
     
-    // Update mobile menu profile photo
-    const mobileProfileImg = document.querySelector('[onclick="toggleMobileProfile()"] img');
-    if (mobileProfileImg) {
-        mobileProfileImg.src = photoUrl;
+    // Also update any other profile photos in sidebar dropdown
+    const sidebarDropdownContainer = document.querySelector('#profileDropdown .w-10.h-10.rounded-full');
+    if (sidebarDropdownContainer) {
+        sidebarDropdownContainer.innerHTML = `
+            <img src="${photoUrl}" alt="Profile Photo" class="w-full h-full object-cover">
+        `;
+        console.log('Updated sidebar dropdown profile photo');
     }
     
-    // Update mobile profile modal photo
-    const mobileModalImg = document.querySelector('#mobileProfileModal img');
-    if (mobileModalImg) {
-        mobileModalImg.src = photoUrl;
-    }
+    // Update mobile menu profile photo if exists
+    const mobileProfileContainers = document.querySelectorAll('.mobile-profile-photo');
+    mobileProfileContainers.forEach(container => {
+        container.innerHTML = `
+            <img src="${photoUrl}" alt="Profile Photo" class="w-full h-full object-cover">
+        `;
+    });
     
-    // Hide fallback icons and show images
-    const fallbackIcons = document.querySelectorAll('[onclick="toggleMobileProfile()"] i.ti-user');
-    fallbackIcons.forEach(icon => {
-        const parent = icon.parentElement;
-        if (parent && !parent.querySelector('img')) {
-            icon.style.display = 'none';
-            const img = document.createElement('img');
+    // Update any profile photos in posts or other areas
+    const allProfileImages = document.querySelectorAll('.user-profile-image, .profile-photo');
+    allProfileImages.forEach(img => {
+        if (img.tagName === 'IMG') {
             img.src = photoUrl;
-            img.alt = 'Profile Photo';
-            img.className = 'w-full h-full object-cover';
-            parent.appendChild(img);
         }
     });
+    
+    // Force refresh of any cached profile images
+    setTimeout(() => {
+        const allImages = document.querySelectorAll('img[alt*="Profile"], img[alt*="profile"]');
+        allImages.forEach(img => {
+            if (img.src.includes('uploads/profile/')) {
+                img.src = photoUrl + '?t=' + Date.now(); // Add timestamp to force refresh
+            }
+        });
+    }, 100);
 }
 
 // Function to update profile preview

@@ -348,9 +348,47 @@ class KelasPosting {
         const postDate = new Date(post.dibuat);
         const timeAgo = this.getTimeAgo(postDate);
         
+        // Build profile photo HTML for post author
+        let profilePhotoHtml = '';
+        if (post.fotoProfil && post.fotoProfil.trim() !== '') {
+            // Check if it already contains the full path
+            let photoPath = '';
+            if (post.fotoProfil.indexOf('uploads/profile/') === 0) {
+                photoPath = '../../' + post.fotoProfil;
+            } else {
+                photoPath = '../../uploads/profile/' + post.fotoProfil;
+            }
+            
+            profilePhotoHtml = `
+                <img src="${photoPath}" 
+                     alt="Profile Photo" 
+                     class="w-full h-full object-cover"
+                     onerror="this.parentElement.innerHTML='<i class=\\'ti ti-user text-white\\'></i>'">
+            `;
+        } else {
+            // Fallback with role-based colors
+            let bgColorClass = 'bg-orange-500';
+            switch(post.rolePenulis) {
+                case 'admin':
+                    bgColorClass = 'bg-red-500';
+                    break;
+                case 'guru':
+                    bgColorClass = 'bg-blue-500';
+                    break;
+                case 'siswa':
+                    bgColorClass = 'bg-green-500';
+                    break;
+                default:
+                    bgColorClass = 'bg-orange-500';
+            }
+            
+            profilePhotoHtml = `<i class="ti ti-user text-white"></i>`;
+        }
+        
         const postElement = document.createElement('div');
         postElement.className = 'bg-white rounded-lg shadow-sm mb-6';
-        postElement.setAttribute('data-post-id', post.id); // Add this line for easy identification
+        postElement.setAttribute('data-post-id', post.id);
+        postElement.setAttribute('data-user-id', post.user_id);
         
         // Add fade-in animation after element is created
         setTimeout(() => {
@@ -369,8 +407,8 @@ class KelasPosting {
         postElement.innerHTML = `
             <div class="p-4 lg:p-6">
                 <div class="flex items-start space-x-3 lg:space-x-4 mb-4">
-                    <div class="w-10 h-10 lg:w-12 lg:h-12 rounded-full bg-orange-500 flex items-center justify-center">
-                        <i class="ti ti-user text-white"></i>
+                    <div class="w-10 h-10 lg:w-12 lg:h-12 rounded-full ${post.fotoProfil ? 'overflow-hidden' : 'bg-orange-500'} flex items-center justify-center">
+                        ${profilePhotoHtml}
                     </div>
                     <div class="flex-1">
                         <h3 class="font-semibold text-gray-900 text-sm lg:text-base">${this.escapeHtml(post.namaPenulis)}</h3>
@@ -397,6 +435,10 @@ class KelasPosting {
                     ` : ''}
                 </div>
                 <div class="mb-4">
+                    <!-- Post Content -->
+                    ${post.konten ? `
+                        <div class="text-gray-900 text-sm lg:text-base mb-3" style="line-height: 1.6; white-space: pre-wrap;">${this.escapeHtml(post.konten)}</div>
+                    ` : ''}
                     ${post.deadline ? `
                         <div class="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                             <div class="flex items-center">
@@ -569,7 +611,10 @@ class KelasPosting {
     }
     
     escapeHtml(unsafe) {
-        return unsafe
+        if (unsafe === null || unsafe === undefined) {
+            return '';
+        }
+        return String(unsafe)
             .replace(/&/g, "&amp;")
             .replace(/</g, "&lt;")
             .replace(/>/g, "&gt;")
@@ -739,9 +784,12 @@ class KelasPosting {
             });
             
             const result = await response.json();
+            console.log('Comments data for post', postId, ':', result);
             
             if (result.success) {
                 this.displayCommentsPreview(postId, result.comments);
+            } else {
+                console.error('Failed to load comments:', result.message);
             }
         } catch (error) {
             console.error('Error loading comments preview:', error);
@@ -749,24 +797,35 @@ class KelasPosting {
     }
     
     displayCommentsPreview(postId, comments) {
+        console.log('Displaying comments preview for post', postId, comments);
         const previewDiv = document.getElementById(`comments-preview-${postId}`);
         const viewAllBtn = document.querySelector(`[data-post-id="${postId}"].view-all-comments`);
+        
+        if (!previewDiv) {
+            console.error('Preview div not found for post', postId);
+            return;
+        }
         
         if (comments.length === 0) {
             previewDiv.style.display = 'none';
         } else {
             // Show max 3 comments
             const displayComments = comments.slice(0, 3);
+            console.log('Creating comment elements for', displayComments);
             const commentsHtml = displayComments.map(comment => this.createCommentElement(comment, true)).join('');
             previewDiv.innerHTML = commentsHtml;
             previewDiv.style.display = 'block';
             
             // Show "view all" button if there are more than 3 comments
             if (comments.length > 3) {
-                viewAllBtn.style.display = 'block';
-                viewAllBtn.textContent = `Lihat ${comments.length - 3} komentar lainnya`;
+                if (viewAllBtn) {
+                    viewAllBtn.style.display = 'block';
+                    viewAllBtn.textContent = `Lihat ${comments.length - 3} komentar lainnya`;
+                }
             } else {
-                viewAllBtn.style.display = 'none';
+                if (viewAllBtn) {
+                    viewAllBtn.style.display = 'none';
+                }
             }
         }
         
@@ -774,17 +833,54 @@ class KelasPosting {
     }
     
     createCommentElement(comment, isPreview = false) {
-        const commentDate = new Date(comment.dibuat);
+        const commentDate = comment.dibuat ? new Date(comment.dibuat) : new Date();
         const timeAgo = this.getTimeAgo(commentDate);
         
+        // Build profile photo HTML
+        let profilePhotoHtml = '';
+        if (comment.fotoProfil && comment.fotoProfil.trim() !== '') {
+            // Check if it already contains the full path
+            let photoPath = '';
+            if (comment.fotoProfil.indexOf('uploads/profile/') === 0) {
+                photoPath = '../../' + comment.fotoProfil;
+            } else {
+                photoPath = '../../uploads/profile/' + comment.fotoProfil;
+            }
+            
+            profilePhotoHtml = `
+                <img src="${photoPath}" 
+                     alt="Profile Photo" 
+                     class="w-full h-full object-cover"
+                     onerror="this.parentElement.innerHTML='<i class=\\'ti ti-user text-white text-xs\\'></i>'">
+            `;
+        } else {
+            // Fallback with role-based colors
+            let bgColorClass = 'bg-orange-500';
+            switch(comment.role) {
+                case 'admin':
+                    bgColorClass = 'bg-red-500';
+                    break;
+                case 'guru':
+                    bgColorClass = 'bg-blue-500';
+                    break;
+                case 'siswa':
+                    bgColorClass = 'bg-green-500';
+                    break;
+                default:
+                    bgColorClass = 'bg-orange-500';
+            }
+            
+            profilePhotoHtml = `<i class="ti ti-user text-white text-xs"></i>`;
+        }
+        
         return `
-            <div class="flex space-x-3 ${isPreview ? 'py-2' : 'py-3'}">
-                <div class="w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center flex-shrink-0">
-                    <i class="ti ti-user text-white text-xs"></i>
+            <div class="flex space-x-3 ${isPreview ? 'py-2' : 'py-3'}" data-user-id="${comment.user_id || ''}">
+                <div class="w-6 h-6 rounded-full ${comment.fotoProfil ? 'overflow-hidden' : 'bg-orange-500'} flex items-center justify-center flex-shrink-0">
+                    ${profilePhotoHtml}
                 </div>
                 <div class="flex-1 ${isPreview ? 'text-sm' : ''}">
                     <div class="bg-gray-100 rounded-lg px-3 py-2">
-                        <p class="font-medium text-gray-900 text-xs">${this.escapeHtml(comment.namaKomentator)}</p>
+                        <p class="font-medium text-gray-900 text-xs">${this.escapeHtml(comment.nama_penulis || comment.namaKomentator)}</p>
                         <p class="text-gray-800 ${isPreview ? 'text-xs' : 'text-sm'}">${this.escapeHtml(comment.komentar)}</p>
                     </div>
                     <div class="flex items-center mt-1 space-x-2 text-xs text-gray-500">

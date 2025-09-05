@@ -12,12 +12,20 @@ if (!isset($_SESSION['user'])) {
 <!-- includes -->
 <?php require '../component/sidebar.php'; ?>
 <?php require '../component/menu-bar-mobile.php'; ?>
+<?php 
+// Include profile photo helper
+require_once '../logic/profile-photo-helper.php';
+
+// Get fresh profile photo URL for the current user
+$freshProfilePhotoUrl = getUserProfilePhotoUrl($_SESSION['user']['id']);
+?>
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="user-id" content="<?php echo $_SESSION['user']['id']; ?>">
     <?php require '../../assets/head.php'; ?>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
     <link rel="stylesheet" href="../css/profile-photo-modal.css">
@@ -72,14 +80,8 @@ if (!isset($_SESSION['user'])) {
                             <div class="relative cursor-pointer" onclick="openProfilePhotoDropdown()">
                                 <img class="w-20 h-20 md:w-24 md:h-24 rounded-full object-cover bg-gray-200 transition-all duration-300 hover:brightness-90 hover:scale-105"
                                     src="<?php 
-                                    if (isset($_SESSION['user']['foto_profil']) && !empty($_SESSION['user']['foto_profil'])) {
-                                        $fotoProfil = $_SESSION['user']['foto_profil'];
-                                        // Check if it already contains the full path
-                                        if (strpos($fotoProfil, 'uploads/profile/') === 0) {
-                                            echo '../../' . htmlspecialchars($fotoProfil);
-                                        } else {
-                                            echo '../../uploads/profile/' . htmlspecialchars($fotoProfil);
-                                        }
+                                    if ($freshProfilePhotoUrl) {
+                                        echo htmlspecialchars($freshProfilePhotoUrl);
                                     } else {
                                         echo 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'96\' height=\'96\' viewBox=\'0 0 96 96\'%3E%3Crect width=\'96\' height=\'96\' fill=\'%23ff6347\'/%3E%3Ctext x=\'48\' y=\'56\' text-anchor=\'middle\' fill=\'white\' font-size=\'32\' font-family=\'Arial\'%3EU%3C/text%3E%3C/svg%3E';
                                     }
@@ -244,6 +246,7 @@ if (!isset($_SESSION['user'])) {
     <script src="../script/tab-settings.js"></script>
     <script src="../script/settings.js"></script>
     <script src="../script/profile-photo-handler.js"></script>
+    <script src="../script/profile-sync.js"></script>
 </body>
 
 </html>
