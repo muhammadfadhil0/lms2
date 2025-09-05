@@ -1,187 +1,182 @@
-# PingoAI - AI Question Generator
+# Pingo Chat Backend Implementation
 
-PingoAI adalah sistem AI yang menggunakan Groq API untuk menghasilkan soal ujian secara otomatis. Sistem ini terintegrasi dengan LMS untuk membantu guru membuat soal dengan cepat dan efisien.
+## Overview
+Backend implementasi untuk Pingo AI Chat menggunakan Groq API dengan format yang sesuai dengan dokumentasi Groq yang Anda berikan.
 
-## Fitur
+## Files Created
 
-- **Generate Soal Otomatis**: Membuat soal pilihan ganda dan essay menggunakan AI
-- **Kustomisasi**: Atur jumlah soal, tingkat kesulitan, dan jumlah pilihan jawaban
-- **Konteks Aware**: AI mempertimbangkan nama ujian, mata pelajaran, dan soal yang sudah ada
-- **Integration**: Terintegrasi langsung dengan sistem LMS yang ada
-- **Real-time Preview**: Melihat prompt yang akan dikirim ke AI sebelum generate
+### Backend Files
+1. **`chat-api.php`** - Main API endpoint untuk chat
+2. **`chat-handler.php`** - Class untuk handle chat logic dan Groq API calls
+3. **`clear-chat.php`** - API endpoint untuk clear chat history
+4. **`chat.js`** - Frontend JavaScript untuk handle chat interface
+5. **`chat.css`** - Styling untuk chat interface (updated)
 
-## Konfigurasi
+### Database
+Tabel `pingo_chat_history` akan dibuat otomatis saat pertama kali digunakan dengan struktur:
+```sql
+CREATE TABLE pingo_chat_history (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    message TEXT NOT NULL,
+    role ENUM('user', 'assistant') NOT NULL,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    session_id VARCHAR(255) NOT NULL,
+    INDEX idx_user_session (user_id, session_id),
+    INDEX idx_timestamp (timestamp)
+)
+```
 
-### 1. Setup API Key Groq
+## Configuration
 
-Edit file `src/pingo/config.php` dan ganti API key Groq Anda:
-
+### 1. Groq API Key
+Edit file `src/pingo/config.php` dan ganti API key:
 ```php
-define('GROQ_API_KEY', 'your_groq_api_key_here'); // Ganti dengan API Key Groq Anda
+define('GROQ_API_KEY', 'gsk_your_actual_groq_api_key_here');
 ```
 
-### 2. Mendapatkan API Key Groq
+### 2. Database Configuration
+Database sudah dikonfigurasi untuk menggunakan database "lms" yang sudah ada.
 
-1. Kunjungi [Groq Console](https://console.groq.com/)
-2. Daftar atau login ke akun Anda
-3. Buat API key baru
-4. Copy API key dan masukkan ke `config.php`
+## Features
 
-### 3. Konfigurasi Model
+### Chat Features
+- ✅ Real-time chat dengan Groq AI
+- ✅ Chat history tersimpan per user per hari
+- ✅ Session-based chat management
+- ✅ Message formatting (bold, italic, code)
+- ✅ Typing indicator
+- ✅ Error handling
+- ✅ Clear chat functionality
 
-Anda dapat mengubah model AI yang digunakan di `config.php`:
+### Technical Features
+- ✅ Session validation
+- ✅ CORS headers
+- ✅ JSON responses
+- ✅ SQL injection protection
+- ✅ Auto-resize textarea
+- ✅ Responsive design
+- ✅ Keyboard shortcuts (Enter to send)
 
-```php
-define('GROQ_MODEL', 'llama-3.1-70b-versatile'); // Model yang akan digunakan
-```
+## API Endpoints
 
-Model yang tersedia:
-- `llama-3.1-70b-versatile`
-- `llama-3.1-8b-instant`
-- `mixtral-8x7b-32768`
+### Chat API (`chat-api.php`)
+- **GET**: Retrieve chat history
+- **POST**: Send message and get AI response
 
-## Cara Penggunaan
-
-### 1. Akses PingoAI
-
-1. Login sebagai guru
-2. Buat ujian baru atau edit ujian yang ada
-3. Di halaman "Buat Soal", klik tombol **"🤖 Bantuan PingoAI"**
-
-### 2. Konfigurasi Soal
-
-Di modal PingoAI, atur:
-
-- **Jumlah Soal**: 1-20 soal per request
-- **Tipe Soal**: Pilihan Ganda atau Essay
-- **Pilihan Jawaban**: 4-6 pilihan (untuk pilihan ganda)
-- **Tingkat Kesulitan**: Mudah, Sedang, atau Sulit
-
-### 3. Generate Soal
-
-1. Review prompt yang akan dikirim ke AI
-2. Klik **"Generate Soal"**
-3. Tunggu proses generate (biasanya 10-30 detik)
-4. Soal akan ditambahkan otomatis ke ujian
-
-## Struktur File
-
-```
-src/pingo/
-├── config.php           # Konfigurasi API key dan pengaturan
-├── pingo-ai.php         # Class utama PingoAI
-├── generate-questions.php # Endpoint untuk generate soal
-├── pingo-modal.js       # JavaScript untuk modal UI
-└── README.md           # Dokumentasi ini
-```
-
-## API Endpoint
-
-### POST `/src/pingo/generate-questions.php`
-
-Generate soal menggunakan AI.
-
-**Request Body (JSON):**
+Request format:
 ```json
 {
-    "ujian_id": 123,
-    "question_count": 5,
-    "question_type": "multiple_choice",
-    "answer_options": 4,
-    "difficulty": "sedang"
+    "message": "Halo, bagaimana cara belajar matematika?"
 }
 ```
 
-**Response:**
+Response format:
 ```json
 {
     "success": true,
-    "message": "Berhasil generate 5 soal menggunakan PingoAI",
-    "questions": [...],
-    "total": 5
+    "message": "AI response here...",
+    "user_message": "User message",
+    "timestamp": "2025-09-05 10:30:00"
 }
 ```
 
+### Clear Chat API (`clear-chat.php`)
+- **POST**: Clear user's chat history
+
+Response format:
+```json
+{
+    "success": true,
+    "message": "Chat history cleared"
+}
+```
+
+## Groq API Implementation
+
+Backend menggunakan format yang persis sesuai dengan dokumentasi Groq:
+
+```php
+$data = [
+    'messages' => $messages,
+    'model' => 'openai/gpt-oss-120b',
+    'temperature' => 1,
+    'max_completion_tokens' => 8192,
+    'top_p' => 1,
+    'stream' => false,
+    'reasoning_effort' => 'medium',
+    'stop' => null
+];
+```
+
+## Frontend Integration
+
+Chat interface sudah terintegrasi dengan:
+- Empty state untuk first-time users
+- Chat history loading saat page load
+- Auto-scroll ke message terbaru
+- Message formatting dan timestamps
+- Loading states dan error handling
+
+## Security
+
+- Session validation untuk semua API calls
+- SQL prepared statements
+- Input sanitization
+- XSS protection dengan escape HTML
+- CSRF protection via session validation
+
+## Testing
+
+Untuk test functionality:
+1. Pastikan Groq API key sudah dikonfigurasi
+2. Login ke aplikasi sebagai user
+3. Akses halaman Pingo (`src/front/pingo.php`)
+4. Kirim message untuk test
+
 ## Troubleshooting
 
-### Error: "API Key Groq belum dikonfigurasi"
+### Common Issues:
+1. **API Key Error**: Update `GROQ_API_KEY` di `config.php`
+2. **Database Error**: Pastikan database "lms" accessible
+3. **Session Error**: User harus login terlebih dahulu
+4. **CORS Error**: Pastikan server mendukung CORS headers
 
-1. Pastikan Anda sudah mengisi API key di `config.php`
-2. Pastikan API key valid dan tidak expired
+### Debug Mode:
+Check browser console untuk JavaScript errors dan network tab untuk API responses.
 
-### Error: "API Error (401): Invalid API key"
+## Chat System Architecture
 
-1. Periksa kembali API key Anda
-2. Pastikan API key memiliki akses yang sesuai
-3. Coba generate API key baru
-
-### Error: "Request timeout"
-
-1. Cek koneksi internet
-2. Coba kurangi jumlah soal yang di-generate
-3. Coba lagi setelah beberapa menit
-
-### Soal yang dihasilkan tidak sesuai
-
-1. Pastikan deskripsi ujian dan mata pelajaran sudah jelas
-2. Coba ubah tingkat kesulitan
-3. Review existing questions yang mungkin mempengaruhi AI
-
-## Konfigurasi Lanjutan
-
-### Mengubah Timeout
-
-Edit `config.php`:
-```php
-define('AI_TIMEOUT', 60); // Timeout dalam detik
+```
+Frontend (pingo.php)
+    ↓
+JavaScript (chat.js)
+    ↓
+API Endpoint (chat-api.php)
+    ↓
+Chat Handler (chat-handler.php)
+    ↓
+Groq API + Database
 ```
 
-### Mengubah Maksimal Token
+## System Requirements
 
-Edit `config.php`:
-```php
-define('AI_MAX_TOKENS', 4000); // Maksimal token untuk response
-```
+- PHP 7.4+
+- MySQL/MariaDB
+- cURL extension
+- PDO extension
+- Valid Groq API key
+- Modern browser dengan JavaScript enabled
 
-### Mengubah Temperature (Kreativitas)
+## Future Enhancements
 
-Edit `config.php`:
-```php
-define('AI_TEMPERATURE', 0.7); // 0.0 = konservatif, 1.0 = kreatif
-```
-
-## Keamanan
-
-1. **Jangan commit API key** ke repository
-2. **Validasi input** - semua input user sudah divalidasi
-3. **Session check** - hanya guru yang bisa mengakses
-4. **Rate limiting** - pertimbangkan menambah rate limiting jika diperlukan
-
-## Batasan
-
-- Maksimal 20 soal per request
-- Hanya mendukung bahasa Indonesia
-- Bergantung pada koneksi internet
-- Tergantung pada ketersediaan layanan Groq
-
-## Dukungan
-
-Jika mengalami masalah:
-
-1. Periksa log PHP untuk error details
-2. Pastikan semua dependency terpenuhi
-3. Cek dokumentasi Groq API
-4. Test dengan prompt sederhana terlebih dahulu
-
-## Pengembangan
-
-Untuk menambah fitur atau model AI baru:
-
-1. Edit `PingoAI` class di `pingo-ai.php`
-2. Tambah tipe soal baru di `$SUPPORTED_QUESTION_TYPES`
-3. Update prompt building logic
-4. Test dengan berbagai skenario
-
----
-
-**Catatan**: PingoAI masih dalam tahap pengembangan. Fitur dan kemampuan akan terus ditingkatkan seiring waktu.
+Potential improvements:
+- [ ] Message attachments support
+- [ ] Voice messages
+- [ ] Chat export functionality
+- [ ] Multiple chat sessions per user
+- [ ] Admin chat monitoring
+- [ ] Chat analytics
+- [ ] Streaming responses
+- [ ] Message reactions
+- [ ] Chat search functionality

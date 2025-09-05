@@ -14,6 +14,8 @@ config/config.php
 *.sqlite3
 database/backups/
 dumps/
+add-columns.php
+update-schema.php
 
 # === Uploads & User Generated Content ===
 # File upload dan konten yang di-generate user

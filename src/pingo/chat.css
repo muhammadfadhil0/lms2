@@ -1,0 +1,448 @@
+/* Pingo Chat Styles */
+
+/* Chat Container */
+.chat-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: #ffffff;
+}
+
+/* Chat Actions Header */
+.chat-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.chat-button {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background-color: #F3F4F6;
+    border: 1px solid #E5E7EB;
+    border-radius: 0.5rem;
+    color: #6B7280;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    font-size: 0.875rem;
+    cursor: pointer;
+}
+
+.chat-button:hover {
+    background-color: #E5E7EB;
+    color: #374151;
+}
+
+/* Empty state styling */
+.chat-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    min-height: 400px;
+    padding: 2rem;
+    text-align: center;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+.empty-state-content {
+    max-width: 600px;
+    width: 100%;
+}
+
+.empty-state-greeting {
+    margin-bottom: 3rem;
+}
+
+.empty-state-greeting h1 {
+    font-size: 2.5rem;
+    font-weight: 600;
+    color: #1F2937;
+    margin-bottom: 0.5rem;
+}
+
+.empty-state-greeting p {
+    font-size: 1.125rem;
+    color: #6B7280;
+    margin-bottom: 2rem;
+}
+
+.pingo-icon {
+    width: 4rem;
+    height: 4rem;
+    background: linear-gradient(135deg, #F97316, #EA580C);
+    border-radius: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: white;
+}
+
+.empty-state-input {
+    width: 100%;
+}
+
+/* Messages Container */
+#chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+    display: none;
+    scroll-behavior: smooth;
+}
+
+#chat-messages:not(:empty) {
+    display: block;
+}
+
+/* Chat Message Layout */
+.chat-message {
+    display: flex;
+    margin-bottom: 1.5rem;
+    animation: fadeInUp 0.4s ease-out;
+}
+
+.chat-message.user {
+    justify-content: flex-end;
+}
+
+.chat-message.assistant {
+    justify-content: flex-start;
+}
+
+.chat-message.error {
+    justify-content: flex-start;
+}
+
+/* Message Content */
+.message-content {
+    max-width: 70%;
+    display: flex;
+    flex-direction: column;
+}
+
+.user-message {
+    background-color: #F3F4F6;
+    border: 1px solid #E5E7EB;
+    border-radius: 1rem 1rem 0.25rem 1rem;
+    padding: 0.75rem 1rem;
+}
+
+.ai-message {
+    background: transparent;
+    padding: 0.25rem 0;
+}
+
+.error-message {
+    background-color: #FEF2F2;
+    border: 1px solid #FECACA;
+    border-radius: 1rem 1rem 1rem 0.25rem;
+    padding: 0.75rem 1rem;
+}
+
+.message-text {
+    margin: 0;
+    line-height: 1.6;
+    color: #1F2937;
+    font-size: 0.95rem;
+    word-wrap: break-word;
+}
+
+.error-message .message-text {
+    color: #EF4444;
+}
+
+.message-time {
+    font-size: 0.75rem;
+    color: #9CA3AF;
+    margin-top: 0.5rem;
+}
+
+/* Avatar Styles */
+.message-avatar {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.75rem;
+    flex-shrink: 0;
+    margin: 0 0.75rem;
+}
+
+.user-avatar {
+    background-color: #6B7280;
+    color: white;
+}
+
+.ai-avatar {
+    background: linear-gradient(135deg, #F97316, #EA580C);
+    color: white;
+}
+
+.error-avatar {
+    background-color: #EF4444;
+    color: white;
+}
+
+/* Input Container */
+.chat-input-container {
+    padding: 1rem;
+    border-top: 1px solid #E5E7EB;
+    background: #ffffff;
+}
+
+.input-group {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    background: #F9FAFB;
+    border: 1px solid #E5E7EB;
+    border-radius: 1rem;
+    padding: 0.75rem;
+    gap: 0.75rem;
+}
+
+.input-wrapper:focus-within {
+    border-color: #F97316;
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
+}
+
+.input-wrapper textarea {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    resize: none;
+    font-size: 1rem;
+    line-height: 1.5;
+    min-height: 1.5rem;
+    max-height: 120px;
+    color: #1F2937;
+}
+
+.input-wrapper textarea::placeholder {
+    color: #9CA3AF;
+}
+
+.send-button-wrapper {
+    display: flex;
+    align-items: center;
+}
+
+.send-button-wrapper button {
+    background: #F97316;
+    border: none;
+    border-radius: 0.5rem;
+    padding: 0.5rem;
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.send-button-wrapper button:hover {
+    background: #EA580C;
+}
+
+.send-button-wrapper button:disabled {
+    background: #D1D5DB;
+    cursor: not-allowed;
+}
+
+/* Typing Indicator */
+.typing-indicator {
+    display: flex;
+    gap: 0.25rem;
+    padding: 0.5rem 0;
+}
+
+.typing-indicator span {
+    width: 0.375rem;
+    height: 0.375rem;
+    border-radius: 50%;
+    background-color: #F97316;
+    animation: typing-bounce 1.2s infinite ease-in-out;
+}
+
+.typing-indicator span:nth-child(1) {
+    animation-delay: -0.24s;
+}
+
+.typing-indicator span:nth-child(2) {
+    animation-delay: -0.12s;
+}
+
+.typing-indicator span:nth-child(3) {
+    animation-delay: 0s;
+}
+
+@keyframes typing-bounce {
+    0%, 80%, 100% {
+        opacity: 0.3;
+        transform: scale(1);
+    }
+    40% {
+        opacity: 1;
+        transform: scale(1.2);
+    }
+}
+
+/* Animations */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Message formatting */
+.message-text strong {
+    font-weight: 600;
+    color: #1F2937;
+}
+
+.message-text em {
+    font-style: italic;
+    color: #4B5563;
+}
+
+.message-text code {
+    background-color: #F3F4F6;
+    padding: 0.125rem 0.25rem;
+    border-radius: 0.25rem;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.875rem;
+}
+
+.message-text pre {
+    background-color: #F3F4F6;
+    border: 1px solid #E5E7EB;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin: 0.5rem 0;
+    overflow-x: auto;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.875rem;
+    line-height: 1.4;
+}
+
+/* Headers in AI messages */
+.message-text h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1F2937;
+    margin: 1rem 0 0.75rem 0;
+    line-height: 1.3;
+    border-bottom: 2px solid #F97316;
+    padding-bottom: 0.5rem;
+}
+
+.message-text h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #374151;
+    margin: 0.875rem 0 0.5rem 0;
+    line-height: 1.3;
+}
+
+.message-text h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #4B5563;
+    margin: 0.75rem 0 0.375rem 0;
+    line-height: 1.3;
+}
+
+/* Lists in AI messages */
+.message-text .ml-4 {
+    margin-left: 1rem;
+    margin-bottom: 0.25rem;
+    line-height: 1.5;
+}
+
+/* Spacing elements */
+.message-text .mt-3 {
+    margin-top: 0.75rem;
+}
+
+/* Code styling */
+.message-text pre code {
+    background: transparent;
+    padding: 0;
+    border-radius: 0;
+    font-size: 0.875rem;
+    color: #1F2937;
+}
+
+.message-text code {
+    background-color: #F1F5F9;
+    color: #1F2937;
+    padding: 0.125rem 0.375rem;
+    border-radius: 0.25rem;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.875rem;
+    border: 1px solid #E2E8F0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .message-content {
+        max-width: 85%;
+    }
+    
+    .message-avatar {
+        width: 1.75rem;
+        height: 1.75rem;
+        margin: 0 0.5rem;
+    }
+    
+    .chat-input-container {
+        padding: 0.75rem;
+    }
+    
+    .input-wrapper {
+        padding: 0.5rem;
+    }
+    
+    .chat-button span {
+        display: none;
+    }
+    
+    .empty-state-greeting h1 {
+        font-size: 2rem;
+    }
+    
+    .empty-state-greeting p {
+        font-size: 1rem;
+    }
+    
+    .pingo-icon {
+        width: 3rem;
+        height: 3rem;
+        font-size: 1.25rem;
+    }
+}
