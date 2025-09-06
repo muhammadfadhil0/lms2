@@ -68,6 +68,72 @@ function handleImageUploads($files, $kelas_id, $user_id) {
     return $uploadedImages;
 }
 
+/**
+ * Handle multiple file uploads for postingan
+ */
+function handleFileUploads($files, $kelas_id, $user_id) {
+    $uploadedFiles = [];
+    $maxFiles = 5;
+    $maxFileSize = 10 * 1024 * 1024; // 10MB per file
+    $allowedExtensions = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'zip', 'rar', '7z'];
+    
+    // Create upload directory if it doesn't exist
+    $uploadDir = '../../uploads/postingan/' . $kelas_id . '/files/';
+    
+    if (!file_exists($uploadDir)) {
+        if (!mkdir($uploadDir, 0777, true)) {
+            return ['error' => 'Gagal membuat direktori upload. Periksa permisi direktori.'];
+        }
+        chmod($uploadDir, 0777); // Ensure proper permissions
+    }
+    
+    $fileCount = count($files['name']);
+    if ($fileCount > $maxFiles) {
+        return ['error' => 'Maksimal 5 file yang dapat diunggah'];
+    }
+    
+    for ($i = 0; $i < $fileCount; $i++) {
+        if ($files['error'][$i] === UPLOAD_ERR_OK) {
+            // Validate file size
+            if ($files['size'][$i] > $maxFileSize) {
+                return ['error' => 'Ukuran file maksimal 10MB'];
+            }
+            
+            // Get file extension
+            $originalFilename = $files['name'][$i];
+            $extension = strtolower(pathinfo($originalFilename, PATHINFO_EXTENSION));
+            
+            // Validate file extension
+            if (!in_array($extension, $allowedExtensions)) {
+                return ['error' => 'Tipe file tidak didukung. Format yang didukung: ' . implode(', ', $allowedExtensions)];
+            }
+            
+            // Generate unique filename while preserving original name structure
+            $baseName = pathinfo($originalFilename, PATHINFO_FILENAME);
+            $filename = $baseName . '_' . uniqid() . '_' . time() . '.' . $extension;
+            $filePath = $uploadDir . $filename;
+            
+            // Move uploaded file
+            if (move_uploaded_file($files['tmp_name'][$i], $filePath)) {
+                $uploadedFiles[] = [
+                    'nama_file' => $originalFilename,
+                    'path_file' => 'uploads/postingan/' . $kelas_id . '/files/' . $filename,
+                    'ukuran_file' => $files['size'][$i],
+                    'tipe_file' => $files['type'][$i],
+                    'ekstensi_file' => $extension,
+                    'urutan' => $i + 1
+                ];
+            } else {
+                return ['error' => 'Gagal mengunggah file: ' . $originalFilename];
+            }
+        } else if ($files['error'][$i] !== UPLOAD_ERR_NO_FILE) {
+            return ['error' => 'Error upload file: ' . $files['name'][$i]];
+        }
+    }
+    
+    return $uploadedFiles;
+}
+
 // Check if user is logged in
 if (!isset($_SESSION['user'])) {
     echo json_encode(['success' => false, 'message' => 'Unauthorized access']);
@@ -160,9 +226,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             exit();
         }
     }
+
+    // Handle file uploads
+    $uploadedFiles = [];
+    if (isset($_FILES['files']) && !empty($_FILES['files']['name'][0])) {
+        $uploadedFiles = handleFileUploads($_FILES['files'], $kelas_id, $user_id);
+        if (isset($uploadedFiles['error'])) {
+            echo json_encode(['success' => false, 'message' => $uploadedFiles['error']]);
+            exit();
+        }
+    }
     
     // Create post
-    $result = $postinganLogic->buatPostingan($kelas_id, $user_id, $konten, $tipePost, $deadline, $uploadedImages);
+    $result = $postinganLogic->buatPostingan($kelas_id, $user_id, $konten, $tipePost, $deadline, $uploadedImages, $uploadedFiles);
     
     echo json_encode($result);
 } else {

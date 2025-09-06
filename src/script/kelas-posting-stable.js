@@ -136,13 +136,25 @@ class KelasPosting {
         // Add selected images if any
         if (window.imageUpload && window.imageUpload.selectedFiles.length > 0) {
             const selectedFiles = window.imageUpload.getSelectedFiles();
-            console.log('Adding', selectedFiles.length, 'files to form data');
+            console.log('Adding', selectedFiles.length, 'images to form data');
             selectedFiles.forEach((file, index) => {
-                console.log('Adding file:', file.name, 'size:', file.size);
+                console.log('Adding image:', file.name, 'size:', file.size);
                 formData.append('images[]', file);
             });
         } else {
             console.log('No images selected for upload');
+        }
+        
+        // Add selected files if any
+        if (window.fileUploadManager && window.fileUploadManager.selectedFiles.length > 0) {
+            const selectedFiles = window.fileUploadManager.getSelectedFiles();
+            console.log('Adding', selectedFiles.length, 'files to form data');
+            selectedFiles.forEach((file, index) => {
+                console.log('Adding file:', file.name, 'size:', file.size);
+                formData.append('files[]', file);
+            });
+        } else {
+            console.log('No files selected for upload');
         }
         
         try {
@@ -160,6 +172,11 @@ class KelasPosting {
                 // Clear selected images
                 if (window.imageUpload) {
                     window.imageUpload.clearSelection();
+                }
+                
+                // Clear selected files
+                if (window.fileUploadManager) {
+                    window.fileUploadManager.clearFiles();
                 }
                 
                 this.showAlert('Postingan berhasil dibuat!', 'success');
@@ -457,21 +474,24 @@ class KelasPosting {
                     ` : ''}
                     ${this.renderAssignmentContent(post)}
                     ${this.renderPostImages(post.gambar)}
+                    ${this.renderPostFiles(post.files)}
                 </div>
                 <div class="flex items-center justify-between pt-4 border-t border-gray-100">
                     <div class="flex items-center space-x-4 lg:space-x-6">
-                        <button class="like-btn flex items-center text-gray-600 hover:text-orange transition-colors text-sm lg:text-base" data-post-id="${post.id}">
-                            <i class="ti ti-heart mr-1 lg:mr-2"></i>
+                        <button class="like-btn flex items-center space-x-2 ${post.userLiked ? 'text-red-600' : 'text-gray-600'} hover:text-red-600 transition-colors text-sm lg:text-base" 
+                                data-post-id="${post.id}" 
+                                data-liked="${post.userLiked ? 'true' : 'false'}">
+                            <i class="ti ti-heart${post.userLiked ? '-filled text-red-600' : ''}"></i>
                             <span class="like-count">${post.jumlahLike || 0}</span>
                         </button>
                         ${this.permissions.canComment ? `
-                        <button class="comment-btn flex items-center text-gray-600 hover:text-orange transition-colors text-sm lg:text-base" data-post-id="${post.id}">
-                            <i class="ti ti-message-circle mr-1 lg:mr-2"></i>
+                        <button class="comment-btn flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors text-sm lg:text-base" data-post-id="${post.id}">
+                            <i class="ti ti-message-circle"></i>
                             <span class="comment-count">${post.jumlahKomentar || 0}</span>
                         </button>
                         ` : ''}
-                        <button class="flex items-center text-gray-600 hover:text-orange transition-colors text-sm lg:text-base">
-                            <i class="ti ti-share mr-1 lg:mr-2"></i>
+                        <button class="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors text-sm lg:text-base">
+                            <i class="ti ti-share"></i>
                             <span class="hidden sm:inline">Bagikan</span>
                         </button>
                     </div>
@@ -544,14 +564,16 @@ class KelasPosting {
                     
                     if (result.action === 'liked') {
                         likeCount.textContent = currentCount + 1;
-                        likeBtn.classList.add('text-red-500', 'liked');
+                        likeBtn.classList.remove('text-gray-600');
+                        likeBtn.classList.add('text-red-600');
                         likeBtn.setAttribute('data-liked', 'true');
                         if (heartIcon) {
                             heartIcon.className = 'ti ti-heart-filled text-red-600';
                         }
                     } else {
                         likeCount.textContent = Math.max(0, currentCount - 1);
-                        likeBtn.classList.remove('text-red-500', 'liked');
+                        likeBtn.classList.remove('text-red-600');
+                        likeBtn.classList.add('text-gray-600');
                         likeBtn.setAttribute('data-liked', 'false');
                         if (heartIcon) {
                             heartIcon.className = 'ti ti-heart';
@@ -1053,6 +1075,31 @@ class KelasPosting {
                 <div class="${gridClass}">
                     ${imagesHtml}
                 </div>
+            </div>
+        `;
+    }
+    
+    renderPostFiles(files) {
+        if (!files || files.length === 0) {
+            return '';
+        }
+        
+        console.log('Rendering post files:', files); // Debug log
+        
+        let filesHtml = files.map((file, index) => {
+            console.log('Processing file:', file); // Debug log for each file
+            try {
+                // Use FileUploadManager's static method to render
+                return window.FileUploadManager.renderPostFileAttachment(file);
+            } catch (error) {
+                console.error('Error rendering file:', error, file);
+                return ''; // Return empty string if error
+            }
+        }).join('');
+        
+        return `
+            <div class="post-files mt-3">
+                ${filesHtml}
             </div>
         `;
     }

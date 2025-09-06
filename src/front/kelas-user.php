@@ -102,6 +102,7 @@ require_once '../logic/profile-photo-helper.php';
     <?php require '../../assets/head.php'; ?>
     <link rel="stylesheet" href="../css/kelas-posting.css?v=<?php echo time(); ?>">
     <link rel="stylesheet" href="../css/image-upload.css?v=<?php echo time(); ?>">
+    <link rel="stylesheet" href="../css/file-upload.css?v=<?php echo time(); ?>">
     <title><?php echo htmlspecialchars($detailKelas['namaKelas']); ?> - Kelas</title>
 </head>
 
@@ -218,6 +219,11 @@ require_once '../logic/profile-photo-helper.php';
                                         <div class="upload-message-container"></div>
                                     </div>
                                     
+                                    <!-- File Attachment Preview Container -->
+                                    <div class="file-preview-container hidden mt-3">
+                                        <div class="file-preview-list space-y-2"></div>
+                                    </div>
+                                    
                                     <div class="flex items-center justify-between mt-4">
                                         <div class="flex space-x-2 lg:space-x-4">
                                             <div class="image-upload-container">
@@ -227,10 +233,13 @@ require_once '../logic/profile-photo-helper.php';
                                                     <span class="hidden sm:inline">Foto</span>
                                                 </label>
                                             </div>
-                                            <button type="button" class="flex items-center text-gray-600 hover:text-orange transition-colors text-sm lg:text-base">
-                                                <i class="ti ti-file mr-1 lg:mr-2"></i>
-                                                <span class="hidden sm:inline">File</span>
-                                            </button>
+                                            <div class="file-upload-container">
+                                                <input type="file" id="fileInput" name="files[]" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar" class="file-upload-input">
+                                                <label for="fileInput" class="file-upload-label flex items-center text-gray-600 hover:text-purple-600 transition-colors text-sm lg:text-base cursor-pointer">
+                                                    <i class="ti ti-file mr-1 lg:mr-2"></i>
+                                                    <span class="hidden sm:inline">File</span>
+                                                </label>
+                                            </div>
                                             <button type="button" class="flex items-center text-gray-600 hover:text-orange transition-colors text-sm lg:text-base">
                                                 <i class="ti ti-link mr-1 lg:mr-2"></i>
                                                 <span class="hidden sm:inline">Link</span>
@@ -398,6 +407,7 @@ require_once '../logic/profile-photo-helper.php';
     <?php require '../component/modal-classmates-list.php'; ?>
     <script src="../script/menu-bar-script.js"></script>
     <script src="../script/image-upload-manager.js"></script>
+    <script src="../script/file-upload-manager.js?v=<?php echo time(); ?>"></script>
     <script src="../script/photoswipe-simple.js"></script>
     <script src="../script/assignment-manager.js"></script>
     <script src="../script/assignment-list-modal.js?v=<?php echo time(); ?>"></script>

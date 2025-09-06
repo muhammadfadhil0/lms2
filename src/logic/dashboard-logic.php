@@ -320,6 +320,7 @@ class DashboardLogic {
             // Get images for each post
             foreach ($postingan as &$post) {
                 $post['gambar'] = $this->getGambarPostingan($post['id']);
+                $post['files'] = $this->getFilePostingan($post['id']); // Add file attachments
                 
                 // Convert assignment file path to URL if exists
                 if ($post['assignment_file_path']) {
@@ -339,6 +340,20 @@ class DashboardLogic {
     private function getGambarPostingan($postingan_id) {
         try {
             $sql = "SELECT nama_file, path_gambar, ukuran_file FROM postingan_gambar WHERE postingan_id = ? ORDER BY urutan";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bind_param("i", $postingan_id);
+            $stmt->execute();
+            
+            return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        } catch (Exception $e) {
+            return [];
+        }
+    }
+    
+    // Helper function to get post files
+    private function getFilePostingan($postingan_id) {
+        try {
+            $sql = "SELECT nama_file, path_file, ukuran_file, tipe_file, ekstensi_file FROM postingan_files WHERE postingan_id = ? ORDER BY urutan";
             $stmt = $this->conn->prepare($sql);
             $stmt->bind_param("i", $postingan_id);
             $stmt->execute();

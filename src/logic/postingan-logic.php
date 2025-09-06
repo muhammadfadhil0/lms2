@@ -9,7 +9,7 @@ class PostinganLogic {
     }
     
     // Membuat postingan baru
-    public function buatPostingan($kelas_id, $user_id, $konten, $tipePost = 'umum', $deadline = null, $images = []) {
+    public function buatPostingan($kelas_id, $user_id, $konten, $tipePost = 'umum', $deadline = null, $images = [], $files = []) {
         try {
             // Start transaction
             $this->conn->begin_transaction();
@@ -25,6 +25,11 @@ class PostinganLogic {
                 // Save images if any
                 if (!empty($images)) {
                     $this->simpanGambarPostingan($postingan_id, $images);
+                }
+                
+                // Save files if any
+                if (!empty($files)) {
+                    $this->simpanFilePostingan($postingan_id, $files);
                 }
                 
                 $this->conn->commit();
@@ -44,11 +49,12 @@ class PostinganLogic {
     }
     
     // Mendapatkan postingan berdasarkan kelas
-    public function getPostinganByKelas($kelas_id, $limit = 20, $offset = 0) {
+    public function getPostinganByKelas($kelas_id, $limit = 20, $offset = 0, $user_id = null) {
         try {
             $sql = "SELECT p.*, u.namaLengkap as namaPenulis, u.role as rolePenulis, u.fotoProfil,
                            COUNT(DISTINCT l.id) as jumlahLike,
                            COUNT(DISTINCT k.id) as jumlahKomentar,
+                           MAX(CASE WHEN l.user_id = ? THEN 1 ELSE 0 END) as userLiked,
                            t.id as assignment_id, t.judul as assignment_title, t.deskripsi as assignment_description,
                            t.deadline as assignment_deadline, t.nilai_maksimal as assignment_max_score,
                            t.file_path as assignment_file_path,
@@ -64,7 +70,7 @@ class PostinganLogic {
                     LIMIT ? OFFSET ?";
             
             $stmt = $this->conn->prepare($sql);
-            $stmt->bind_param("iii", $kelas_id, $limit, $offset);
+            $stmt->bind_param("iiii", $user_id, $kelas_id, $limit, $offset);
             $stmt->execute();
             
             $postingan = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
@@ -72,6 +78,7 @@ class PostinganLogic {
             // Get images for each post and assignment submission status if needed
             foreach ($postingan as &$post) {
                 $post['gambar'] = $this->getGambarPostingan($post['id']);
+                $post['files'] = $this->getFilePostingan($post['id']); // Add file attachments
                 
                 // Convert assignment file path to URL if exists
                 if ($post['assignment_file_path']) {
@@ -338,10 +345,48 @@ class PostinganLogic {
         }
     }
     
+    // Simpan file postingan
+    private function simpanFilePostingan($postingan_id, $files) {
+        try {
+            foreach ($files as $file) {
+                $sql = "INSERT INTO postingan_files (postingan_id, nama_file, path_file, ukuran_file, tipe_file, ekstensi_file, urutan) 
+                        VALUES (?, ?, ?, ?, ?, ?, ?)";
+                $stmt = $this->conn->prepare($sql);
+                $stmt->bind_param("ississi", 
+                    $postingan_id, 
+                    $file['nama_file'], 
+                    $file['path_file'], 
+                    $file['ukuran_file'], 
+                    $file['tipe_file'],
+                    $file['ekstensi_file'], 
+                    $file['urutan']
+                );
+                $stmt->execute();
+            }
+            return true;
+        } catch (Exception $e) {
+            throw new Exception('Gagal menyimpan file: ' . $e->getMessage());
+        }
+    }
+    
     // Mendapatkan gambar postingan
     public function getGambarPostingan($postingan_id) {
         try {
             $sql = "SELECT * FROM postingan_gambar WHERE postingan_id = ? ORDER BY urutan";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bind_param("i", $postingan_id);
+            $stmt->execute();
+            
+            return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        } catch (Exception $e) {
+            return [];
+        }
+    }
+    
+    // Mendapatkan file postingan
+    public function getFilePostingan($postingan_id) {
+        try {
+            $sql = "SELECT * FROM postingan_files WHERE postingan_id = ? ORDER BY urutan";
             $stmt = $this->conn->prepare($sql);
             $stmt->bind_param("i", $postingan_id);
             $stmt->execute();

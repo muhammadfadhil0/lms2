@@ -20,7 +20,7 @@ $siswa_id = $_SESSION['user']['id'];
 $dashboardData = $dashboardLogic->getDashboardSiswa($siswa_id);
 
 // Get recent posts from all classes
-$recentPosts = $dashboardLogic->getPostinganTerbaruSiswa($siswa_id, 5);
+$recentPosts = $dashboardLogic->getPostinganTerbaruSiswa($siswa_id, 15);
 
 // Ensure default values if data is null
 if (!$dashboardData) {
@@ -46,6 +46,7 @@ if (!$dashboardData) {
     <meta name="user-id" content="<?php echo $_SESSION['user']['id']; ?>">
     <?php require '../../assets/head.php'; ?>
     <link rel="stylesheet" href="../css/kelas-posting.css?v=<?php echo time(); ?>">
+    <link rel="stylesheet" href="../css/file-upload.css?v=<?php echo time(); ?>">
     <title>Beranda</title>
     <style>
         /* Additional responsive styles */
@@ -540,13 +541,72 @@ if (!$dashboardData) {
                                             <?php endforeach; ?>
                                         </div>
                                     <?php endif; ?>
+
+                                    <!-- Post Files -->
+                                    <?php if (!empty($post['files'])): ?>
+                                        <?php
+                                        // Helper function for file size formatting
+                                        if (!function_exists('formatFileSize')) {
+                                            function formatFileSize($bytes) {
+                                                if ($bytes == 0) return '0 Bytes';
+                                                $k = 1024;
+                                                $sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                                                $i = floor(log($bytes) / log($k));
+                                                return round(($bytes / pow($k, $i)), 2) . ' ' . $sizes[$i];
+                                            }
+                                        }
+                                        ?>
+                                        <div class="mt-3 space-y-2">
+                                            <?php foreach ($post['files'] as $file): ?>
+                                                <?php
+                                                // Get file extension for icon
+                                                $extension = strtolower($file['ekstensi_file']);
+                                                
+                                                // Icon mapping
+                                                $iconMap = [
+                                                    'pdf' => ['icon' => 'ti-file-type-pdf', 'class' => 'pdf', 'bg' => 'bg-red-500'],
+                                                    'doc' => ['icon' => 'ti-file-type-doc', 'class' => 'word', 'bg' => 'bg-blue-500'],
+                                                    'docx' => ['icon' => 'ti-file-type-doc', 'class' => 'word', 'bg' => 'bg-blue-500'],
+                                                    'xls' => ['icon' => 'ti-file-type-xls', 'class' => 'excel', 'bg' => 'bg-green-500'],
+                                                    'xlsx' => ['icon' => 'ti-file-type-xls', 'class' => 'excel', 'bg' => 'bg-green-500'],
+                                                    'ppt' => ['icon' => 'ti-presentation', 'class' => 'powerpoint', 'bg' => 'bg-orange-500'],
+                                                    'pptx' => ['icon' => 'ti-presentation', 'class' => 'powerpoint', 'bg' => 'bg-orange-500'],
+                                                    'txt' => ['icon' => 'ti-file-text', 'class' => 'text', 'bg' => 'bg-gray-500'],
+                                                    'zip' => ['icon' => 'ti-file-zip', 'class' => 'archive', 'bg' => 'bg-yellow-600'],
+                                                    'rar' => ['icon' => 'ti-file-zip', 'class' => 'archive', 'bg' => 'bg-yellow-600'],
+                                                    '7z' => ['icon' => 'ti-file-zip', 'class' => 'archive', 'bg' => 'bg-yellow-600']
+                                                ];
+                                                
+                                                $iconInfo = $iconMap[$extension] ?? ['icon' => 'ti-file', 'class' => 'default', 'bg' => 'bg-gray-500'];
+                                                ?>
+                                                <a href="../../<?php echo htmlspecialchars($file['path_file']); ?>" 
+                                                   class="flex items-center p-3 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 hover:border-gray-300 transition-all hover:shadow-sm" 
+                                                   target="_blank" rel="noopener noreferrer">
+                                                    <div class="w-12 h-12 <?php echo $iconInfo['bg']; ?> text-white rounded-lg flex items-center justify-center mr-3 flex-shrink-0 shadow-sm">
+                                                        <i class="ti <?php echo $iconInfo['icon']; ?> text-lg"></i>
+                                                    </div>
+                                                    <div class="flex-1 min-w-0">
+                                                        <div class="font-medium text-gray-900 truncate text-sm" title="<?php echo htmlspecialchars($file['nama_file']); ?>">
+                                                            <?php echo htmlspecialchars($file['nama_file']); ?>
+                                                        </div>
+                                                        <div class="text-xs text-gray-500 mt-1">
+                                                            <?php echo formatFileSize($file['ukuran_file']); ?>
+                                                        </div>
+                                                    </div>
+                                                    <div class="ml-3 text-gray-400 hover:text-gray-600">
+                                                        <i class="ti ti-download text-lg"></i>
+                                                    </div>
+                                                </a>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    <?php endif; ?>
                                 </div>
 
                                 <!-- Post Actions -->
                                 <div class="flex items-center justify-between pt-3 border-t border-gray-100">
                                     <div class="flex items-center space-x-4">
                                         <!-- Like Button -->
-                                        <button class="like-btn flex items-center space-x-2 text-gray-600 hover:text-red-600 transition-colors"
+                                        <button class="like-btn flex items-center space-x-2 <?php echo $post['userLiked'] ? 'text-red-600' : 'text-gray-600'; ?> hover:text-red-600 transition-colors"
                                             data-post-id="<?php echo $post['id']; ?>"
                                             data-liked="<?php echo $post['userLiked'] ? 'true' : 'false'; ?>">
                                             <i class="ti ti-heart<?php echo $post['userLiked'] ? '-filled text-red-600' : ''; ?>"></i>
@@ -656,6 +716,16 @@ if (!$dashboardData) {
                     const postId = this.dataset.postId;
                     if (window.kelasPosting) {
                         window.kelasPosting.openCommentsModal(postId);
+                    }
+                });
+            });
+
+            // Like button functionality
+            document.querySelectorAll('.like-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const postId = this.dataset.postId;
+                    if (window.kelasPosting) {
+                        window.kelasPosting.toggleLike(postId);
                     }
                 });
             });

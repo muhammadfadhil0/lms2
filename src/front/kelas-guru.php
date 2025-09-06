@@ -57,6 +57,7 @@ require_once '../logic/profile-photo-helper.php';
     <link rel="stylesheet" href="../css/kelas-posting.css">
     <link rel="stylesheet" href="../css/class-settings.css">
     <link rel="stylesheet" href="../css/image-upload.css">
+    <link rel="stylesheet" href="../css/file-upload.css?v=<?php echo time(); ?>">
     <title><?php echo htmlspecialchars($detailKelas['namaKelas']); ?> - Kelola Kelas</title>
     <style>
         /* Hide scrollbar for horizontal quick actions on mobile */
@@ -190,6 +191,11 @@ require_once '../logic/profile-photo-helper.php';
                                         <div class="upload-message-container"></div>
                                     </div>
                                     
+                                    <!-- File Attachment Preview Container -->
+                                    <div class="file-preview-container hidden mt-3">
+                                        <div class="file-preview-list space-y-2"></div>
+                                    </div>
+                                    
                                     <div class="flex items-center justify-between mt-4">
                                         <div class="flex space-x-2 lg:space-x-4">
                                             <div class="image-upload-container">
@@ -199,17 +205,16 @@ require_once '../logic/profile-photo-helper.php';
                                                     <span class="hidden sm:inline">Foto</span>
                                                 </label>
                                             </div>
+                                            <div class="file-upload-container">
+                                                <input type="file" id="fileInput" name="files[]" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar" class="file-upload-input">
+                                                <label for="fileInput" class="file-upload-label flex items-center text-gray-600 hover:text-purple-600 transition-colors text-sm lg:text-base cursor-pointer">
+                                                    <i class="ti ti-file mr-1 lg:mr-2"></i>
+                                                    <span class="hidden sm:inline">File</span>
+                                                </label>
+                                            </div>
                                             <button type="button" onclick="openCreateAssignmentModal()" class="flex items-center text-gray-600 hover:text-blue-600 transition-colors text-sm lg:text-base">
                                                 <i class="ti ti-clipboard-list mr-1 lg:mr-2"></i>
                                                 <span class="hidden sm:inline">Tugas</span>
-                                            </button>
-                                            <button type="button" class="flex items-center text-gray-600 hover:text-orange transition-colors text-sm lg:text-base">
-                                                <i class="ti ti-file mr-1 lg:mr-2"></i>
-                                                <span class="hidden sm:inline">File</span>
-                                            </button>
-                                            <button type="button" class="flex items-center text-gray-600 hover:text-orange transition-colors text-sm lg:text-base">
-                                                <i class="ti ti-link mr-1 lg:mr-2"></i>
-                                                <span class="hidden sm:inline">Link</span>
                                             </button>
                                         </div>
                                         <button type="submit" class="bg-orange text-white px-4 lg:px-6 py-2 rounded-lg hover:bg-orange-600 transition-colors text-sm lg:text-base">
@@ -249,7 +254,7 @@ require_once '../logic/profile-photo-helper.php';
                                     <i class="ti ti-clipboard-check mr-3 text-blue-600"></i>
                                     <span class="text-sm text-gray-700 font-medium">Laporan Tugas Siswa</span>
                                 </button>
-                                <button class="w-full flex items-center p-3 text-left hover:bg-orange-50 rounded-lg transition-colors border border-transparent hover:border-orange-200">
+                                <button onclick="openCreateAssignmentModal()" class="w-full flex items-center p-3 text-left hover:bg-orange-50 rounded-lg transition-colors border border-transparent hover:border-orange-200">
                                     <i class="ti ti-file-plus mr-3 text-orange"></i>
                                     <span class="text-sm text-gray-700 font-medium">Buat Tugas</span>
                                 </button>
@@ -333,6 +338,7 @@ require_once '../logic/profile-photo-helper.php';
     <script src="../script/menu-bar-script.js"></script>
     <script src="../script/class-settings-manager.js"></script>
     <script src="../script/image-upload-manager.js"></script>
+    <script src="../script/file-upload-manager.js?v=<?php echo time(); ?>"></script>
     <script src="../script/photoswipe-simple.js"></script>
     <script src="../script/edit-post-modal.js"></script>
     <script src="../script/assignment-manager.js"></script>

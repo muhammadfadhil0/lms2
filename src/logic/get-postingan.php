@@ -51,7 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
     }
     
     // Get posts
-    $postingan = $postinganLogic->getPostinganByKelas($kelas_id, $limit, $offset);
+    $postingan = $postinganLogic->getPostinganByKelas($kelas_id, $limit, $offset, $user_id);
     
     echo json_encode([
         'success' => true, 
