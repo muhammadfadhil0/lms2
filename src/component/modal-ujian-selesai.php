@@ -1,19 +1,19 @@
-<!-- Modal Ujian Sudah Selesai -->
-<div id="modal-ujian-selesai" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-        <div class="mt-3 text-center">
-            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
-                <i class="ti ti-circle-x text-red-600 text-2xl"></i>
+<!-- Alert Ujian Sudah Selesai -->
+<div id="alert-ujian-selesai" class="hidden fixed top-4 right-4 z-50 transform transition-all duration-300 ease-in-out translate-x-full">
+    <div class="bg-white border-l-4 border-red-500 rounded-lg shadow-lg p-4 max-w-sm w-full">
+        <div class="flex items-start">
+            <div class="flex-shrink-0">
+                <i class="ti ti-circle-x text-red-500 text-xl"></i>
             </div>
-            <h3 class="text-lg font-medium text-gray-900 mt-3">Ujian Sudah Selesai</h3>
-            <div class="mt-2 px-7 py-3">
-                <p class="text-sm text-gray-500">
+            <div class="ml-3 flex-1">
+                <h3 class="text-sm font-medium text-gray-900">Ujian Sudah Selesai</h3>
+                <p class="mt-1 text-sm text-gray-600">
                     Anda sudah menyelesaikan ujian ini sebelumnya. Silakan lihat hasil ujian atau pilih ujian lain yang tersedia.
                 </p>
             </div>
-            <div class="items-center px-4 py-3">
-                <button id="btn-tutup-modal-selesai" class="px-4 py-2 bg-red-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-300">
-                    Tutup
+            <div class="ml-4 flex-shrink-0">
+                <button id="btn-tutup-alert-selesai" class="inline-flex text-gray-400 hover:text-gray-600 focus:outline-none focus:text-gray-600 transition ease-in-out duration-150">
+                    <i class="ti ti-x text-lg"></i>
                 </button>
             </div>
         </div>
@@ -21,23 +21,45 @@
 </div>
 
 <script>
-// Function untuk menampilkan modal ujian sudah selesai
-function showModalUjianSelesai() {
-    document.getElementById('modal-ujian-selesai').classList.remove('hidden');
+// Function untuk menampilkan alert ujian sudah selesai
+function showAlertUjianSelesai() {
+    const alert = document.getElementById('alert-ujian-selesai');
+    alert.classList.remove('hidden');
+    
+    // Trigger reflow untuk memastikan transisi berjalan
+    alert.offsetHeight;
+    
+    // Slide in dari kanan
+    alert.classList.remove('translate-x-full');
+    
+    // Auto hide setelah 5 detik
+    setTimeout(() => {
+        hideAlertUjianSelesai();
+    }, 5000);
 }
 
-// Function untuk menutup modal ujian sudah selesai
-function hideModalUjianSelesai() {
-    document.getElementById('modal-ujian-selesai').classList.add('hidden');
+// Function untuk menyembunyikan alert ujian sudah selesai
+function hideAlertUjianSelesai() {
+    const alert = document.getElementById('alert-ujian-selesai');
+    
+    // Slide out ke kanan
+    alert.classList.add('translate-x-full');
+    
+    // Sembunyikan setelah animasi selesai
+    setTimeout(() => {
+        alert.classList.add('hidden');
+    }, 300);
 }
 
 // Event listener untuk tombol tutup
-document.getElementById('btn-tutup-modal-selesai').addEventListener('click', hideModalUjianSelesai);
+document.getElementById('btn-tutup-alert-selesai').addEventListener('click', hideAlertUjianSelesai);
 
-// Event listener untuk menutup modal ketika area luar diklik
-document.getElementById('modal-ujian-selesai').addEventListener('click', function(e) {
-    if (e.target === this) {
-        hideModalUjianSelesai();
-    }
-});
+// Backward compatibility - alias untuk function lama
+function showModalUjianSelesai() {
+    showAlertUjianSelesai();
+}
+
+function hideModalUjianSelesai() {
+    hideAlertUjianSelesai();
+}
 </script>

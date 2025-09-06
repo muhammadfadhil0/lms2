@@ -151,7 +151,7 @@ class KelasLogic {
     // Mendapatkan detail kelas
     public function getDetailKelas($kelas_id) {
         try {
-            $sql = "SELECT k.*, u.namaLengkap as namaGuru, u.email as emailGuru
+            $sql = "SELECT k.*, u.namaLengkap as namaGuru, u.email as emailGuru, u.fotoProfil as fotoProfilGuru
                     FROM kelas k 
                     JOIN users u ON k.guru_id = u.id
                     WHERE k.id = ?";

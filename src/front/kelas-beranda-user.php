@@ -1,7 +1,7 @@
 <!-- cek sekarang ada di halaman apa -->
-<?php 
+<?php
 session_start();
-$currentPage = 'kelas'; 
+$currentPage = 'kelas';
 
 // Check if user is logged in and is a siswa
 if (!isset($_SESSION['user']) || $_SESSION['user']['role'] != 'siswa') {
@@ -34,8 +34,12 @@ if (!$dashboardData) {
 <?php require '../component/sidebar.php'; ?>
 <?php require '../component/menu-bar-mobile.php'; ?>
 <?php require '../component/modal-join-class.php'; ?>
+<?php // Profile photo helper for fresh avatar URL 
+?>
+<?php require_once '../logic/profile-photo-helper.php'; ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -47,43 +51,76 @@ if (!$dashboardData) {
             .grid {
                 gap: 1rem;
             }
-            
-            .text-xl, .text-2xl {
+
+            .text-xl,
+            .text-2xl {
                 font-size: 1.25rem;
             }
-            
+
             .p-6 {
                 padding: 1rem;
             }
         }
-        
+
         /* Smooth transitions */
         .transition-all {
             transition-property: all;
             transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
             transition-duration: 300ms;
         }
-        
+
         /* Card hover effects */
         .hover\:shadow-md:hover {
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
         }
     </style>
 </head>
+
 <body class="bg-gray-50">
 
     <!-- Main Content -->
     <div data-main-content class="md:ml-64 min-h-screen pb-20 md:pb-0 transition-all duration-300 ease-in-out">
         <!-- Header -->
-        <header class="bg-white p-4 md:p-6">
+        <header class="bg-white p-2 md:p-6 header-compact border-b border-gray-200">
+            <style>
+                @media (max-width: 768px) {
+                    .header-compact {
+                        padding: .5rem .75rem;
+                    }
+
+                    .header-compact .mobile-logo-wrap img {
+                        height: 28px;
+                        width: 28px;
+                    }
+
+                    .header-compact .mobile-logo-text {
+                        font-size: 1.35rem;
+                        line-height: 1.45rem;
+                    }
+
+                    .header-compact .action-buttons {
+                        gap: .25rem;
+                    }
+
+                    .header-compact .action-buttons button {
+                        padding: .4rem;
+                    }
+
+                    .header-compact .action-buttons i {
+                        font-size: 1.05rem;
+                    }
+                }
+            </style>
+
             <div class="flex items-center justify-between">
                 <div>
-                    <h1 class="text-xl md:text-2xl font-bold text-gray-800">Beranda</h1>
-                    <p class="text-gray-600">Selamat datang, <?php echo htmlspecialchars($_SESSION['user']['namaLengkap']); ?>!</p>
+                    <h1 class="text-xl md:text-2xl font-bold text-gray-800">Kelas</h1>
+                    <p class="text-gray-600 hidden md:block">Kelas yang telah kamu ikuti</p>
                 </div>
                 <div class="flex items-center space-x-2 md:space-x-4">
                     <button command="show-modal" commandfor="join-class-modal" class="p-2 border rounded-full text-gray-400 hover:text-orange-600 transition-colors flex items-center">
                         <i class="ti ti-user-plus text-lg md:text-xl"></i>
+                        <span class="inline md:hidden ml-1 text-sm">Gabung</span>
                         <span class="hidden md:inline ml-1 text-sm">Gabung Kelas</span>
                     </button>
                     <button class="p-2 text-gray-400 hover:text-gray-600 transition-colors">
@@ -103,7 +140,7 @@ if (!$dashboardData) {
                 <?php if (isset($dashboardData['kelasTerbaru']) && !empty($dashboardData['kelasTerbaru'])): ?>
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                         <?php foreach ($dashboardData['kelasTerbaru'] as $kelas): ?>
-                            <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
+                            <div class="relative bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all">
                                 <div class="h-32 sm:h-40 md:h-48 bg-gradient-to-br from-orange-400 to-orange-600 relative">
                                     <?php if (!empty($kelas['gambarKover'])): ?>
                                         <img src="../../<?php echo htmlspecialchars($kelas['gambarKover']); ?>" alt="<?php echo htmlspecialchars($kelas['namaKelas']); ?>" class="w-full h-full object-cover">
@@ -117,9 +154,24 @@ if (!$dashboardData) {
                                             <?php echo htmlspecialchars($kelas['mataPelajaran'] ?? $kelas['namaKelas']); ?>
                                         </span>
                                     </div>
+                                    <!-- Teacher avatar positioned at left on the cover/card boundary -->
+                                    <div class="absolute left-4 md:left-6 bottom-0 transform translate-y-1/2">
+                                        <?php
+                                        // Use guru id from kelas if available
+                                        $ownerId = isset($kelas['guru_id']) ? $kelas['guru_id'] : null;
+                                        $ownerPhoto = $ownerId ? getUserProfilePhotoUrl($ownerId) : null;
+                                        ?>
+                                        <?php if ($ownerPhoto): ?>
+                                            <img src="<?php echo htmlspecialchars($ownerPhoto); ?>" alt="Foto Guru" class="w-16 h-16 md:w-20 md:h-20 rounded-full border-4 border-white object-cover shadow-md" onerror="this.parentElement.innerHTML='<div class=\'w-16 h-16 md:w-20 md:h-20 rounded-full border-4 border-white bg-orange-600 flex items-center justify-center\'><i class=\'ti ti-user text-white text-xl\'></i></div>'">
+                                        <?php else: ?>
+                                            <div class="w-16 h-16 md:w-20 md:h-20 rounded-full border-4 border-white bg-orange-600 flex items-center justify-center shadow-md">
+                                                <i class="ti ti-user text-white text-xl"></i>
+                                            </div>
+                                        <?php endif; ?>
+                                    </div>
                                 </div>
-                                <div class="p-4 md:p-6">
-                                    <h3 class="font-semibold text-gray-800 mb-2"><?php echo htmlspecialchars($kelas['namaKelas']); ?></h3>
+                                <div class="pt-10 p-4 md:pt-12 md:p-6">
+                                    <h3 class="font-semibold text-gray-800"><?php echo htmlspecialchars($kelas['namaKelas']); ?></h3>
                                     <p class="text-sm text-gray-600 mb-3"><?php echo htmlspecialchars($kelas['namaGuru'] ?? 'Guru'); ?></p>
                                     <div class="flex items-center justify-between text-xs md:text-sm text-gray-600 mb-3 md:mb-4">
                                         <span class="flex items-center">
@@ -156,4 +208,5 @@ if (!$dashboardData) {
     <script src="../script/menu-bar-script.js"></script>
     <script src="../script/kelas-management.js"></script>
 </body>
+
 </html>

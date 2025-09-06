@@ -26,6 +26,8 @@ $currentPage = 'beranda';
     <?php require '../component/sidebar.php'; ?>
     <?php require '../component/menu-bar-mobile.php'; ?>
     <?php require '../component/modal-add-class.php'; ?>
+    <?php // Profile photo helper for fresh avatar URL ?>
+    <?php require_once '../logic/profile-photo-helper.php'; ?>
     <!DOCTYPE html>
     <html lang="en">
     <head>
@@ -120,7 +122,7 @@ $currentPage = 'beranda';
                         <?php if (!empty($dashboardData['kelasTerbaru'])): ?>
                             <?php foreach ($dashboardData['kelasTerbaru'] as $kelas): ?>
                                 <?php $isNewClass = ($newClassId && $kelas['id'] == $newClassId); ?>
-                                <div class="bg-white rounded-lg shadow-sm border <?php echo $isNewClass ? 'border-orange-300 ring-2 ring-orange-200' : 'border-gray-200'; ?> overflow-hidden hover:shadow-md transition-all <?php echo $isNewClass ? 'animate-pulse' : ''; ?>">
+                                <div class="relative bg-white rounded-lg shadow-sm border <?php echo $isNewClass ? 'border-orange-300 ring-2 ring-orange-200' : 'border-gray-200'; ?> overflow-hidden hover:shadow-md transition-all <?php echo $isNewClass ? 'animate-pulse' : ''; ?>">
                                     <div class="h-32 sm:h-40 md:h-48 bg-gradient-to-br from-orange-400 to-orange-600 relative">
                                         <?php if (!empty($kelas['gambarKover'])): ?>
                                             <img src="../../<?php echo htmlspecialchars($kelas['gambarKover']); ?>" alt="<?php echo htmlspecialchars($kelas['namaKelas']); ?>" class="w-full h-full object-cover">
@@ -134,9 +136,24 @@ $currentPage = 'beranda';
                                                 <?php echo htmlspecialchars($kelas['mataPelajaran']); ?>
                                             </span>
                                         </div>
+                                        <!-- Teacher avatar positioned at left on the cover/card boundary -->
+                                        <div class="absolute left-4 md:left-6 bottom-0 transform translate-y-1/2">
+                                            <?php
+                                            // Use guru id from kelas if available, otherwise current guru
+                                            $ownerId = isset($kelas['guru_id']) ? $kelas['guru_id'] : $guru_id;
+                                            $ownerPhoto = getUserProfilePhotoUrl($ownerId);
+                                            ?>
+                                            <?php if ($ownerPhoto): ?>
+                                                <img src="<?php echo htmlspecialchars($ownerPhoto); ?>" alt="Foto Guru" class="w-16 h-16 md:w-20 md:h-20 rounded-full border-4 border-white object-cover shadow-md" onerror="this.parentElement.innerHTML='<div class=\'w-16 h-16 md:w-20 md:h-20 rounded-full border-4 border-white bg-orange-600 flex items-center justify-center\'><i class=\'ti ti-user text-white text-xl\'></i></div>'">
+                                            <?php else: ?>
+                                                <div class="w-16 h-16 md:w-20 md:h-20 rounded-full border-4 border-white bg-orange-600 flex items-center justify-center shadow-md">
+                                                    <i class="ti ti-user text-white text-xl"></i>
+                                                </div>
+                                            <?php endif; ?>
+                                        </div>
                                     </div>
-                                    <div class="p-4 md:p-6">
-                                        <h3 class="font-semibold text-gray-800 mb-2"><?php echo htmlspecialchars($kelas['namaKelas']); ?></h3>
+                                    <div class="pt-10 p-4 md:pt-12 md:p-6">
+                                        <h3 class="font-semibold text-gray-800"><?php echo htmlspecialchars($kelas['namaKelas']); ?></h3>
                                         <p class="text-sm text-gray-600 mb-3"><?php echo htmlspecialchars($kelas['mataPelajaran']); ?></p>
                                         <div class="flex items-center justify-between text-xs md:text-sm text-gray-600 mb-3 md:mb-4">
                                             <span class="flex items-center">

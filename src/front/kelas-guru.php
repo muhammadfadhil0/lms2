@@ -43,6 +43,10 @@ $statistikPostingan = $postinganLogic->getStatistikPostingan($kelas_id);
 <!-- includes -->
 <?php require '../component/sidebar.php'; ?>
 <?php require '../component/menu-bar-mobile.php'; ?>
+<?php 
+// Include profile photo helper for fresh data
+require_once '../logic/profile-photo-helper.php';
+?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -88,8 +92,26 @@ $statistikPostingan = $postinganLogic->getStatistikPostingan($kelas_id);
             <div class="absolute bottom-4 lg:bottom-6 left-4 lg:left-6 text-white" style="z-index: 3;">
                 <h1 class="text-2xl lg:text-4xl font-bold mb-2"><?php echo htmlspecialchars($detailKelas['namaKelas']); ?></h1>
                 <div class="flex items-center space-x-3 lg:space-x-4 mb-3">
-                    <div class="w-10 h-10 lg:w-12 lg:h-12 rounded-full bg-orange-600 flex items-center justify-center">
-                        <i class="ti ti-user text-white text-lg lg:text-xl"></i>
+                    <div class="w-10 h-10 lg:w-12 lg:h-12 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0">
+                        <?php if (isset($detailKelas['fotoProfilGuru']) && !empty($detailKelas['fotoProfilGuru'])): ?>
+                            <?php
+                            $fotoProfilGuru = $detailKelas['fotoProfilGuru'];
+                            // Check if it already contains the full path
+                            if (strpos($fotoProfilGuru, 'uploads/profile/') === 0) {
+                                $photoPath = '../../' . $fotoProfilGuru;
+                            } else {
+                                $photoPath = '../../uploads/profile/' . $fotoProfilGuru;
+                            }
+                            ?>
+                            <img src="<?php echo htmlspecialchars($photoPath); ?>" 
+                                 alt="Foto Guru" 
+                                 class="w-full h-full object-cover"
+                                 onerror="this.parentElement.innerHTML='<div class=\'w-full h-full bg-orange-600 flex items-center justify-center\'><i class=\'ti ti-user text-white text-lg lg:text-xl\'></i></div>'">
+                        <?php else: ?>
+                            <div class="w-full h-full bg-orange-600 flex items-center justify-center">
+                                <i class="ti ti-user text-white text-lg lg:text-xl"></i>
+                            </div>
+                        <?php endif; ?>
                     </div>
                     <div>
                         <p class="text-base lg:text-lg font-medium"><?php echo htmlspecialchars($detailKelas['namaGuru']); ?></p>
@@ -142,8 +164,20 @@ $statistikPostingan = $postinganLogic->getStatistikPostingan($kelas_id);
                     <div class="bg-white rounded-lg p-4 lg:p-6 shadow-sm mb-6">
                         <form id="postForm" enctype="multipart/form-data">
                             <div class="flex items-start space-x-3 lg:space-x-4">
-                                <div class="w-8 h-8 lg:w-10 lg:h-10 rounded-full bg-orange-500 flex items-center justify-center">
-                                    <i class="ti ti-user text-white"></i>
+                                <div class="w-8 h-8 lg:w-10 lg:h-10 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0">
+                                    <?php 
+                                    // Get fresh photo from database
+                                    $currentUserPhotoUrl = getUserProfilePhotoUrl($_SESSION['user']['id']);
+                                    if ($currentUserPhotoUrl): ?>
+                                        <img src="<?php echo htmlspecialchars($currentUserPhotoUrl); ?>" 
+                                             alt="Foto Profil" 
+                                             class="w-full h-full object-cover"
+                                             onerror="this.parentElement.innerHTML='<div class=\'w-full h-full bg-orange-500 flex items-center justify-center\'><i class=\'ti ti-user text-white\'></i></div>'">
+                                    <?php else: ?>
+                                        <div class="w-full h-full bg-orange-500 flex items-center justify-center">
+                                            <i class="ti ti-user text-white"></i>
+                                        </div>
+                                    <?php endif; ?>
                                 </div>
                                 <div class="flex-1">
                                     <textarea id="postTextarea" name="konten" placeholder="Bagikan sesuatu dengan kelas..."

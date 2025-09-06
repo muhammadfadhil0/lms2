@@ -443,6 +443,80 @@ class UjianLogic {
             return [];
         }
     }
+
+    // Mendapatkan data review ujian untuk siswa
+    public function getReviewUjianSiswa($ujian_id, $siswa_id) {
+        try {
+            // Get ujian data with showScore permission
+            $sql = "SELECT u.*, k.namaKelas, us.id as ujian_siswa_id, us.totalNilai, us.jumlahBenar, us.jumlahSalah,
+                           us.waktuMulai, us.waktuSelesai, us.status,
+                           COALESCE(u.showScore, 1) as showScore
+                    FROM ujian u
+                    JOIN kelas k ON u.kelas_id = k.id
+                    JOIN ujian_siswa us ON u.id = us.ujian_id
+                    WHERE u.id = ? AND us.siswa_id = ? AND us.status = 'selesai'";
+            
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bind_param("ii", $ujian_id, $siswa_id);
+            $stmt->execute();
+            $ujian_data = $stmt->get_result()->fetch_assoc();
+            
+            if (!$ujian_data) {
+                return null;
+            }
+            
+            // Check if student is allowed to see results
+            if (!$ujian_data['showScore']) {
+                return ['error' => 'not_allowed', 'message' => 'Guru tidak mengizinkan siswa melihat hasil ujian ini'];
+            }
+            
+            // Get soal data with student answers 
+            $sql = "SELECT s.id as soal_id, s.pertanyaan, s.tipeSoal, s.kunciJawaban, s.poin as poin_soal, 
+                           s.nomorSoal,
+                           js.jawaban, js.pilihanJawaban, js.benar, js.poin as poin_jawaban, js.waktuDijawab
+                    FROM soal s
+                    LEFT JOIN jawaban_siswa js ON s.id = js.soal_id AND js.ujian_siswa_id = ?
+                    WHERE s.ujian_id = ?
+                    ORDER BY s.nomorSoal ASC";
+            
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bind_param("ii", $ujian_data['ujian_siswa_id'], $ujian_id);
+            $stmt->execute();
+            $soal_data = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+            
+            if (empty($soal_data)) {
+                return null;
+            }
+            
+            // Get pilihan jawaban for multiple choice questions
+            foreach ($soal_data as &$soal) {
+                if ($soal['tipeSoal'] === 'pilihan_ganda') {
+                    $sql_pilihan = "SELECT opsi, teksJawaban, benar FROM pilihan_jawaban WHERE soal_id = ? ORDER BY opsi";
+                    $stmt_pilihan = $this->conn->prepare($sql_pilihan);
+                    $stmt_pilihan->bind_param("i", $soal['soal_id']);
+                    $stmt_pilihan->execute();
+                    $pilihan_result = $stmt_pilihan->get_result()->fetch_all(MYSQLI_ASSOC);
+                    
+                    $soal['pilihan_array'] = [];
+                    foreach ($pilihan_result as $pilihan) {
+                        $soal['pilihan_array'][$pilihan['opsi']] = [
+                            'teks' => $pilihan['teksJawaban'],
+                            'benar' => (bool)$pilihan['benar']
+                        ];
+                    }
+                }
+            }
+            unset($soal);
+            
+            return [
+                'ujian' => $ujian_data,
+                'soal_list' => $soal_data
+            ];
+            
+        } catch (Exception $e) {
+            return null;
+        }
+    }
     
     // Mendapatkan data untuk mode koreksi swipe
     public function getDataKoreksiSwipe($ujian_id) {

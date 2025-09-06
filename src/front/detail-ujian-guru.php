@@ -192,9 +192,9 @@ function statusBadgeClass($status)
           <!-- Sidebar (col-span-1) -->
           <div class="lg:col-span-1">
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sidebar-tools">
-              <h3 class="text-lg font-medium text-gray-800 mb-4">Tools</h3>
+              <h3 class="text-lg font-medium text-gray-800 mb-4">Aksi Cepat</h3>
               <div class="space-y-3">
-                <a href="buat-soal-guru.php?ujian_id=<?= (int)$ujian['id'] ?>" class="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-orange text-white rounded-lg hover:bg-orange-600 transition-colors">
+                <a href="buat-soal-guru.php?ujian_id=<?= (int)$ujian['id'] ?>" class="w-full flex items-center justify-center space-x-2 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
                   <i class="ti ti-edit"></i><span>Edit Soal</span>
                 </a>
                 <a href="buat-ujian-guru.php?ujian_id=<?= (int)$ujian['id'] ?>" class="w-full flex items-center justify-center space-x-2 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
@@ -212,7 +212,7 @@ function statusBadgeClass($status)
                     </button>
                   </form>
                 <?php elseif ($ujian['status'] === 'aktif'): ?>
-                  <button id="finishExamBtn" data-ujian-id="<?= (int)$ujian['id'] ?>" class="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm">
+                  <button id="finishExamBtn" data-ujian-id="<?= (int)$ujian['id'] ?>" class="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm">
                     <i class="ti ti-check"></i><span>Tandai Selesai</span>
                   </button>
                 <?php endif; ?>

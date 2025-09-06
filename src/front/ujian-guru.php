@@ -31,6 +31,8 @@ function badgeColor($status)
 <!-- includes -->
 <?php require '../component/sidebar.php'; ?>
 <?php require '../component/menu-bar-mobile.php'; ?>
+<?php // Profile photo helper for fresh avatar URL ?>
+<?php require_once '../logic/profile-photo-helper.php'; ?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -119,12 +121,24 @@ function badgeColor($status)
                                             <?= $status ?>
                                         </span>
                                     </div>
-                                    <div class="absolute bottom-3 left-4 right-4">
-                                        <span class="bg-white/90 text-orange-600 text-[11px] font-medium px-2 py-1 rounded-full inline-block mb-1 shadow-sm">Kelas: <?= $kelas ?></span>
-                                    </div>
                                 </div>
-                                <div class="p-4 md:p-5 space-y-3">
-                                    <h3 class="font-semibold leading-snug drop-shadow line-clamp-2 group-hover:line-clamp-none transition-all"><?= $nama ?></h3>
+                                <!-- Teacher avatar positioned at left on the cover/card boundary (moved outside cover to avoid clipping) -->
+                                <?php
+                                $ownerId = isset($u['guru_id']) ? $u['guru_id'] : $guru_id;
+                                $ownerPhoto = getUserProfilePhotoUrl($ownerId);
+                                ?>
+                                <div class="relative -mt-8 z-20 ml-4 md:ml-6">
+                                    <?php if ($ownerPhoto): ?>
+                                        <img src="<?= htmlspecialchars($ownerPhoto) ?>" alt="Foto Guru" class="w-16 h-16 md:w-20 md:h-20 rounded-full border-4 border-white object-cover shadow-md" onerror="this.parentElement.innerHTML='<div class=\'w-16 h-16 md:w-20 md:h-20 rounded-full border-4 border-white bg-orange-600 flex items-center justify-center\'><i class=\'ti ti-user text-white text-xl\'></i></div>'">
+                                    <?php else: ?>
+                                        <div class="w-16 h-16 md:w-20 md:h-20 rounded-full border-4 border-white bg-orange-600 flex items-center justify-center shadow-md">
+                                            <i class="ti ti-user text-white text-xl"></i>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                                <div class="p-4 md:pt-5 md:p-5 space-y-3">
+                                    <h3 class="font-semibold leading-snug drop-shadow line-clamp-2 pb-0 mb-0 group-hover:line-clamp-none transition-all"><?= $nama ?></h3>
+                                    <p class="text-sm text-gray-600"><?= $kelas ?></p>
                                     <div class="grid grid-cols-2 gap-2 text-[11px] text-gray-600">
                                         <div class="flex items-center"><i class="ti ti-calendar mr-1"></i><?= $tanggal ?></div>
                                         <div class="flex items-center justify-end"><i class="ti ti-clock mr-1"></i><?= $waktu ?></div>

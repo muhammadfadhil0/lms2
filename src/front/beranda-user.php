@@ -101,38 +101,58 @@ if (!$dashboardData) {
         <!-- Header -->
         <header class="bg-white p-2 md:p-6 header-compact border-b border-gray-200">
             <style>
-            @media (max-width: 768px) {
-                .header-compact { padding: .5rem .75rem; }
-                .header-compact .mobile-logo-wrap img { height: 28px; width: 28px; }
-                .header-compact .mobile-logo-text { font-size: 1.35rem; line-height: 1.45rem; }
-                .header-compact .action-buttons { gap: .25rem; }
-                .header-compact .action-buttons button { padding: .4rem; }
-                .header-compact .action-buttons i { font-size: 1.05rem; }
-            }
+                @media (max-width: 768px) {
+                    .header-compact {
+                        padding: .5rem .75rem;
+                    }
+
+                    .header-compact .mobile-logo-wrap img {
+                        height: 28px;
+                        width: 28px;
+                    }
+
+                    .header-compact .mobile-logo-text {
+                        font-size: 1.35rem;
+                        line-height: 1.45rem;
+                    }
+
+                    .header-compact .action-buttons {
+                        gap: .25rem;
+                    }
+
+                    .header-compact .action-buttons button {
+                        padding: .4rem;
+                    }
+
+                    .header-compact .action-buttons i {
+                        font-size: 1.05rem;
+                    }
+                }
             </style>
             <div class="flex items-center justify-between">
-            <div class="hidden md:block">
-                <h1 class="text-xl md:text-2xl font-bold text-gray-800">Beranda</h1>
-                <p class="text-gray-600">Selamat datang, <?php echo htmlspecialchars($_SESSION['user']['namaLengkap']); ?>!</p>
-            </div>
-            <div class="flex md:hidden items-center gap-2 mobile-logo-wrap">
-                <img src="../../assets/img/logo.png" alt="Logo" class="h-7 w-7 flex-shrink-0">
-                <div id="logoTextContainer" class="transition-all duration-300 ease-in-out overflow-hidden whitespace-nowrap">
-                <h1 id="logoText" class="mobile-logo-text font-bold text-gray-800">Point</h1>
+                <div class="hidden md:block">
+                    <h1 class="text-xl md:text-2xl font-bold text-gray-800">Beranda</h1>
+                    <p class="text-gray-600">Selamat datang, <?php echo htmlspecialchars($_SESSION['user']['namaLengkap']); ?>!</p>
                 </div>
-            </div>
-            <div class="flex items-center action-buttons gap-1 md:space-x-4">
-                <button command="show-modal" commandfor="join-class-modal" class="p-1 md:p-2 border rounded-full text-gray-400 hover:text-orange-600 transition-colors flex items-center">
-                <i class="ti ti-user-plus text-base md:text-xl"></i>
-                <span class="hidden md:inline ml-1 text-sm">Gabung Kelas</span>
-                </button>
-                <button class="p-1 md:p-2 text-gray-400 hover:text-gray-600 transition-colors">
-                <i class="ti ti-bell text-base md:text-xl"></i>
-                </button>
-                <button class="p-1 md:p-2 text-gray-400 hover:text-gray-600 transition-colors">
-                <i class="ti ti-search text-base md:text-xl"></i>
-                </button>
-            </div>
+                <div class="flex md:hidden items-center gap-2 mobile-logo-wrap">
+                    <img src="../../assets/img/logo.png" alt="Logo" class="h-7 w-7 flex-shrink-0">
+                    <div id="logoTextContainer" class="transition-all duration-300 ease-in-out overflow-hidden whitespace-nowrap">
+                        <h1 id="logoText" class="mobile-logo-text font-bold text-gray-800">Point</h1>
+                    </div>
+                </div>
+                <div class="flex items-center action-buttons gap-1 md:space-x-4">
+                    <button command="show-modal" commandfor="join-class-modal" class="p-1 md:p-2 border rounded-full text-gray-400 hover:text-orange-600 transition-colors flex items-center">
+                        <i class="ti ti-user-plus text-base md:text-xl"></i>
+                        <span class="inline md:hidden ml-1 text-sm">Gabung</span>
+                        <span class="hidden md:inline ml-1 text-sm">Gabung Kelas</span>
+                    </button>
+                    <button class="p-1 md:p-2 text-gray-400 hover:text-gray-600 transition-colors">
+                        <i class="ti ti-bell text-base md:text-xl"></i>
+                    </button>
+                    <button class="p-1 md:p-2 text-gray-400 hover:text-gray-600 transition-colors">
+                        <i class="ti ti-search text-base md:text-xl"></i>
+                    </button>
+                </div>
             </div>
         </header>
 
@@ -212,27 +232,27 @@ if (!$dashboardData) {
                                                     $photoPath = '../../uploads/profile/' . $fotoProfil;
                                                 }
                                                 ?>
-                                                <img src="<?php echo htmlspecialchars($photoPath); ?>" 
-                                                     alt="Profile Photo" 
-                                                     class="w-full h-full object-cover post-profile-photo"
-                                                     onerror="this.parentElement.innerHTML='<div class=\'w-full h-full bg-orange-600 rounded-full flex items-center justify-center\'><span class=\'text-white font-medium text-sm\'><?php echo strtoupper(substr($post['namaPenulis'], 0, 1)); ?></span></div>'">
+                                                <img src="<?php echo htmlspecialchars($photoPath); ?>"
+                                                    alt="Profile Photo"
+                                                    class="w-full h-full object-cover post-profile-photo"
+                                                    onerror="this.parentElement.innerHTML='<div class=\'w-full h-full bg-orange-600 rounded-full flex items-center justify-center\'><span class=\'text-white font-medium text-sm\'><?php echo strtoupper(substr($post['namaPenulis'], 0, 1)); ?></span></div>'">
                                             <?php else: ?>
                                                 <!-- Fallback with role-based colors -->
                                                 <div class="w-full h-full rounded-full flex items-center justify-center <?php
-                                                    switch ($post['rolePenulis']) {
-                                                        case 'admin':
-                                                            echo 'bg-red-100 text-red-600';
-                                                            break;
-                                                        case 'guru':
-                                                            echo 'bg-blue-100 text-blue-600';
-                                                            break;
-                                                        case 'siswa':
-                                                            echo 'bg-green-100 text-green-600';
-                                                            break;
-                                                        default:
-                                                            echo 'bg-orange-600 text-white';
-                                                    }
-                                                ?>">
+                                                                                                                        switch ($post['rolePenulis']) {
+                                                                                                                            case 'admin':
+                                                                                                                                echo 'bg-red-100 text-red-600';
+                                                                                                                                break;
+                                                                                                                            case 'guru':
+                                                                                                                                echo 'bg-blue-100 text-blue-600';
+                                                                                                                                break;
+                                                                                                                            case 'siswa':
+                                                                                                                                echo 'bg-green-100 text-green-600';
+                                                                                                                                break;
+                                                                                                                            default:
+                                                                                                                                echo 'bg-orange-600 text-white';
+                                                                                                                        }
+                                                                                                                        ?>">
                                                     <span class="font-medium text-sm">
                                                         <?php echo strtoupper(substr($post['namaPenulis'], 0, 1)); ?>
                                                     </span>
@@ -280,11 +300,11 @@ if (!$dashboardData) {
                                                             <?php echo isset($post['assignment_title']) ? htmlspecialchars($post['assignment_title']) : 'Tugas'; ?>
                                                         </h3>
                                                     </div>
-                                                    
+
                                                     <!-- Assignment Details Grid -->
                                                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
                                                         <?php if (isset($post['assignment_deadline']) && $post['assignment_deadline']): ?>
-                                                            <?php 
+                                                            <?php
                                                             $isExpired = strtotime($post['assignment_deadline']) < time();
                                                             ?>
                                                             <div class="flex items-center space-x-2 p-3 bg-white rounded-lg border <?php echo $isExpired ? 'border-red-200 bg-red-50' : 'border-gray-200'; ?>">
@@ -300,7 +320,7 @@ if (!$dashboardData) {
                                                                 </div>
                                                             </div>
                                                         <?php endif; ?>
-                                                        
+
                                                         <?php if (isset($post['assignment_max_score']) && $post['assignment_max_score']): ?>
                                                             <div class="flex items-center space-x-2 p-3 bg-white rounded-lg border border-gray-200">
                                                                 <div class="flex-shrink-0">
@@ -313,7 +333,7 @@ if (!$dashboardData) {
                                                             </div>
                                                         <?php endif; ?>
                                                     </div>
-                                                    
+
                                                     <?php if (isset($post['assignment_file_path']) && $post['assignment_file_path']): ?>
                                                         <div class="p-3 bg-white rounded-lg border border-gray-200">
                                                             <div class="flex items-center space-x-3">
@@ -324,8 +344,8 @@ if (!$dashboardData) {
                                                                     <div class="text-xs font-medium text-gray-500 uppercase tracking-wide">File Tugas</div>
                                                                     <div class="text-sm font-semibold text-gray-900 truncate"><?php echo basename($post['assignment_file_path']); ?></div>
                                                                 </div>
-                                                                <a href="../../<?php echo htmlspecialchars($post['assignment_file_path']); ?>" target="_blank" 
-                                                                   class="flex items-center space-x-1 bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex-shrink-0">
+                                                                <a href="../../<?php echo htmlspecialchars($post['assignment_file_path']); ?>" target="_blank"
+                                                                    class="flex items-center space-x-1 bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex-shrink-0">
                                                                     <i class="ti ti-download"></i>
                                                                     <span class="hidden sm:inline">Download</span>
                                                                 </a>
@@ -561,12 +581,12 @@ if (!$dashboardData) {
                                     <button class="view-all-comments text-orange text-sm hover:text-orange-600 transition-colors" data-post-id="<?php echo $post['id']; ?>" style="display: none;">
                                         Lihat komentar lainnya
                                     </button>
-                                    
+
                                     <!-- Comments Preview - Always visible if there are comments -->
                                     <div id="comments-preview-<?php echo $post['id']; ?>" class="mt-4 pt-4 border-t border-gray-100" style="display: none;">
                                         <!-- Preview comments (max 3) will be loaded here -->
                                     </div>
-                                    
+
                                     <!-- Quick Comment Input -->
                                     <div id="quick-comment-<?php echo $post['id']; ?>" class="hidden mt-4 pt-4 border-t border-gray-100">
                                         <form class="flex space-x-3" onsubmit="addQuickComment(event, <?php echo $post['id']; ?>)">
@@ -574,7 +594,7 @@ if (!$dashboardData) {
                                                 <i class="ti ti-user text-white text-sm"></i>
                                             </div>
                                             <div class="flex-1">
-                                                <textarea placeholder="Tulis komentar... (tekan Enter untuk mengirim)" 
+                                                <textarea placeholder="Tulis komentar... (tekan Enter untuk mengirim)"
                                                     rows="2"
                                                     class="w-full px-3 py-2 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-sm"
                                                     onkeydown="handleCommentKeydown(event, <?php echo $post['id']; ?>)"
@@ -615,15 +635,15 @@ if (!$dashboardData) {
         // Initialize global variables
         window.currentUserId = <?php echo $_SESSION['user']['id']; ?>;
         window.currentUserRole = '<?php echo $_SESSION['user']['role']; ?>';
-        
+
         // Initialize like functionality
         document.addEventListener('DOMContentLoaded', function() {
             // Initialize KelasPosting for comments functionality (beranda context)
             window.kelasPosting = new KelasPosting(null, {
-                canPost: false,  // No posting in beranda
+                canPost: false, // No posting in beranda
                 canComment: true // Allow commenting
             });
-            
+
             // Prevent KelasPosting from loading posts since we already have them in PHP
             if (window.kelasPosting) {
                 window.kelasPosting.initialized = true; // Mark as initialized to prevent auto-loading
