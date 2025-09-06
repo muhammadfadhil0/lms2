@@ -20,7 +20,7 @@ $siswa_id = $_SESSION['user']['id'];
 $dashboardData = $dashboardLogic->getDashboardSiswa($siswa_id);
 
 // Get recent posts from all classes
-$recentPosts = $dashboardLogic->getPostinganTerbaruSiswa($siswa_id, 15);
+$recentPosts = $dashboardLogic->getPostinganTerbaruSiswa($siswa_id, 5); // Reduced from 15 to 5
 
 // Ensure default values if data is null
 if (!$dashboardData) {
@@ -215,10 +215,12 @@ if (!$dashboardData) {
                     <h2 class="text-lg md:text-xl font-bold text-gray-800">Postingan Terbaru</h2>
                 </div>
 
-                <?php if (!empty($recentPosts)): ?>
-                    <div class="space-y-4">
+                <!-- Posts Container for Dynamic Loading -->
+                <div id="berandaPostsContainer" class="space-y-4">
+                    <!-- Initial posts loaded via PHP for faster first paint -->
+                    <?php if (!empty($recentPosts)): ?>
                         <?php foreach ($recentPosts as $post): ?>
-                            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6" data-user-id="<?php echo $post['user_id']; ?>">
+                            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6" data-user-id="<?php echo $post['user_id']; ?>" data-post-id="<?php echo $post['id']; ?>">
                                 <!-- Post Header -->
                                 <div class="flex items-start justify-between mb-3">
                                     <div class="flex items-center space-x-3">
@@ -277,11 +279,16 @@ if (!$dashboardData) {
                                 <div class="mb-4">
                                     <div class="post-content text-gray-800 whitespace-pre-wrap"><?php
                                                                                                 // Convert markdown-style formatting to HTML
-                                                                                                $formattedContent = htmlspecialchars($post['konten']);
+                                                                                                // First do the markdown replacements before htmlspecialchars
+                                                                                                $formattedContent = $post['konten'];
                                                                                                 // Bold text: **text** -> <strong>text</strong>
                                                                                                 $formattedContent = preg_replace('/\*\*(.*?)\*\*/', '<strong>$1</strong>', $formattedContent);
                                                                                                 // Italic text: *text* -> <em>text</em> (only single asterisks not already converted)
                                                                                                 $formattedContent = preg_replace('/(?<!\*)\*([^*]+?)\*(?!\*)/', '<em>$1</em>', $formattedContent);
+                                                                                                // Now escape HTML but preserve our formatting tags
+                                                                                                $formattedContent = htmlspecialchars($formattedContent, ENT_QUOTES, 'UTF-8', false);
+                                                                                                // Unescape our formatting tags
+                                                                                                $formattedContent = str_replace(['&lt;strong&gt;', '&lt;/strong&gt;', '&lt;em&gt;', '&lt;/em&gt;'], ['<strong>', '</strong>', '<em>', '</em>'], $formattedContent);
                                                                                                 echo $formattedContent;
                                                                                                 ?></div>
 
@@ -296,7 +303,7 @@ if (!$dashboardData) {
                                                 </div>
                                                 <div class="flex-1 min-w-0">
                                                     <div class="flex items-start justify-between mb-3">
-                                                        <h3 class="text-xl font-bold text-gray-900 flex items-center">
+                                                        <h3 class="text-xl font-bold text-gray-900 flex items-center assignment-title">
                                                             <i class="ti ti-assignment text-blue-600 mr-2"></i>
                                                             <?php echo isset($post['assignment_title']) ? htmlspecialchars($post['assignment_title']) : 'Tugas'; ?>
                                                         </h3>
@@ -547,7 +554,8 @@ if (!$dashboardData) {
                                         <?php
                                         // Helper function for file size formatting
                                         if (!function_exists('formatFileSize')) {
-                                            function formatFileSize($bytes) {
+                                            function formatFileSize($bytes)
+                                            {
                                                 if ($bytes == 0) return '0 Bytes';
                                                 $k = 1024;
                                                 $sizes = ['Bytes', 'KB', 'MB', 'GB'];
@@ -561,7 +569,7 @@ if (!$dashboardData) {
                                                 <?php
                                                 // Get file extension for icon
                                                 $extension = strtolower($file['ekstensi_file']);
-                                                
+
                                                 // Icon mapping
                                                 $iconMap = [
                                                     'pdf' => ['icon' => 'ti-file-type-pdf', 'class' => 'pdf', 'bg' => 'bg-red-500'],
@@ -576,12 +584,12 @@ if (!$dashboardData) {
                                                     'rar' => ['icon' => 'ti-file-zip', 'class' => 'archive', 'bg' => 'bg-yellow-600'],
                                                     '7z' => ['icon' => 'ti-file-zip', 'class' => 'archive', 'bg' => 'bg-yellow-600']
                                                 ];
-                                                
+
                                                 $iconInfo = $iconMap[$extension] ?? ['icon' => 'ti-file', 'class' => 'default', 'bg' => 'bg-gray-500'];
                                                 ?>
-                                                <a href="../../<?php echo htmlspecialchars($file['path_file']); ?>" 
-                                                   class="flex items-center p-3 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 hover:border-gray-300 transition-all hover:shadow-sm" 
-                                                   target="_blank" rel="noopener noreferrer">
+                                                <a href="../../<?php echo htmlspecialchars($file['path_file']); ?>"
+                                                    class="flex items-center p-3 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 hover:border-gray-300 transition-all hover:shadow-sm"
+                                                    target="_blank" rel="noopener noreferrer">
                                                     <div class="w-12 h-12 <?php echo $iconInfo['bg']; ?> text-white rounded-lg flex items-center justify-center mr-3 flex-shrink-0 shadow-sm">
                                                         <i class="ti <?php echo $iconInfo['icon']; ?> text-lg"></i>
                                                     </div>
@@ -669,12 +677,30 @@ if (!$dashboardData) {
                                 <?php endif; ?>
                             </div>
                         <?php endforeach; ?>
-                    </div>
-                <?php else: ?>
-                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
-                        <i class="ti ti-message-off text-4xl text-gray-300 mb-3"></i>
-                        <h3 class="text-lg font-medium text-gray-900 mb-2">Belum ada postingan</h3>
-                        <p class="text-gray-500">Postingan dari kelas yang Anda ikuti akan muncul di sini</p>
+                    <?php else: ?>
+                        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
+                            <i class="ti ti-message-off text-4xl text-gray-300 mb-3"></i>
+                            <h3 class="text-lg font-medium text-gray-900 mb-2">Belum ada postingan</h3>
+                            <p class="text-gray-500 mb-4">Postingan dari kelas yang Anda ikuti akan muncul di sini</p>
+                            <div class="text-sm text-gray-400">
+                                <p>Tips:</p>
+                                <ul class="list-disc list-inside mt-2 space-y-1">
+                                    <li>Pastikan Anda sudah bergabung dengan kelas</li>
+                                    <li>Minta guru untuk membuat postingan di kelas</li>
+                                    <li>Periksa koneksi internet Anda</li>
+                                </ul>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+                </div>
+
+                <!-- Load More Button for Beranda -->
+                <?php if (!empty($recentPosts) && count($recentPosts) >= 5): ?>
+                    <div class="text-center mt-6">
+                        <button id="loadMoreBerandaPosts" class="inline-flex items-center px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors">
+                            <i class="ti ti-plus mr-2"></i>
+                            Muat Postingan Lainnya
+                        </button>
                     </div>
                 <?php endif; ?>
             </div>
@@ -710,6 +736,17 @@ if (!$dashboardData) {
                 window.kelasPosting.hasMorePosts = false; // Prevent infinite scroll
             }
 
+            // Initialize beranda lazy loading
+            initializeBerandaLazyLoading();
+
+            // Debug: Check if we have posts
+            console.log('Recent posts loaded:', <?php echo json_encode(count($recentPosts)); ?>);
+            console.log('Has posts data:', <?php echo !empty($recentPosts) ? 'true' : 'false'; ?>);
+            <?php if (!empty($recentPosts)): ?>
+                console.log('First post:', <?php echo json_encode($recentPosts[0] ?? []); ?>);
+                console.log('Posts container children:', document.getElementById('berandaPostsContainer').children.length);
+            <?php endif; ?>
+
             // Comment button functionality - use KelasPosting method
             document.querySelectorAll('.comment-btn').forEach(btn => {
                 btn.addEventListener('click', function() {
@@ -732,8 +769,10 @@ if (!$dashboardData) {
 
             // Load comments preview for all posts
             setTimeout(() => {
+                console.log('Loading comments preview for existing posts...');
                 document.querySelectorAll('[id^="comments-preview-"]').forEach(container => {
                     const postId = container.id.replace('comments-preview-', '');
+                    console.log('Loading comments for post:', postId);
                     if (window.kelasPosting) {
                         console.log('Loading comments preview for post', postId);
                         window.kelasPosting.loadCommentsPreview(postId);
@@ -951,6 +990,272 @@ if (!$dashboardData) {
             };
 
             return iconMap[extension] || '<i class="ti ti-file text-gray-600"></i>';
+        }
+
+        // Beranda lazy loading functionality
+        let berandaOffset = 5; // We already loaded 5 posts
+        let berandaHasMore = true;
+        let berandaLoading = false;
+
+        function initializeBerandaLazyLoading() {
+            const loadMoreBtn = document.getElementById('loadMoreBerandaPosts');
+            const container = document.getElementById('berandaPostsContainer');
+
+            console.log('Initialize lazy loading:');
+            console.log('- Load more button:', loadMoreBtn);
+            console.log('- Container:', container);
+            console.log('- Container children:', container ? container.children.length : 'N/A');
+
+            if (loadMoreBtn) {
+                loadMoreBtn.addEventListener('click', loadMoreBerandaPosts);
+            }
+
+            // Optional: Add scroll-based loading
+            window.addEventListener('scroll', () => {
+                if (berandaHasMore && !berandaLoading) {
+                    const scrollPosition = window.innerHeight + window.scrollY;
+                    const threshold = document.body.offsetHeight - 800;
+
+                    if (scrollPosition >= threshold) {
+                        loadMoreBerandaPosts();
+                    }
+                }
+            });
+        }
+
+        async function loadMoreBerandaPosts() {
+            if (berandaLoading || !berandaHasMore) return;
+
+            berandaLoading = true;
+            const loadMoreBtn = document.getElementById('loadMoreBerandaPosts');
+            const container = document.getElementById('berandaPostsContainer');
+
+            // Show loading state
+            if (loadMoreBtn) {
+                loadMoreBtn.innerHTML = '<i class="ti ti-loader animate-spin mr-2"></i>Memuat...';
+                loadMoreBtn.disabled = true;
+            }
+
+            try {
+                const response = await fetch(`../logic/get-beranda-posts.php?offset=${berandaOffset}&limit=5&_=${Date.now()}`);
+                const result = await response.json();
+
+                console.log('Beranda API Response:', result); // Debug
+
+                if (result.success && result.posts && result.posts.length > 0) {
+                    // Add new posts to container
+                    result.posts.forEach(post => {
+                        const postElement = createBerandaPostElement(post);
+                        container.appendChild(postElement);
+
+                        // Add event listeners for new post
+                        addPostEventListeners(postElement, post.id);
+                    });
+
+                    berandaOffset += result.posts.length;
+
+                    // Check if there are more posts
+                    if (result.posts.length < 5) {
+                        berandaHasMore = false;
+                        if (loadMoreBtn) {
+                            loadMoreBtn.style.display = 'none';
+                        }
+                    }
+                } else {
+                    berandaHasMore = false;
+                    if (loadMoreBtn) {
+                        loadMoreBtn.style.display = 'none';
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading more posts:', error);
+                if (loadMoreBtn) {
+                    loadMoreBtn.innerHTML = '<i class="ti ti-alert-circle mr-2"></i>Gagal memuat';
+                }
+            } finally {
+                berandaLoading = false;
+                if (loadMoreBtn && berandaHasMore) {
+                    loadMoreBtn.innerHTML = '<i class="ti ti-plus mr-2"></i>Muat Postingan Lainnya';
+                    loadMoreBtn.disabled = false;
+                }
+            }
+        }
+
+        function createBerandaPostElement(post) {
+            // Create post element (similar to PHP template but in JS)
+            const postDiv = document.createElement('div');
+            postDiv.className = 'bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6';
+            postDiv.setAttribute('data-user-id', post.user_id);
+            postDiv.setAttribute('data-post-id', post.id);
+
+            // Create photo path for profile image
+            let photoHtml = '';
+            if (post.fotoProfil) {
+                const photoPath = post.fotoProfil.startsWith('uploads/profile/') ?
+                    '../../' + post.fotoProfil :
+                    '../../uploads/profile/' + post.fotoProfil;
+                photoHtml = `<img src="${photoPath}" alt="Profile Photo" class="w-full h-full object-cover post-profile-photo" 
+                    onerror="this.parentElement.innerHTML='<div class=\\'w-full h-full bg-orange-600 rounded-full flex items-center justify-center\\'><span class=\\'text-white font-medium text-sm\\'>${escapeHtml(post.namaPenulis).charAt(0).toUpperCase()}</span></div>'">`;
+            } else {
+                // Role-based colors
+                let bgColor = 'bg-orange-600 text-white';
+                switch (post.rolePenulis) {
+                    case 'admin':
+                        bgColor = 'bg-red-100 text-red-600';
+                        break;
+                    case 'guru':
+                        bgColor = 'bg-blue-100 text-blue-600';
+                        break;
+                    case 'siswa':
+                        bgColor = 'bg-green-100 text-green-600';
+                        break;
+                }
+                photoHtml = `<div class="w-full h-full rounded-full flex items-center justify-center ${bgColor}">
+                    <span class="font-medium text-sm">${escapeHtml(post.namaPenulis).charAt(0).toUpperCase()}</span>
+                </div>`;
+            }
+
+            // Create full post template
+            postDiv.innerHTML = `
+                <!-- Post Header -->
+                <div class="flex items-start justify-between mb-3">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0 bg-gray-100">
+                            ${photoHtml}
+                        </div>
+                        <div>
+                            <div class="flex items-center space-x-2">
+                                <h4 class="font-medium text-gray-900">${escapeHtml(post.namaPenulis)}</h4>
+                                <span class="text-sm text-gray-500">•</span>
+                                <span class="text-sm text-orange-600 font-medium">${escapeHtml(post.namaKelas)}</span>
+                            </div>
+                            <p class="text-xs text-gray-500">
+                                ${formatTimeAgo(post.dibuat)}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Post Content -->
+                <div class="mb-4">
+                    ${post.konten ? `<div class="post-content text-gray-800 whitespace-pre-wrap">${formatPostContent(post.konten)}</div>` : ''}
+                </div>
+                
+                <!-- Post Actions -->
+                <div class="flex items-center justify-between pt-3 border-t border-gray-100">
+                    <div class="flex items-center space-x-4">
+                        <!-- Like Button -->
+                        <button class="like-btn flex items-center space-x-2 ${post.userLiked ? 'text-red-600' : 'text-gray-600'} hover:text-red-600 transition-colors" 
+                                data-post-id="${post.id}" data-liked="${post.userLiked ? 'true' : 'false'}">
+                            <i class="ti ti-heart${post.userLiked ? '-filled text-red-600' : ''}"></i>
+                            <span class="like-count text-sm">${post.jumlahLike || 0}</span>
+                        </button>
+                        
+                        <!-- Comment Button -->
+                        ${!post.restrict_comments ? `
+                        <button class="comment-btn flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors" data-post-id="${post.id}">
+                            <i class="ti ti-message-circle"></i>
+                            <span class="comment-count text-sm">${post.jumlahKomentar || 0}</span>
+                        </button>
+                        ` : `
+                        <span class="flex items-center space-x-2 text-gray-400">
+                            <i class="ti ti-message-circle-off"></i>
+                            <span class="text-sm">Komentar dinonaktifkan</span>
+                        </span>
+                        `}
+                    </div>
+                    
+                    <!-- Class Link -->
+                    <a href="kelas-user.php?id=${post.kelas_id}" class="text-orange-600 hover:text-orange-700 text-sm font-medium">
+                        Lihat Kelas
+                    </a>
+                </div>
+                
+                <!-- Comments Section for KelasPosting compatibility -->
+                ${!post.restrict_comments ? `
+                <button class="view-all-comments text-orange text-sm hover:text-orange-600 transition-colors" data-post-id="${post.id}" style="display: none;">
+                    Lihat komentar lainnya
+                </button>
+                <div id="comments-preview-${post.id}" class="mt-4 pt-4 border-t border-gray-100" style="display: none;">
+                    <!-- Preview comments will be loaded here -->
+                </div>
+                ` : ''}
+            `;
+
+            return postDiv;
+        }
+
+        function formatTimeAgo(dateString) {
+            const date = new Date(dateString);
+            const now = new Date();
+            const diffInSeconds = Math.floor((now - date) / 1000);
+
+            if (diffInSeconds < 60) return 'Baru saja';
+            if (diffInSeconds < 3600) return Math.floor(diffInSeconds / 60) + ' menit lalu';
+            if (diffInSeconds < 86400) return Math.floor(diffInSeconds / 3600) + ' jam lalu';
+            return Math.floor(diffInSeconds / 86400) + ' hari lalu';
+        }
+
+        function escapeHtml(unsafe) {
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        // Format post content with markdown-like syntax
+        function formatPostContent(content) {
+            if (!content) return '';
+
+            // First do the markdown replacements
+            let formatted = content;
+            // Bold text: **text** -> <strong>text</strong>
+            formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            // Italic text: *text* -> <em>text</em> (only single asterisks not preceded by *)
+            // Use a different approach to avoid lookbehind
+            formatted = formatted.replace(/(?:^|[^*])\*([^*]+?)\*(?![*])/g, function(match, p1, offset, string) {
+                // Keep the character before * if it exists
+                const beforeChar = match.charAt(0) !== '*' ? match.charAt(0) : '';
+                return beforeChar + '<em>' + p1 + '</em>';
+            });
+
+            // Then escape HTML but preserve our formatting tags
+            formatted = escapeHtml(formatted);
+            // Unescape our formatting tags
+            formatted = formatted.replace(/&lt;strong&gt;/g, '<strong>')
+                .replace(/&lt;\/strong&gt;/g, '</strong>')
+                .replace(/&lt;em&gt;/g, '<em>')
+                .replace(/&lt;\/em&gt;/g, '</em>');
+
+            return formatted;
+        }
+
+        // Add event listeners to dynamically loaded posts
+        function addPostEventListeners(postElement, postId) {
+            // Like button
+            const likeBtn = postElement.querySelector('.like-btn');
+            if (likeBtn && window.kelasPosting) {
+                likeBtn.addEventListener('click', function() {
+                    window.kelasPosting.toggleLike(postId);
+                });
+            }
+
+            // Comment button
+            const commentBtn = postElement.querySelector('.comment-btn');
+            if (commentBtn && window.kelasPosting) {
+                commentBtn.addEventListener('click', function() {
+                    window.kelasPosting.openCommentsModal(postId);
+                });
+            }
+
+            // Load comments preview for new post
+            if (window.kelasPosting) {
+                setTimeout(() => {
+                    window.kelasPosting.loadCommentsPreview(postId);
+                }, 300);
+            }
         }
 
         // Inline assignment submission handlers (beranda)

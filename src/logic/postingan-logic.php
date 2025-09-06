@@ -49,7 +49,7 @@ class PostinganLogic {
     }
     
     // Mendapatkan postingan berdasarkan kelas
-    public function getPostinganByKelas($kelas_id, $limit = 20, $offset = 0, $user_id = null) {
+    public function getPostinganByKelas($kelas_id, $limit = 5, $offset = 0, $user_id = null) {
         try {
             $sql = "SELECT p.*, u.namaLengkap as namaPenulis, u.role as rolePenulis, u.fotoProfil,
                            COUNT(DISTINCT l.id) as jumlahLike,

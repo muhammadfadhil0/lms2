@@ -279,7 +279,7 @@ class DashboardLogic {
     }
     
     // Get recent posts from all classes for a student
-    public function getPostinganTerbaruSiswa($siswa_id, $limit = 10) {
+    public function getPostinganTerbaruSiswa($siswa_id, $limit = 10, $offset = 0) {
         try {
             $sql = "SELECT p.*, 
                            u.namaLengkap as namaPenulis, 
@@ -309,10 +309,10 @@ class DashboardLogic {
                     WHERE ks.siswa_id = ? AND ks.status = 'aktif' AND k.status = 'aktif'
                     GROUP BY p.id
                     ORDER BY p.dibuat DESC
-                    LIMIT ?";
+                    LIMIT ? OFFSET ?";
             
             $stmt = $this->conn->prepare($sql);
-            $stmt->bind_param("iiii", $siswa_id, $siswa_id, $siswa_id, $limit);
+            $stmt->bind_param("iiiii", $siswa_id, $siswa_id, $siswa_id, $limit, $offset);
             $stmt->execute();
             
             $postingan = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);

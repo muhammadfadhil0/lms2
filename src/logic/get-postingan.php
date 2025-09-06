@@ -18,7 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
     
     // Get parameters
     $kelas_id = intval($_GET['kelas_id'] ?? 0);
-    $limit = intval($_GET['limit'] ?? 10);
+    $limit = intval($_GET['limit'] ?? 5); // Reduced default from 10 to 5
     $offset = intval($_GET['offset'] ?? 0);
     
     if ($kelas_id <= 0) {

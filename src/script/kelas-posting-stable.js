@@ -7,7 +7,7 @@ class KelasPosting {
             canComment: true
         };
         this.currentOffset = 0;
-        this.limit = 10;
+        this.limit = 5; // Reduced from 10 to 5 for better performance
         this.isLoading = false;
         this.hasMorePosts = true;
         this.submitInProgress = false;
@@ -263,19 +263,29 @@ class KelasPosting {
                         this.pendingTimeouts = [];
                     }
                     
-                    // Add posts one by one to avoid conflicts
+                    // Remove scroll loading indicator
+                    this.hideLoadingIndicator();
+                    
+                    // Add posts with optimized rendering
                     result.data.forEach((post, index) => {
                         const timeoutId = setTimeout(() => {
                             const postElement = this.createPostElement(post, result.user_id, result.user_role);
                             if (postsContainer && postElement) {
                                 postsContainer.appendChild(postElement);
+                                
+                                // Lazy load comments preview for better performance
+                                if (this.permissions.canComment) {
+                                    setTimeout(() => {
+                                        this.loadCommentsPreview(post.id);
+                                    }, 200 * (index + 1)); // Staggered comment loading
+                                }
                             }
                             // Remove this timeout from pending list
                             const timeoutIndex = this.pendingTimeouts.indexOf(timeoutId);
                             if (timeoutIndex > -1) {
                                 this.pendingTimeouts.splice(timeoutIndex, 1);
                             }
-                        }, index * 100); // Stagger the additions
+                        }, index * 50); // Reduced delay for faster rendering
                         
                         // Track this timeout
                         this.pendingTimeouts.push(timeoutId);
@@ -287,13 +297,19 @@ class KelasPosting {
                         this.hasMorePosts = false;
                     }
                     
-                    // Add load more indicator
+                    // Add load more indicator with improved styling
                     if (this.hasMorePosts) {
                         const loadMoreTimeoutId = setTimeout(() => {
                             const loadMoreElement = document.createElement('div');
                             loadMoreElement.id = 'loadMoreIndicator';
-                            loadMoreElement.className = 'text-center py-4 text-gray-400';
-                            loadMoreElement.innerHTML = '<p class="text-sm">Scroll ke bawah untuk memuat lebih banyak...</p>';
+                            loadMoreElement.className = 'text-center py-4 text-gray-400 border-t border-gray-100 mt-4';
+                            loadMoreElement.innerHTML = `
+                                <div class="flex items-center justify-center space-x-2">
+                                    <i class="ti ti-chevron-down text-sm animate-bounce"></i>
+                                    <span class="text-sm">Scroll untuk memuat ${this.limit} postingan lagi</span>
+                                    <i class="ti ti-chevron-down text-sm animate-bounce"></i>
+                                </div>
+                            `;
                             if (postsContainer) {
                                 postsContainer.appendChild(loadMoreElement);
                             }
@@ -302,7 +318,7 @@ class KelasPosting {
                             if (timeoutIndex > -1) {
                                 this.pendingTimeouts.splice(timeoutIndex, 1);
                             }
-                        }, result.data.length * 100 + 200);
+                        }, result.data.length * 50 + 100); // Reduced delay
                         
                         // Track this timeout too
                         this.pendingTimeouts.push(loadMoreTimeoutId);
@@ -592,8 +608,9 @@ class KelasPosting {
     handleScroll() {
         if (this.isLoading || !this.hasMorePosts) return;
         
+        // Improved scroll detection for better lazy loading
         const scrollPosition = window.innerHeight + window.scrollY;
-        const threshold = document.body.offsetHeight - 1000;
+        const threshold = document.body.offsetHeight - 500; // Reduced threshold for earlier loading
         
         if (scrollPosition >= threshold) {
             // Remove existing load more indicator
@@ -602,7 +619,40 @@ class KelasPosting {
                 loadMoreIndicator.remove();
             }
             
+            // Show loading indicator immediately
+            this.showLoadingIndicator();
             this.loadPostingan();
+        }
+    }
+    
+    // Add loading indicator for better UX
+    showLoadingIndicator() {
+        const postsContainer = document.getElementById('postsContainer');
+        if (!postsContainer) return;
+        
+        // Remove existing indicator first
+        const existingIndicator = document.getElementById('scrollLoadingIndicator');
+        if (existingIndicator) {
+            existingIndicator.remove();
+        }
+        
+        const loadingElement = document.createElement('div');
+        loadingElement.id = 'scrollLoadingIndicator';
+        loadingElement.className = 'text-center py-6 text-gray-500';
+        loadingElement.innerHTML = `
+            <div class="flex items-center justify-center space-x-2">
+                <i class="ti ti-loader animate-spin text-xl"></i>
+                <span class="text-sm">Memuat postingan...</span>
+            </div>
+        `;
+        postsContainer.appendChild(loadingElement);
+    }
+    
+    // Remove loading indicator
+    hideLoadingIndicator() {
+        const indicator = document.getElementById('scrollLoadingIndicator');
+        if (indicator) {
+            indicator.remove();
         }
     }
     
