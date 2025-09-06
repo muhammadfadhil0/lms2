@@ -612,6 +612,10 @@ if (!$dashboardData) {
     <script src="../script/assignment-manager.js"></script>
     <script src="../script/kelas-posting-stable.js?v=<?php echo time(); ?>"></script>
     <script>
+        // Initialize global variables
+        window.currentUserId = <?php echo $_SESSION['user']['id']; ?>;
+        window.currentUserRole = '<?php echo $_SESSION['user']['role']; ?>';
+        
         // Initialize like functionality
         document.addEventListener('DOMContentLoaded', function() {
             // Initialize KelasPosting for comments functionality (beranda context)
@@ -619,45 +623,12 @@ if (!$dashboardData) {
                 canPost: false,  // No posting in beranda
                 canComment: true // Allow commenting
             });
-
-            // Like button functionality
-            document.querySelectorAll('.like-btn').forEach(btn => {
-                btn.addEventListener('click', async function() {
-                    const postId = this.dataset.postId;
-                    const isLiked = this.dataset.liked === 'true';
-
-                    try {
-                        const response = await fetch('../logic/toggle-like.php', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({
-                                postingan_id: postId
-                            })
-                        });
-
-                        const result = await response.json();
-
-                        if (result.success) {
-                            const heartIcon = this.querySelector('i');
-                            const countSpan = this.querySelector('.like-count');
-
-                            if (result.action === 'liked') {
-                                heartIcon.className = 'ti ti-heart-filled text-red-600';
-                                this.dataset.liked = 'true';
-                                countSpan.textContent = parseInt(countSpan.textContent) + 1;
-                            } else {
-                                heartIcon.className = 'ti ti-heart';
-                                this.dataset.liked = 'false';
-                                countSpan.textContent = parseInt(countSpan.textContent) - 1;
-                            }
-                        }
-                    } catch (error) {
-                        console.error('Error toggling like:', error);
-                    }
-                });
-            });
+            
+            // Prevent KelasPosting from loading posts since we already have them in PHP
+            if (window.kelasPosting) {
+                window.kelasPosting.initialized = true; // Mark as initialized to prevent auto-loading
+                window.kelasPosting.hasMorePosts = false; // Prevent infinite scroll
+            }
 
             // Comment button functionality - use KelasPosting method
             document.querySelectorAll('.comment-btn').forEach(btn => {

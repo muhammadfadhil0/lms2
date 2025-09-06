@@ -29,6 +29,7 @@ $freshProfilePhotoUrl = getUserProfilePhotoUrl($_SESSION['user']['id']);
     <?php require '../../assets/head.php'; ?>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
     <link rel="stylesheet" href="../css/profile-photo-modal.css">
+    <link rel="stylesheet" href="../css/appearance-settings.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js"></script>
     <title>Pengaturan Akun</title>
@@ -67,6 +68,9 @@ $freshProfilePhotoUrl = getUserProfilePhotoUrl($_SESSION['user']['id']);
                         </button>
                         <button class="tab-btn py-2 px-1 border-b-2 font-medium text-sm md:text-base whitespace-nowrap" data-tab="security">
                             <i class="ti ti-shield mr-2"></i>Keamanan
+                        </button>
+                        <button class="tab-btn py-2 px-1 border-b-2 font-medium text-sm md:text-base whitespace-nowrap" data-tab="appearance">
+                            <i class="ti ti-palette mr-2"></i>Tampilan
                         </button>
                     </nav>
                 </div>
@@ -230,6 +234,128 @@ $freshProfilePhotoUrl = getUserProfilePhotoUrl($_SESSION['user']['id']);
                         </div>
                     </div>
                 </div>
+
+                <!-- Appearance Tab -->
+                <div id="appearance-tab" class="tab-content hidden">
+                    <!-- Dark Mode Section -->
+                    <div class="bg-white rounded-lg shadow-sm p-4 md:p-6 mb-4 md:mb-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4 md:mb-6">
+                            <i class="ti ti-moon mr-2 text-orange"></i>Mode Gelap
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <!-- Light Mode -->
+                            <div class="theme-option bg-white border-2 border-gray-200 rounded-lg p-4 cursor-pointer hover:border-orange-300 transition-all" data-theme="light">
+                                <div class="flex flex-col items-center space-y-3">
+                                    <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-yellow-200 to-orange-200 flex items-center justify-center relative">
+                                        <i class="ti ti-sun text-2xl text-orange-600"></i>
+                                        <div class="absolute -top-2 -right-2 w-6 h-6 bg-orange text-white rounded-full flex items-center justify-center opacity-0 checkmark transition-opacity">
+                                            <i class="ti ti-check text-xs"></i>
+                                        </div>
+                                    </div>
+                                    <div class="text-center">
+                                        <h4 class="font-medium text-gray-900">Mode Terang</h4>
+                                        <p class="text-sm text-gray-600">Tampilan terang klasik</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Dark Mode -->
+                            <div class="theme-option bg-white border-2 border-gray-200 rounded-lg p-4 cursor-pointer hover:border-orange-300 transition-all" data-theme="dark">
+                                <div class="flex flex-col items-center space-y-3">
+                                    <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-gray-700 to-gray-900 flex items-center justify-center relative">
+                                        <i class="ti ti-moon text-2xl text-blue-300"></i>
+                                        <div class="absolute -top-2 -right-2 w-6 h-6 bg-orange text-white rounded-full flex items-center justify-center opacity-0 checkmark transition-opacity">
+                                            <i class="ti ti-check text-xs"></i>
+                                        </div>
+                                    </div>
+                                    <div class="text-center">
+                                        <h4 class="font-medium text-gray-900">Mode Gelap</h4>
+                                        <p class="text-sm text-gray-600">Tampilan gelap untuk mata</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- System Mode -->
+                            <div class="theme-option bg-white border-2 border-gray-200 rounded-lg p-4 cursor-pointer hover:border-orange-300 transition-all" data-theme="system">
+                                <div class="flex flex-col items-center space-y-3">
+                                    <div class="w-16 h-16 rounded-lg bg-gradient-to-r from-yellow-200 via-gray-300 to-gray-700 flex items-center justify-center relative">
+                                        <i class="ti ti-device-desktop text-2xl text-gray-600"></i>
+                                        <div class="absolute -top-2 -right-2 w-6 h-6 bg-orange text-white rounded-full flex items-center justify-center opacity-0 checkmark transition-opacity">
+                                            <i class="ti ti-check text-xs"></i>
+                                        </div>
+                                    </div>
+                                    <div class="text-center">
+                                        <h4 class="font-medium text-gray-900">Mengikuti Sistem</h4>
+                                        <p class="text-sm text-gray-600">Sesuai pengaturan perangkat</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Font Size Section -->
+                    <div class="bg-white rounded-lg shadow-sm p-4 md:p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4 md:mb-6">
+                            <i class="ti ti-typography mr-2 text-orange"></i>Ukuran Font
+                        </h3>
+                        <div class="space-y-4">
+                            <p class="text-sm text-gray-600 mb-4">Pilih ukuran font yang nyaman untuk dibaca</p>
+                            
+                            <!-- Font Size Options -->
+                            <div class="space-y-3">
+                                <label class="flex items-center justify-between p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                    <div class="flex items-center">
+                                        <input type="radio" name="fontSize" value="70" class="text-orange focus:ring-orange border-gray-300 mr-3">
+                                        <span class="text-sm" style="font-size: 0.7em;">Sangat Kecil (70%)</span>
+                                    </div>
+                                    <span class="text-xs text-gray-500">70%</span>
+                                </label>
+
+                                <label class="flex items-center justify-between p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                    <div class="flex items-center">
+                                        <input type="radio" name="fontSize" value="80" class="text-orange focus:ring-orange border-gray-300 mr-3">
+                                        <span class="text-sm" style="font-size: 0.8em;">Kecil (80%)</span>
+                                    </div>
+                                    <span class="text-xs text-gray-500">80%</span>
+                                </label>
+
+                                <label class="flex items-center justify-between p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                    <div class="flex items-center">
+                                        <input type="radio" name="fontSize" value="90" class="text-orange focus:ring-orange border-gray-300 mr-3">
+                                        <span class="text-sm" style="font-size: 0.9em;">Agak Kecil (90%)</span>
+                                    </div>
+                                    <span class="text-xs text-gray-500">90%</span>
+                                </label>
+
+                                <label class="flex items-center justify-between p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                    <div class="flex items-center">
+                                        <input type="radio" name="fontSize" value="100" class="text-orange focus:ring-orange border-gray-300 mr-3" checked>
+                                        <span class="text-sm">Normal (100%)</span>
+                                    </div>
+                                    <span class="text-xs text-gray-500">100%</span>
+                                </label>
+
+                                <label class="flex items-center justify-between p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                    <div class="flex items-center">
+                                        <input type="radio" name="fontSize" value="110" class="text-orange focus:ring-orange border-gray-300 mr-3">
+                                        <span class="text-sm" style="font-size: 1.1em;">Besar (110%)</span>
+                                    </div>
+                                    <span class="text-xs text-gray-500">110%</span>
+                                </label>
+                            </div>
+
+                            <!-- Save Button for Appearance -->
+                            <div class="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 pt-4 border-t border-gray-100">
+                                <button type="button" class="px-6 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors text-sm md:text-base">
+                                    Reset
+                                </button>
+                                <button type="button" id="save-appearance" class="px-6 py-2 bg-orange text-white rounded-lg hover:bg-orange-600 transition-colors text-sm md:text-base">
+                                    <i class="ti ti-device-floppy mr-2"></i>Simpan Pengaturan Tampilan
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </main>
     </div>
@@ -245,6 +371,7 @@ $freshProfilePhotoUrl = getUserProfilePhotoUrl($_SESSION['user']['id']);
     <script src="../script/menu-bar-script.js"></script>
     <script src="../script/tab-settings.js"></script>
     <script src="../script/settings.js"></script>
+    <script src="../script/appearance-settings.js"></script>
     <script src="../script/profile-photo-handler.js"></script>
     <script src="../script/profile-sync.js"></script>
 </body>

@@ -1,0 +1,155 @@
+/* Appearance Settings Styles */
+
+/* Theme Classes */
+.theme-light {
+    color-scheme: light;
+}
+
+.theme-dark {
+    color-scheme: dark;
+    background-color: #1a1a1a !important;
+    color: #ffffff !important;
+}
+
+.theme-dark .bg-white {
+    background-color: #2d2d2d !important;
+    color: #ffffff !important;
+}
+
+.theme-dark .text-gray-900 {
+    color: #ffffff !important;
+}
+
+.theme-dark .text-gray-700 {
+    color: #d1d5db !important;
+}
+
+.theme-dark .text-gray-600 {
+    color: #9ca3af !important;
+}
+
+.theme-dark .text-gray-500 {
+    color: #6b7280 !important;
+}
+
+.theme-dark .border-gray-300 {
+    border-color: #4b5563 !important;
+}
+
+.theme-dark .border-gray-200 {
+    border-color: #374151 !important;
+}
+
+.theme-dark .bg-gray-50 {
+    background-color: #111827 !important;
+}
+
+.theme-dark .bg-gray-100 {
+    background-color: #374151 !important;
+    color: #ffffff !important;
+}
+
+.theme-dark input, 
+.theme-dark textarea, 
+.theme-dark select {
+    background-color: #374151 !important;
+    border-color: #4b5563 !important;
+    color: #ffffff !important;
+}
+
+.theme-dark input::placeholder,
+.theme-dark textarea::placeholder {
+    color: #9ca3af !important;
+}
+
+/* Theme Option Styles */
+.theme-option {
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.theme-option:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.theme-option.active {
+    border-color: #ff6347 !important;
+    box-shadow: 0 0 0 2px rgba(255, 99, 71, 0.2);
+}
+
+.theme-option.active .checkmark {
+    opacity: 1 !important;
+}
+
+/* Font Size Radio Styles */
+input[type="radio"]:checked {
+    background-color: #ff6347;
+    border-color: #ff6347;
+}
+
+input[type="radio"]:focus {
+    box-shadow: 0 0 0 3px rgba(255, 99, 71, 0.1);
+}
+
+/* Font Size Label Hover */
+label:has(input[type="radio"]:checked) {
+    background-color: rgba(255, 99, 71, 0.05);
+    border-color: #ff6347;
+}
+
+/* Dark mode for radio labels */
+.theme-dark label:has(input[type="radio"]:checked) {
+    background-color: rgba(255, 99, 71, 0.15);
+    border-color: #ff6347;
+}
+
+/* Theme gradient animations */
+.theme-option[data-theme="light"] .gradient-bg {
+    background: linear-gradient(135deg, #ffeaa7, #fdcb6e);
+}
+
+.theme-option[data-theme="dark"] .gradient-bg {
+    background: linear-gradient(135deg, #2d3436, #636e72);
+}
+
+.theme-option[data-theme="system"] .gradient-bg {
+    background: linear-gradient(90deg, #ffeaa7 0%, #a29bfe 50%, #2d3436 100%);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .theme-option {
+        padding: 1rem;
+    }
+    
+    .theme-option .w-16 {
+        width: 3rem;
+        height: 3rem;
+    }
+    
+    .theme-option .text-2xl {
+        font-size: 1.25rem;
+    }
+}
+
+/* Animation for checkmark */
+.checkmark {
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    transform: scale(0.8);
+}
+
+.theme-option.active .checkmark {
+    transform: scale(1);
+}
+
+/* Custom focus styles for accessibility */
+.theme-option:focus {
+    outline: 2px solid #ff6347;
+    outline-offset: 2px;
+}
+
+/* Font size preview animation */
+.font-preview {
+    transition: font-size 0.3s ease;
+}

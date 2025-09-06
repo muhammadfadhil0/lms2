@@ -539,14 +539,23 @@ class KelasPosting {
                 const likeBtn = document.querySelector(`.like-btn[data-post-id="${postId}"]`);
                 if (likeBtn) {
                     const likeCount = likeBtn.querySelector('.like-count');
+                    const heartIcon = likeBtn.querySelector('i');
                     const currentCount = parseInt(likeCount.textContent) || 0;
                     
                     if (result.action === 'liked') {
                         likeCount.textContent = currentCount + 1;
                         likeBtn.classList.add('text-red-500', 'liked');
+                        likeBtn.setAttribute('data-liked', 'true');
+                        if (heartIcon) {
+                            heartIcon.className = 'ti ti-heart-filled text-red-600';
+                        }
                     } else {
                         likeCount.textContent = Math.max(0, currentCount - 1);
                         likeBtn.classList.remove('text-red-500', 'liked');
+                        likeBtn.setAttribute('data-liked', 'false');
+                        if (heartIcon) {
+                            heartIcon.className = 'ti ti-heart';
+                        }
                     }
                 }
             } else {
@@ -1559,6 +1568,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
         }
+    }
+    
+    // Add backdrop click to close modal
+    const commentsModal = document.getElementById('comments-modal');
+    if (commentsModal) {
+        commentsModal.addEventListener('click', function(e) {
+            if (e.target === commentsModal) {
+                closeCommentsModal();
+            }
+        });
     }
 });
 

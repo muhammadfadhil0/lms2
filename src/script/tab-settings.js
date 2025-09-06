@@ -1,4 +1,4 @@
-        // Tab functionality - updated for 2 tabs only
+        // Tab functionality - updated for 3 tabs (profile, security, appearance)
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 const tab = btn.dataset.tab;

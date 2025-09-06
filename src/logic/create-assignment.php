@@ -91,10 +91,14 @@ try {
     $konten_post = "{$deskripsi}";
     
     $stmt = $pdo->prepare("
+
+
         INSERT INTO postingan_kelas (kelas_id, user_id, konten, tipe_postingan, assignment_id, dibuat) 
         VALUES (?, ?, ?, 'assignment', ?, NOW())
     ");
     $stmt->execute([$kelas_id, $guru_id, $konten_post, $assignment_id]);
+
+
     
     echo json_encode(['success' => true, 'message' => 'Tugas berhasil dibuat', 'assignment_id' => $assignment_id]);
     
