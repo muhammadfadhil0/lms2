@@ -214,14 +214,6 @@ $newClassId = isset($_GET['new_class']) ? intval($_GET['new_class']) : null;
                                             </button>
                                             <div id="dropdown-<?php echo $kelas['id']; ?>" class="hidden fixed w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
                                                 <div class="py-1">
-                                                    <a href="kelas-guru.php?id=<?php echo $kelas['id']; ?>" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                                        <i class="ti ti-eye mr-2"></i>
-                                                        Detail
-                                                    </a>
-                                                    <a href="#" onclick="editKelas(<?php echo $kelas['id']; ?>)" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                                        <i class="ti ti-edit mr-2"></i>
-                                                        Edit
-                                                    </a>
                                                     <a href="#" onclick="hapusKelas(<?php echo $kelas['id']; ?>)" class="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50">
                                                         <i class="ti ti-trash mr-2"></i>
                                                         Hapus

@@ -48,7 +48,7 @@
 
                 <div class="modal-body">
                     <form id="add-class-form" class="modal-form" onsubmit="createKelas(event)">
-                        <div class="space-y-4">
+                        <div class="space-y-4 md:px-5 ">
                             <div>
                                 <label for="namaKelas" class="block text-sm font-medium text-gray-700 mb-1">Nama Kelas</label>
                                 <input type="text" id="namaKelas" name="namaKelas" required

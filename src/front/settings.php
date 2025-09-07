@@ -246,7 +246,7 @@ $freshProfilePhotoUrl = getUserProfilePhotoUrl($_SESSION['user']['id']);
                             <!-- Light Mode -->
                             <div class="theme-option bg-white border-2 border-gray-200 rounded-lg p-4 cursor-pointer hover:border-orange-300 transition-all" data-theme="light">
                                 <div class="flex flex-col items-center space-y-3">
-                                    <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-yellow-200 to-orange-200 flex items-center justify-center relative">
+                                    <div class="w-16 h-16 rounded-lg bg-gradient-to-br fropm-yellow-200 to-orange-200 flex items-center justify-center relative">
                                         <i class="ti ti-sun text-2xl text-orange-600"></i>
                                         <div class="absolute -top-2 -right-2 w-6 h-6 bg-orange text-white rounded-full flex items-center justify-center opacity-0 checkmark transition-opacity">
                                             <i class="ti ti-check text-xs"></i>
