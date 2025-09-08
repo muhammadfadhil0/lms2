@@ -322,26 +322,28 @@ class PostinganLogic {
         }
     }
     
-    // Simpan gambar postingan
-    private function simpanGambarPostingan($postingan_id, $images) {
+    // Simpan gambar/media postingan
+    private function simpanGambarPostingan($postingan_id, $mediaFiles) {
         try {
-            foreach ($images as $image) {
-                $sql = "INSERT INTO postingan_gambar (postingan_id, nama_file, path_gambar, ukuran_file, tipe_file, urutan) 
-                        VALUES (?, ?, ?, ?, ?, ?)";
+            foreach ($mediaFiles as $media) {
+                $sql = "INSERT INTO postingan_gambar (postingan_id, nama_file, path_gambar, ukuran_file, tipe_file, media_type, urutan) 
+                        VALUES (?, ?, ?, ?, ?, ?, ?)";
                 $stmt = $this->conn->prepare($sql);
-                $stmt->bind_param("issisi", 
+                $mediaType = isset($media['media_type']) ? $media['media_type'] : 'image';
+                $stmt->bind_param("ississi", 
                     $postingan_id, 
-                    $image['nama_file'], 
-                    $image['path_gambar'], 
-                    $image['ukuran_file'], 
-                    $image['tipe_file'], 
-                    $image['urutan']
+                    $media['nama_file'], 
+                    $media['path_gambar'], 
+                    $media['ukuran_file'], 
+                    $media['tipe_file'], 
+                    $mediaType,
+                    $media['urutan']
                 );
                 $stmt->execute();
             }
             return true;
         } catch (Exception $e) {
-            throw new Exception('Gagal menyimpan gambar: ' . $e->getMessage());
+            throw new Exception('Gagal menyimpan media: ' . $e->getMessage());
         }
     }
     
@@ -369,10 +371,10 @@ class PostinganLogic {
         }
     }
     
-    // Mendapatkan gambar postingan
+    // Mendapatkan gambar/media postingan
     public function getGambarPostingan($postingan_id) {
         try {
-            $sql = "SELECT * FROM postingan_gambar WHERE postingan_id = ? ORDER BY urutan";
+            $sql = "SELECT *, COALESCE(media_type, 'image') as media_type FROM postingan_gambar WHERE postingan_id = ? ORDER BY urutan";
             $stmt = $this->conn->prepare($sql);
             $stmt->bind_param("i", $postingan_id);
             $stmt->execute();

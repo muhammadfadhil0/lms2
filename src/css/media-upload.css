@@ -1,0 +1,294 @@
+/* Media Upload Styles (Images and Videos) */
+.media-upload-container {
+    position: relative;
+    display: inline-block;
+}
+
+.media-upload-input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.media-upload-label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    color: #6b7280;
+    transition: color 0.2s;
+}
+
+.media-upload-label:hover {
+    color: #f97316;
+}
+
+/* Media Preview Styles */
+.media-preview-container {
+    margin-top: 16px;
+    padding: 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background-color: #f9fafb;
+}
+
+.media-preview-grid {
+    display: grid;
+    gap: 8px;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+/* Grid layouts for different numbers of media files */
+.media-preview-grid.grid-1 {
+    grid-template-columns: 1fr;
+    max-width: 400px;
+}
+
+.media-preview-grid.grid-2 {
+    grid-template-columns: 1fr 1fr;
+    max-width: 400px;
+}
+
+.media-preview-grid.grid-3 {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    max-width: 400px;
+}
+
+.media-preview-grid.grid-3 .preview-item:first-child {
+    grid-row: span 2;
+}
+
+.media-preview-grid.grid-4 {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    max-width: 400px;
+}
+
+.preview-item {
+    position: relative;
+    border-radius: 8px;
+    overflow: hidden;
+    aspect-ratio: 1;
+    background: #f3f4f6;
+}
+
+.preview-media {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.preview-media:hover {
+    transform: scale(1.02);
+}
+
+/* Video specific styles */
+video.preview-media {
+    cursor: default;
+}
+
+video.preview-media::-webkit-media-controls {
+    transform: scale(0.8);
+}
+
+/* Media type indicator */
+.media-type-indicator {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 14px;
+    z-index: 2;
+}
+
+.image-indicator {
+    background: rgba(34, 197, 94, 0.8);
+}
+
+.video-indicator {
+    background: rgba(59, 130, 246, 0.8);
+}
+
+.remove-media {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+    z-index: 3;
+}
+
+.remove-media:hover {
+    background: rgba(239, 68, 68, 0.8);
+}
+
+.remove-media i {
+    font-size: 12px;
+}
+
+/* Upload message styles */
+.upload-message-container {
+    margin-top: 8px;
+}
+
+.upload-message {
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.upload-message.error {
+    background-color: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+}
+
+.upload-message.success {
+    background-color: #f0fdf4;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .media-preview-grid {
+        max-width: 100%;
+    }
+    
+    .media-preview-grid.grid-1,
+    .media-preview-grid.grid-2,
+    .media-preview-grid.grid-3,
+    .media-preview-grid.grid-4 {
+        max-width: 100%;
+    }
+    
+    .preview-item {
+        min-height: 150px;
+    }
+}
+
+/* Post display styles for media */
+.post-media-container {
+    margin-top: 12px;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.post-media-grid {
+    display: grid;
+    gap: 4px;
+}
+
+.post-media-grid.grid-1 {
+    grid-template-columns: 1fr;
+}
+
+.post-media-grid.grid-2 {
+    grid-template-columns: 1fr 1fr;
+}
+
+.post-media-grid.grid-3 {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+}
+
+.post-media-grid.grid-3 .post-media-item:first-child {
+    grid-row: span 2;
+}
+
+.post-media-grid.grid-4 {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+}
+
+.post-media-item {
+    position: relative;
+    aspect-ratio: 1;
+    overflow: hidden;
+    background: #f3f4f6;
+}
+
+.post-media-item img,
+.post-media-item video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    cursor: pointer;
+}
+
+.post-media-item video {
+    cursor: default;
+}
+
+/* Download button for media */
+.media-download-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+    z-index: 2;
+}
+
+.media-download-btn:hover {
+    background: rgba(34, 197, 94, 0.8);
+}
+
+.media-download-btn i {
+    font-size: 16px;
+}
+
+/* Media type badge in posts */
+.post-media-type-badge {
+    position: absolute;
+    bottom: 8px;
+    left: 8px;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    color: white;
+    z-index: 2;
+}
+
+.post-media-type-badge.image {
+    background: rgba(34, 197, 94, 0.8);
+}
+
+.post-media-type-badge.video {
+    background: rgba(59, 130, 246, 0.8);
+}

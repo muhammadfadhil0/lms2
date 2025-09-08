@@ -133,16 +133,24 @@ class KelasPosting {
         formData.append('konten', konten);
         formData.append('tipePost', 'umum');
         
-        // Add selected images if any
-        if (window.imageUpload && window.imageUpload.selectedFiles.length > 0) {
+        // Add selected media if any
+        if (window.mediaUpload && window.mediaUpload.selectedFiles.length > 0) {
+            const selectedFiles = window.mediaUpload.getSelectedFiles();
+            console.log('Adding', selectedFiles.length, 'media files to form data');
+            selectedFiles.forEach((file, index) => {
+                console.log('Adding media:', file.name, 'size:', file.size);
+                formData.append('media[]', file);
+            });
+        } else if (window.imageUpload && window.imageUpload.selectedFiles.length > 0) {
+            // Backward compatibility with old image upload system
             const selectedFiles = window.imageUpload.getSelectedFiles();
-            console.log('Adding', selectedFiles.length, 'images to form data');
+            console.log('Adding', selectedFiles.length, 'images to form data (legacy)');
             selectedFiles.forEach((file, index) => {
                 console.log('Adding image:', file.name, 'size:', file.size);
                 formData.append('images[]', file);
             });
         } else {
-            console.log('No images selected for upload');
+            console.log('No media selected for upload');
         }
         
         // Add selected files if any
@@ -169,8 +177,10 @@ class KelasPosting {
                 textarea.value = '';
                 this.autoResizeTextarea.call(textarea);
                 
-                // Clear selected images
-                if (window.imageUpload) {
+                // Clear selected media
+                if (window.mediaUpload) {
+                    window.mediaUpload.clearSelection();
+                } else if (window.imageUpload) {
                     window.imageUpload.clearSelection();
                 }
                 
@@ -489,7 +499,7 @@ class KelasPosting {
                         </div>
                     ` : ''}
                     ${this.renderAssignmentContent(post)}
-                    ${this.renderPostImages(post.gambar)}
+                    ${this.renderPostMedia(post.gambar)}
                     ${this.renderPostFiles(post.files)}
                 </div>
                 <div class="flex items-center justify-between pt-4 border-t border-gray-100">
@@ -1100,446 +1110,76 @@ class KelasPosting {
         }
     }
     
-    renderPostImages(images) {
-        if (!images || images.length === 0) {
+    renderPostMedia(mediaFiles) {
+        if (!mediaFiles || mediaFiles.length === 0) {
             return '';
         }
         
-        const imageCount = images.length;
-        const gridClass = `post-images-grid grid-${imageCount}`;
-        const imageClass = imageCount === 1 ? 'single' : 'multiple';
+        const mediaCount = mediaFiles.length;
+        const gridClass = `post-media-grid grid-${mediaCount}`;
+        const mediaClass = mediaCount === 1 ? 'single' : 'multiple';
         
-        let imagesHtml = images.map((image, index) => `
-            <div class="post-image-item ${imageClass}">
-                <img src="../../${image.path_gambar}" 
-                     alt="${this.escapeHtml(image.nama_file)}" 
-                     class="post-image" 
-                     data-image-index="${index}"
-                     style="cursor: pointer;"
-                     onerror="this.style.display='none'">
-            </div>
-        `).join('');
-        
-        return `
-            <div class="post-images mt-3">
-                <div class="${gridClass}">
-                    ${imagesHtml}
-                </div>
-            </div>
-        `;
-    }
-    
-    renderPostFiles(files) {
-        if (!files || files.length === 0) {
-            return '';
-        }
-        
-        console.log('Rendering post files:', files); // Debug log
-        
-        let filesHtml = files.map((file, index) => {
-            console.log('Processing file:', file); // Debug log for each file
-            try {
-                // Use FileUploadManager's static method to render
-                return window.FileUploadManager.renderPostFileAttachment(file);
-            } catch (error) {
-                console.error('Error rendering file:', error, file);
-                return ''; // Return empty string if error
+        let mediaHtml = mediaFiles.map((media, index) => {
+            const isVideo = media.media_type === 'video' || media.tipe_file.startsWith('video/');
+            const mediaPath = `../../${media.path_gambar}`;
+            
+            if (isVideo) {
+                return `
+                    <div class="post-media-item ${mediaClass}">
+                        <video controls 
+                               class="post-media" 
+                               data-media-index="${index}"
+                               preload="metadata">
+                            <source src="${mediaPath}" type="${media.tipe_file}">
+                            Your browser does not support the video tag.
+                        </video>
+                        <div class="post-media-type-badge video">
+                            <i class="ti ti-video"></i> Video
+                        </div>
+                        <button class="media-download-btn" onclick="downloadMedia('${mediaPath}', '${this.escapeHtml(media.nama_file)}')" title="Download Video">
+                            <i class="ti ti-download"></i>
+                        </button>
+                    </div>
+                `;
+            } else {
+                return `
+                    <div class="post-media-item ${mediaClass}">
+                        <img src="${mediaPath}" 
+                             alt="${this.escapeHtml(media.nama_file)}" 
+                             class="post-media" 
+                             data-media-index="${index}"
+                             style="cursor: pointer;"
+                             onerror="this.style.display='none'">
+                        <div class="post-media-type-badge image">
+                            <i class="ti ti-photo"></i> Gambar
+                        </div>
+                        <button class="media-download-btn" onclick="downloadMedia('${mediaPath}', '${this.escapeHtml(media.nama_file)}')" title="Download Gambar">
+                            <i class="ti ti-download"></i>
+                        </button>
+                    </div>
+                `;
             }
         }).join('');
         
         return `
-            <div class="post-files mt-3">
-                ${filesHtml}
-            </div>
-        `;
-    }
-    
-    // Method to reload all posts (useful after edit/delete)
-    reloadPosts() {
-        this.currentOffset = 0;
-        this.hasMorePosts = true;
-        this.loadPostingan(true);
-    }
-    
-    // Method to refresh a single post
-    async refreshPost(postId) {
-        try {
-            const response = await fetch(`../logic/get-postingan.php?kelas_id=${this.kelasId}&postingan_id=${postId}`);
-            const data = await response.json();
-            
-            if (data.success && data.data && data.data.length > 0) {
-                const post = data.data[0];
-                const existingElement = document.querySelector(`[data-post-id="${postId}"]`);
-                if (existingElement) {
-                    const postContainer = existingElement.closest('.bg-white');
-                    if (postContainer) {
-                        const newElement = this.createPostElement(post, data.user_id, data.user_role);
-                        postContainer.replaceWith(newElement);
-                    }
-                }
-            }
-        } catch (error) {
-            console.error('Error refreshing post:', error);
-        }
-    }
-
-    renderAssignmentContent(post) {
-        if (post.tipe_postingan !== 'assignment' || !post.assignment_id) {
-            return '';
-        }
-
-        const currentUserRole = window.currentUserRole;
-        console.log('🎯 renderAssignmentContent:', {
-            postId: post.id,
-            assignmentId: post.assignment_id,
-            currentUserRole,
-            submissionStatus: post.student_submission_status
-        });
-        
-        const isDeadlinePassed = post.assignment_deadline && new Date(post.assignment_deadline) < new Date();
-        
-        // Format deadline
-        const formatDeadline = (deadline) => {
-            if (!deadline) return '';
-            const date = new Date(deadline);
-            return date.toLocaleDateString('id-ID', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            });
-        };
-
-        // Format deadline for mobile (shorter)
-        const formatDeadlineMobile = (deadline) => {
-            if (!deadline) return '';
-            const date = new Date(deadline);
-            return date.toLocaleDateString('id-ID', {
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            });
-        };
-
-        // Get file icon based on extension
-        const getFileIcon = (filename) => {
-            if (!filename) return 'ti ti-file';
-            const ext = filename.toLowerCase().split('.').pop();
-            switch (ext) {
-                case 'pdf': return 'ti ti-file-type-pdf';
-                case 'doc':
-                case 'docx': return 'ti ti-file-type-doc';
-                case 'xls':
-                case 'xlsx': return 'ti ti-file-type-xls';
-                case 'ppt':
-                case 'pptx': return 'ti ti-file-type-ppt';
-                case 'jpg':
-                case 'jpeg':
-                case 'png':
-                case 'gif': return 'ti ti-photo';
-                case 'mp4':
-                case 'avi':
-                case 'mov': return 'ti ti-video';
-                case 'mp3':
-                case 'wav': return 'ti ti-music';
-                case 'zip':
-                case 'rar': return 'ti ti-file-zip';
-                default: return 'ti ti-file';
-            }
-        };
-
-        // Assignment header with info
-        let assignmentHeader = `
-            <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 mt-3" data-assignment-id="${post.assignment_id}">
-                <div class="flex items-start space-x-3">
-                    <div class="flex-shrink-0">
-                        <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                            <i class="ti ti-clipboard-text text-blue-600 text-xl"></i>
-                        </div>
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <div class="flex items-start justify-between mb-3">
-                            <h3 class="text-xl font-bold text-gray-900 flex items-center">
-                                <i class="ti ti-assignment text-blue-600 mr-2"></i>
-                                ${this.escapeHtml(post.assignment_title)}
-                            </h3>
-                        </div>
-                        
-                        <!-- Assignment Details Grid -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
-                            ${post.assignment_deadline ? `
-                                <div class="flex items-center space-x-2 p-3 bg-white rounded-lg border ${isDeadlinePassed ? 'border-red-200 bg-red-50' : 'border-gray-200'}">
-                                    <div class="flex-shrink-0">
-                                        <i class="ti ti-calendar-due text-lg ${isDeadlinePassed ? 'text-red-500' : 'text-orange-500'}"></i>
-                                    </div>
-                                    <div class="flex-1 min-w-0">
-                                        <div class="text-xs font-medium text-gray-500 uppercase tracking-wide">Deadline</div>
-                                        <div class="text-sm font-semibold ${isDeadlinePassed ? 'text-red-700' : 'text-gray-900'} truncate">
-                                            <span class="hidden sm:inline">${formatDeadline(post.assignment_deadline)}</span>
-                                            <span class="sm:hidden">${formatDeadlineMobile(post.assignment_deadline)}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            ` : ''}
-                            
-                            ${post.assignment_max_score ? `
-                                <div class="flex items-center space-x-2 p-3 bg-white rounded-lg border border-gray-200">
-                                    <div class="flex-shrink-0">
-                                        <i class="ti ti-trophy text-lg text-yellow-500"></i>
-                                    </div>
-                                    <div class="flex-1">
-                                        <div class="text-xs font-medium text-gray-500 uppercase tracking-wide">Nilai Maksimal</div>
-                                        <div class="text-sm font-semibold text-gray-900">${post.assignment_max_score} Poin</div>
-                                    </div>
-                                </div>
-                            ` : ''}
-                        </div>
-                        
-                        ${post.assignment_file_path ? `
-                            <div class="p-3 bg-white rounded-lg border border-gray-200">
-                                <div class="flex items-center space-x-3">
-                                    <div class="flex-shrink-0">
-                                        <i class="${getFileIcon(post.assignment_file_path)} text-blue-600 text-xl"></i>
-                                    </div>
-                                    <div class="flex-1 min-w-0">
-                                        <div class="text-xs font-medium text-gray-500 uppercase tracking-wide">File Tugas</div>
-                                        <div class="text-sm font-semibold text-gray-900 truncate">${post.assignment_file_path.split('/').pop()}</div>
-                                    </div>
-                                    <a href="/lms${post.assignment_file_path.startsWith('/') ? '' : '/'}${post.assignment_file_path}" target="_blank" 
-                                       class="flex items-center space-x-1 bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex-shrink-0">
-                                        <i class="ti ti-download"></i>
-                                        <span class="hidden sm:inline">Download</span>
-                                    </a>
-                                </div>
-                            </div>
-                        ` : ''}
-                    </div>
+            <div class="post-media-container mt-3">
+                <div class="${gridClass}">
+                    ${mediaHtml}
                 </div>
             </div>
         `;
-        
-        let assignmentActions = '';
-        
-        if (currentUserRole === 'siswa') {
-            if (isDeadlinePassed) {
-                assignmentActions = `
-                    <div class="bg-red-50 border border-red-200 rounded-lg p-3 mt-3">
-                        <div class="flex items-center">
-                            <i class="ti ti-clock-x text-red-600 mr-2"></i>
-                            <span class="text-sm text-red-800">Deadline telah terlewat</span>
-                        </div>
-                    </div>
-                `;
-            } else {
-                const submissionStatus = post.student_submission_status;
-                if (submissionStatus === 'dinilai') {
-                    assignmentActions = `
-                        <div class="mt-3 bg-green-50 border border-green-200 rounded-lg p-4">
-                            <!-- Header -->
-                            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                                <div class="flex items-start sm:items-center">
-                                    <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
-                                        <i class="ti ti-check text-green-600 text-lg"></i>
-                                    </div>
-                                    <div class="min-w-0">
-                                        <div class="font-semibold text-green-700 text-sm sm:text-base">Tugas telah dinilai</div>
-                                        <div class="text-[12px] sm:text-sm text-green-600 mt-0.5">Selamat! Anda sudah mendapatkan nilai akhir.</div>
-                                    </div>
-                                </div>
-                                <div class="flex sm:block items-center sm:text-right bg-white sm:bg-transparent px-3 py-2 sm:p-0 rounded-md border border-green-200 sm:border-0">
-                                    <div class="flex items-baseline sm:block">
-                                        <span class="text-xl sm:text-2xl font-bold text-green-600 leading-none mr-1 sm:mr-0">${post.student_score}</span>
-                                        <span class="text-xs sm:text-sm text-gray-500 leading-none">/ ${post.assignment_max_score}</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <!-- Progress Bar -->
-                            <div class="mt-4">
-                                <div class="flex justify-between text-[10px] sm:text-xs font-medium mb-1 text-gray-600">
-                                    <span class="text-green-600">Terkirim</span>
-                                    <span class="text-green-600">Dinilai</span>
-                                </div>
-                                <div class="relative h-2 bg-green-100 rounded-full">
-                                    <div class="absolute inset-y-0 left-0 bg-green-500 rounded-full" style="width:100%"></div>
-                                    <div class="absolute -top-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full shadow left-0 translate-x-[-2px]"></div>
-                                    <div class="absolute -top-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full shadow right-0 translate-x-[2px]"></div>
-                                </div>
-                            </div>
-                            ${post.student_feedback ? `
-                                <div class="mt-4 bg-white border border-green-200 rounded-lg p-3">
-                                    <div class="flex items-start space-x-2">
-                                        <i class="ti ti-message-circle text-green-600 mt-0.5"></i>
-                                        <div class="min-w-0">
-                                            <div class="font-medium text-green-700 text-xs sm:text-sm mb-1">Komentar Guru</div>
-                                            <div class="text-xs sm:text-sm text-gray-700 leading-relaxed">${this.escapeHtml(post.student_feedback)}</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            ` : ''}
-                        </div>
-                    `;
-                } else if (submissionStatus === 'dikumpulkan') {
-                    assignmentActions = `
-                        <div class="mt-3 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                                <div class="flex items-start sm:items-center">
-                                    <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
-                                        <i class="ti ti-clock text-yellow-600 text-lg"></i>
-                                    </div>
-                                    <div class="min-w-0">
-                                        <div class="font-semibold text-yellow-700 text-sm sm:text-base">Tugas sudah dikumpulkan</div>
-                                        <div class="text-[12px] sm:text-sm text-yellow-600 mt-0.5">Menunggu penilaian dari guru...</div>
-                                    </div>
-                                </div>
-                                <div class="flex items-center sm:block text-yellow-600">
-                                    <i class="ti ti-hourglass-high text-xl sm:text-2xl"></i>
-                                </div>
-                            </div>
-                            <!-- Progress Bar -->
-                            <div class="mt-4">
-                                <div class="flex justify-between text-[10px] sm:text-xs font-medium mb-1 text-gray-600">
-                                    <span class="text-green-600">Terkirim</span>
-                                    <span class="text-gray-400">Dinilai</span>
-                                </div>
-                                <div class="relative h-2 bg-gray-200 rounded-full">
-                                    <div class="absolute inset-y-0 left-0 bg-green-500 rounded-full" style="width:50%"></div>
-                                    <div class="absolute -top-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full shadow left-0 translate-x-[-2px]"></div>
-                                    <div class="absolute -top-1 w-4 h-4 bg-white border-2 border-gray-300 rounded-full shadow right-0 translate-x-[2px]"></div>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                } else {
-                    assignmentActions = `
-                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-3">
-                            <div class="assignment-submission-area" id="submission-area-${post.assignment_id}">
-                                <div class="flex items-center justify-between mb-3">
-                                    <div class="flex items-center">
-                                        <i class="ti ti-upload text-blue-600 mr-2"></i>
-                                        <span class="text-sm text-blue-800">Belum mengumpulkan tugas</span>
-                                    </div>
-                                    <button onclick="showSubmissionForm(${post.assignment_id})" 
-                                            class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
-                                        Kumpulkan Tugas
-                                    </button>
-                                </div>
-                                <!-- Progress (pending) -->
-                                <div class="mt-2">
-                                    <div class="flex justify-between text-[10px] sm:text-xs font-medium mb-1 text-gray-500">
-                                        <span class="text-gray-400">Terkumpul</span>
-                                        <span class="text-gray-400">Dinilai</span>
-                                    </div>
-                                    <div class="relative h-2 bg-gray-200 rounded-full">
-                                        <div class="absolute inset-y-0 left-0 bg-green-500 rounded-full" style="width:0%"></div>
-                                        <div class="absolute -top-1 w-4 h-4 bg-white border-2 border-gray-300 rounded-full shadow left-0 translate-x-[-2px] flex items-center justify-center">
-                                            <i class="ti ti-circle-dashed text-gray-300 text-[10px]"></i>
-                                        </div>
-                                        <div class="absolute -top-1 w-4 h-4 bg-white border-2 border-gray-300 rounded-full shadow right-0 translate-x-[2px]"></div>
-                                    </div>
-                                </div>
-                                
-                                <!-- Hidden submission form -->
-                                <div id="submission-form-${post.assignment_id}" class="hidden mt-4 space-y-4">
-                                    <div class="border-t border-blue-200 pt-4">
-                                        <h4 class="font-medium text-gray-900 mb-3">Kumpulkan Tugas: ${this.escapeHtml(post.assignment_title)}</h4>
-                                        
-                                        <!-- File upload area -->
-                                        <div class="mb-4">
-                                            <label class="block text-sm font-medium text-gray-700 mb-2">Pilih File</label>
-                                            <div class="flex items-center space-x-3">
-                                                <input type="file" id="submission-file-${post.assignment_id}" 
-                                                       accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.jpg,.jpeg,.png,.gif"
-                                                       class="hidden" onchange="handleSubmissionFileSelect(${post.assignment_id}, this)">
-                                                <button onclick="document.getElementById('submission-file-${post.assignment_id}').click()" 
-                                                        class="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg text-sm font-medium border border-gray-300">
-                                                    <i class="ti ti-paperclip mr-2"></i>Pilih File
-                                                </button>
-                                                <span class="text-sm text-gray-500">Format: PDF, DOC, PPT, gambar (Max 10MB)</span>
-                                            </div>
-                                        </div>
-                                        
-                                        <!-- File preview area -->
-                                        <div id="submission-preview-${post.assignment_id}" class="hidden mb-4">
-                                            <div class="bg-white border border-gray-200 rounded-lg p-3">
-                                                <div class="flex items-center justify-between">
-                                                    <div class="flex items-center space-x-3">
-                                                        <div id="file-icon-${post.assignment_id}" class="text-blue-600 text-lg">
-                                                            <i class="ti ti-file"></i>
-                                                        </div>
-                                                        <div>
-                                                            <div id="file-name-${post.assignment_id}" class="text-sm font-medium text-gray-900"></div>
-                                                            <div id="file-size-${post.assignment_id}" class="text-xs text-gray-500"></div>
-                                                        </div>
-                                                    </div>
-                                                    <button onclick="removeSubmissionFile(${post.assignment_id})" 
-                                                            class="text-red-600 hover:text-red-800 p-1 rounded">
-                                                        <i class="ti ti-x"></i>
-                                                    </button>
-                                                </div>
-                                                <!-- Image preview for images -->
-                                                <div id="image-preview-${post.assignment_id}" class="hidden mt-3">
-                                                    <img class="max-w-full h-48 object-cover rounded-lg">
-                                                </div>
-                                            </div>
-                                        </div>
-                                        
-                                        <!-- Notes -->
-                                        <div class="mb-4">
-                                            <label for="submission-notes-${post.assignment_id}" class="block text-sm font-medium text-gray-700 mb-2">
-                                                Catatan (Opsional)
-                                            </label>
-                                            <textarea id="submission-notes-${post.assignment_id}" rows="3" 
-                                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                                    placeholder="Tambahkan catatan untuk guru..."></textarea>
-                                        </div>
-                                        
-                                        <!-- Action buttons -->
-                                        <div class="flex justify-between items-center">
-                                            <button onclick="hideSubmissionForm(${post.assignment_id})" 
-                                                    class="text-gray-600 hover:text-gray-800 text-sm font-medium">
-                                                Batal
-                                            </button>
-                                            <button onclick="submitAssignment(${post.assignment_id})" 
-                                                    id="submit-btn-${post.assignment_id}"
-                                                    class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                                                <i class="ti ti-send mr-2"></i>Kumpulkan
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                }
-            }
-        } else if (currentUserRole === 'guru') {
-            assignmentActions = `
-                <div class="bg-gray-50 border border-gray-200 rounded-lg p-3 mt-3">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center space-x-4">
-                            <div class="text-center">
-                                <div class="text-lg font-bold text-green-600">${post.assignment_submitted_count || 0}</div>
-                                <div class="text-xs text-gray-600">Terkumpul</div>
-                            </div>
-                            <div class="text-center">
-                                <div class="text-lg font-bold text-blue-600">${post.assignment_graded_count || 0}</div>
-                                <div class="text-xs text-gray-600">Dinilai</div>
-                            </div>
-                        </div>
-                        <button onclick="openAssignmentReports(${post.assignment_id})" class="bg-gray-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-700 transition-colors">
-                            Lihat Laporan
-                        </button>
-                    </div>
-                </div>
-            `;
-        }
-
-        return assignmentHeader + assignmentActions;
     }
 }
+
+// Global function for media download
+window.downloadMedia = function(mediaPath, fileName) {
+    const link = document.createElement('a');
+    link.href = mediaPath;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+};
 
 // Global functions for dropdown and actions
 function toggleDropdown(button) {

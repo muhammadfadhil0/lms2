@@ -101,7 +101,7 @@ require_once '../logic/profile-photo-helper.php';
     <meta name="user-id" content="<?php echo $_SESSION['user']['id']; ?>">
     <?php require '../../assets/head.php'; ?>
     <link rel="stylesheet" href="../css/kelas-posting.css?v=<?php echo time(); ?>">
-    <link rel="stylesheet" href="../css/image-upload.css?v=<?php echo time(); ?>">
+    <link rel="stylesheet" href="../css/media-upload.css?v=<?php echo time(); ?>">
     <link rel="stylesheet" href="../css/file-upload.css?v=<?php echo time(); ?>">
     <title><?php echo htmlspecialchars($detailKelas['namaKelas']); ?> - Kelas</title>
 </head>
@@ -213,9 +213,9 @@ require_once '../logic/profile-photo-helper.php';
                                         class="w-full p-3 rounded-lg resize-none focus:ring-2 focus:ring-orange-500 focus:outline-none bg-gray-50"
                                         rows="3" required></textarea>
                                     
-                                    <!-- Image Preview Container (will be populated by JavaScript) -->
-                                    <div class="image-preview-container hidden">
-                                        <div class="image-preview-grid"></div>
+                                    <!-- Media Preview Container (will be populated by JavaScript) -->
+                                    <div class="media-preview-container hidden">
+                                        <div class="media-preview-grid"></div>
                                         <div class="upload-message-container"></div>
                                     </div>
                                     
@@ -226,11 +226,11 @@ require_once '../logic/profile-photo-helper.php';
                                     
                                     <div class="flex items-center justify-between mt-4">
                                         <div class="flex space-x-2 lg:space-x-4">
-                                            <div class="image-upload-container">
-                                                <input type="file" id="imageInput" name="images[]" multiple accept="image/*" class="image-upload-input">
-                                                <label for="imageInput" class="image-upload-label flex items-center text-gray-600 hover:text-orange transition-colors text-sm lg:text-base cursor-pointer">
-                                                    <i class="ti ti-photo mr-1 lg:mr-2"></i>
-                                                    <span class="hidden sm:inline">Foto</span>
+                                            <div class="media-upload-container">
+                                                <input type="file" id="mediaInput" name="media[]" multiple accept="image/*,video/*" class="media-upload-input">
+                                                <label for="mediaInput" class="media-upload-label flex items-center text-gray-600 hover:text-orange transition-colors text-sm lg:text-base cursor-pointer">
+                                                    <i class="ti ti-device-camera mr-1 lg:mr-2"></i>
+                                                    <span class="hidden sm:inline">Media</span>
                                                 </label>
                                             </div>
                                             <div class="file-upload-container">
@@ -406,7 +406,7 @@ require_once '../logic/profile-photo-helper.php';
     <?php require '../component/modal-material-list.php'; ?>
     <?php require '../component/modal-classmates-list.php'; ?>
     <script src="../script/menu-bar-script.js"></script>
-    <script src="../script/image-upload-manager.js"></script>
+    <script src="../script/media-upload-manager.js"></script>
     <script src="../script/file-upload-manager.js?v=<?php echo time(); ?>"></script>
     <script src="../script/photoswipe-simple.js"></script>
     <script src="../script/assignment-manager.js"></script>

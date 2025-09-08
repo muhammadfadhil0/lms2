@@ -5,13 +5,15 @@ require_once 'postingan-logic.php';
 header('Content-Type: application/json');
 
 /**
- * Handle multiple image uploads for postingan
+ * Handle multiple media uploads for postingan (images and videos)
  */
-function handleImageUploads($files, $kelas_id, $user_id) {
-    $uploadedImages = [];
+function handleMediaUploads($files, $kelas_id, $user_id) {
+    $uploadedMedia = [];
     $maxFiles = 4;
-    $maxFileSize = 5 * 1024 * 1024; // 5MB per file
-    $allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+    $maxImageSize = 5 * 1024 * 1024; // 5MB per image
+    $maxVideoSize = 50 * 1024 * 1024; // 50MB per video
+    $allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+    $allowedVideoTypes = ['video/mp4', 'video/avi', 'video/mov', 'video/wmv', 'video/webm'];
     
     // Create upload directory if it doesn't exist
     $uploadDir = '../../uploads/postingan/' . $kelas_id . '/';
@@ -25,23 +27,29 @@ function handleImageUploads($files, $kelas_id, $user_id) {
     
     $fileCount = count($files['name']);
     if ($fileCount > $maxFiles) {
-        return ['error' => 'Maksimal 4 gambar yang dapat diunggah'];
+        return ['error' => 'Maksimal 4 file media yang dapat diunggah'];
     }
     
     for ($i = 0; $i < $fileCount; $i++) {
         if ($files['error'][$i] === UPLOAD_ERR_OK) {
-            // Validate file size
-            if ($files['size'][$i] > $maxFileSize) {
-                return ['error' => 'Ukuran file maksimal 5MB'];
-            }
-            
-            // Validate file type
+            // Detect file type
             $finfo = finfo_open(FILEINFO_MIME_TYPE);
             $mimeType = finfo_file($finfo, $files['tmp_name'][$i]);
             finfo_close($finfo);
             
-            if (!in_array($mimeType, $allowedTypes)) {
-                return ['error' => 'Tipe file tidak didukung. Gunakan JPG, PNG, atau GIF'];
+            $isImage = in_array($mimeType, $allowedImageTypes);
+            $isVideo = in_array($mimeType, $allowedVideoTypes);
+            
+            if (!$isImage && !$isVideo) {
+                return ['error' => 'Tipe file tidak didukung. Gunakan format gambar (JPG, PNG, GIF) atau video (MP4, AVI, MOV, WMV, WEBM)'];
+            }
+            
+            // Validate file size based on type
+            $maxFileSize = $isVideo ? $maxVideoSize : $maxImageSize;
+            if ($files['size'][$i] > $maxFileSize) {
+                $fileType = $isVideo ? 'video' : 'gambar';
+                $maxSizeMB = $isVideo ? '50MB' : '5MB';
+                return ['error' => "Ukuran file terlalu besar. Maksimal {$maxSizeMB} untuk {$fileType}"];
             }
             
             // Generate unique filename
@@ -50,11 +58,12 @@ function handleImageUploads($files, $kelas_id, $user_id) {
             $filePath = $uploadDir . $filename;
             
             if (move_uploaded_file($files['tmp_name'][$i], $filePath)) {
-                $uploadedImages[] = [
+                $uploadedMedia[] = [
                     'nama_file' => $files['name'][$i],
                     'path_gambar' => 'uploads/postingan/' . $kelas_id . '/' . $filename,
                     'ukuran_file' => $files['size'][$i],
                     'tipe_file' => $mimeType,
+                    'media_type' => $isVideo ? 'video' : 'image',
                     'urutan' => $i + 1
                 ];
             } else {
@@ -65,7 +74,7 @@ function handleImageUploads($files, $kelas_id, $user_id) {
         }
     }
     
-    return $uploadedImages;
+    return $uploadedMedia;
 }
 
 /**
@@ -217,14 +226,24 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
     }
     
-    // Handle image uploads
-    $uploadedImages = [];
-    if (isset($_FILES['images']) && !empty($_FILES['images']['name'][0])) {
-        $uploadedImages = handleImageUploads($_FILES['images'], $kelas_id, $user_id);
-        if (isset($uploadedImages['error'])) {
-            echo json_encode(['success' => false, 'message' => $uploadedImages['error']]);
+    // Handle media uploads (images and videos)
+    $uploadedMedia = [];
+    if (isset($_FILES['media']) && !empty($_FILES['media']['name'][0])) {
+        $uploadedMedia = handleMediaUploads($_FILES['media'], $kelas_id, $user_id);
+        if (isset($uploadedMedia['error'])) {
+            echo json_encode(['success' => false, 'message' => $uploadedMedia['error']]);
             exit();
         }
+    }
+
+    // Handle legacy image uploads (backward compatibility)
+    if (isset($_FILES['images']) && !empty($_FILES['images']['name'][0])) {
+        $legacyImages = handleMediaUploads($_FILES['images'], $kelas_id, $user_id);
+        if (isset($legacyImages['error'])) {
+            echo json_encode(['success' => false, 'message' => $legacyImages['error']]);
+            exit();
+        }
+        $uploadedMedia = array_merge($uploadedMedia, $legacyImages);
     }
 
     // Handle file uploads
@@ -238,7 +257,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
     
     // Create post
-    $result = $postinganLogic->buatPostingan($kelas_id, $user_id, $konten, $tipePost, $deadline, $uploadedImages, $uploadedFiles);
+    $result = $postinganLogic->buatPostingan($kelas_id, $user_id, $konten, $tipePost, $deadline, $uploadedMedia, $uploadedFiles);
     
     echo json_encode($result);
 } else {
