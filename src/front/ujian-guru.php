@@ -155,7 +155,7 @@ function badgeColor($status)
                                                 <a href="duplikat-ujian.php?id=<?= (int)$u['id'] ?>" class="flex items-center px-3 py-2 hover:bg-gray-50">
                                                     <i class="ti ti-copy mr-2"></i> Duplikasi
                                                 </a>
-                                                <button onclick="hapusUjian(<?= (int)$u['id'] ?>)" class="w-full text-left flex items-center px-3 py-2 hover:bg-red-50 text-red-600">
+                                                <button onclick="hapusUjian(<?= (int)$u['id'] ?>, '<?= addslashes($nama) ?>')" class="w-full text-left flex items-center px-3 py-2 hover:bg-red-50 text-red-600">
                                                     <i class="ti ti-trash mr-2"></i> Hapus
                                                 </button>
                                             </div>
@@ -172,6 +172,9 @@ function badgeColor($status)
 
     <!-- Include Archive Sidebar -->
     <?php require '../component/sidebar-archive.php'; ?>
+
+    <!-- Include Delete Ujian Modal -->
+    <?php require '../component/modal-delete-ujian.php'; ?>
 
     <script src="../script/menu-bar-script.js"></script>
     <script>
@@ -240,27 +243,131 @@ function badgeColor($status)
             }
         });
 
-        function hapusUjian(id) {
-            if (confirm('Hapus ujian ini? Semua data terkait soal akan ikut terhapus.')) {
-                fetch('../logic/delete-ujian.php', {
-                        method: 'POST',
-                        body: new URLSearchParams({
-                            ujian_id: id
-                        })
+        function hapusUjian(id, namaUjian = '') {
+            // Set ujian name in modal
+            const ujianNameSpan = document.getElementById('ujianName');
+            if (ujianNameSpan) {
+                ujianNameSpan.textContent = namaUjian || 'ujian ini';
+            }
+
+            // Show modal with animation
+            const modal = document.getElementById('deleteUjianModal');
+            const backdrop = document.getElementById('deleteUjianBackdrop');
+            const panel = document.getElementById('deleteUjianPanel');
+            
+            if (modal && backdrop && panel) {
+                modal.classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+                
+                // Trigger animations
+                requestAnimationFrame(() => {
+                    backdrop.classList.remove('opacity-0');
+                    backdrop.classList.add('opacity-100');
+                    
+                    panel.classList.remove('opacity-0', 'translate-y-4', 'scale-95');
+                    panel.classList.add('opacity-100', 'translate-y-0', 'scale-100');
+                });
+            }
+
+            // Store ujian ID for deletion
+            window.currentUjianToDelete = id;
+        }
+
+        // Modal Delete Ujian functionality
+        const deleteUjianModal = document.getElementById('deleteUjianModal');
+        const confirmDeleteUjianBtn = document.getElementById('confirmDeleteUjianBtn');
+        const cancelDeleteUjianBtn = document.getElementById('cancelDeleteUjianBtn');
+
+        function closeDeleteUjianModal() {
+            const modal = document.getElementById('deleteUjianModal');
+            const backdrop = document.getElementById('deleteUjianBackdrop');
+            const panel = document.getElementById('deleteUjianPanel');
+            
+            if (modal && backdrop && panel) {
+                // Start exit animation
+                backdrop.classList.remove('opacity-100');
+                backdrop.classList.add('opacity-0');
+                
+                panel.classList.remove('opacity-100', 'translate-y-0', 'scale-100');
+                panel.classList.add('opacity-0', 'translate-y-4', 'scale-95');
+                
+                // Hide modal after animation completes
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                    document.body.style.overflow = '';
+                }, 300);
+            }
+            
+            window.currentUjianToDelete = null;
+        }
+
+        async function performDeleteUjian(id) {
+            const deleteBtn = confirmDeleteUjianBtn;
+            const loadingIcon = deleteBtn.querySelector('.delete-ujian-btn-loading');
+            const btnText = deleteBtn.querySelector('.delete-ujian-btn-text');
+
+            // Show loading state
+            deleteBtn.disabled = true;
+            loadingIcon.classList.remove('hidden');
+            btnText.textContent = 'Menghapus...';
+
+            try {
+                const response = await fetch('../logic/delete-ujian.php', {
+                    method: 'POST',
+                    body: new URLSearchParams({
+                        ujian_id: id
                     })
-                    .then(r => r.json()).then(j => {
-                        if (j.success) {
-                            // reload with flag
-                            const url = new URL(location.href);
-                            url.searchParams.set('deleted', '1');
-                            location.href = url;
-                        } else {
-                            showToast(j.message || 'Gagal menghapus ujian', 'error');
-                        }
-                    })
-                    .catch(() => showToast('Gagal menghapus ujian (network error).', 'error'));
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    closeDeleteUjianModal();
+                    // reload with flag
+                    const url = new URL(location.href);
+                    url.searchParams.set('deleted', '1');
+                    location.href = url;
+                } else {
+                    showToast(result.message || 'Gagal menghapus ujian', 'error');
+                }
+            } catch (error) {
+                showToast('Gagal menghapus ujian (network error).', 'error');
+            } finally {
+                // Reset loading state
+                deleteBtn.disabled = false;
+                loadingIcon.classList.add('hidden');
+                btnText.textContent = 'Hapus Ujian';
             }
         }
+
+        // Event listeners for delete ujian modal
+        if (confirmDeleteUjianBtn) {
+            confirmDeleteUjianBtn.addEventListener('click', () => {
+                if (window.currentUjianToDelete) {
+                    performDeleteUjian(window.currentUjianToDelete);
+                }
+            });
+        }
+
+        if (cancelDeleteUjianBtn) {
+            cancelDeleteUjianBtn.addEventListener('click', closeDeleteUjianModal);
+        }
+
+        // Close modal when clicking outside
+        if (deleteUjianModal) {
+            deleteUjianModal.addEventListener('click', (e) => {
+                if (e.target === deleteUjianModal || e.target.id === 'deleteUjianBackdrop') {
+                    closeDeleteUjianModal();
+                }
+            });
+        }
+
+        // Close modal on escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && deleteUjianModal && !deleteUjianModal.classList.contains('hidden')) {
+                closeDeleteUjianModal();
+            }
+        });
 
         // Archive sidebar functionality
         const archiveBtn = document.getElementById('archiveBtn');
@@ -415,6 +522,66 @@ function badgeColor($status)
 
         #toast-container .toast {
             transition: all .3s ease;
+        }
+
+        /* Modal Delete Ujian Styles */
+        #deleteUjianModal {
+            z-index: 9999;
+        }
+
+        #deleteUjianModal.hidden {
+            display: none !important;
+        }
+
+        #deleteUjianModal:not(.hidden) {
+            display: block !important;
+        }
+
+        #deleteUjianBackdrop {
+            transition: opacity 0.3s ease-out;
+        }
+
+        #deleteUjianPanel {
+            transition: all 0.3s ease-out;
+            min-height: 200px; /* Ensure minimum height */
+        }
+
+        /* Ensure content is visible */
+        #deleteUjianPanel .bg-white {
+            background-color: white ;
+        }
+
+        #deleteUjianPanel h3 {
+            color: #111827 ; /* gray-900 */
+        }
+
+        #deleteUjianPanel p {
+            color: #6b7280 ; /* gray-500 */
+        }
+
+        #deleteUjianPanel span {
+            color: #374151 ; /* gray-700 */
+        }
+        
+        .delete-ujian-btn-text {
+            color: white !important;
+        }
+
+        /* Mobile responsive adjustments */
+        @media (max-width: 640px) {
+            #deleteUjianPanel {
+                margin: 0;
+                border-radius: 0.75rem 0.75rem 0 0;
+                margin-bottom: 0;
+            }
+            
+            #deleteUjianPanel.translate-y-4 {
+                transform: translateY(100%);
+            }
+            
+            #deleteUjianPanel.translate-y-0 {
+                transform: translateY(0);
+            }
         }
     </style>
 </body>

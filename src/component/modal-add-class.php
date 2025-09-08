@@ -82,7 +82,7 @@
                                         class="block w-full px-3 py-2 rounded-md border border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-sm">
                                 </div>
                                 <div>
-                                    <label for="class-image" class="block text-sm font-medium text-gray-700 mb-1">Gambar</label>
+                                    <label for="class-image" class="block text-sm font-medium text-gray-700 mb-1">Latar Belakang</label>
                                     <input type="file" id="class-image" name="class_image" accept="image/*"
                                         class="block w-full py-2 px-3 text-sm text-gray-500 border border-gray-300 rounded-md
                                         file:mr-2 file:py-1 file:px-2

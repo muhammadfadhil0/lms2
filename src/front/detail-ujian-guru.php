@@ -204,13 +204,9 @@ function statusBadgeClass($status)
                   <i class="ti ti-circle-check"></i><span>Hasil Ujian</span>
                 </a>
                 <?php if ($ujian['status'] === 'draft'): ?>
-                  <form method="post" action="../logic/update-status-ujian.php" onsubmit="return confirm('Aktifkan ujian sekarang?');" class="pt-1">
-                    <input type="hidden" name="ujian_id" value="<?= (int)$ujian['id'] ?>">
-                    <input type="hidden" name="status" value="aktif">
-                    <button class="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm">
-                      <i class="ti ti-player-play"></i><span>Aktifkan</span>
-                    </button>
-                  </form>
+                  <button id="activateExamBtn" data-ujian-id="<?= (int)$ujian['id'] ?>" class="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm">
+                    <i class="ti ti-player-play"></i><span>Aktifkan</span>
+                  </button>
                 <?php elseif ($ujian['status'] === 'aktif'): ?>
                   <button id="finishExamBtn" data-ujian-id="<?= (int)$ujian['id'] ?>" class="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm">
                     <i class="ti ti-check"></i><span>Tandai Selesai</span>
@@ -366,6 +362,58 @@ function statusBadgeClass($status)
         }
       });
     }
+
+    // Handle activate exam button
+    const activateBtn = document.getElementById('activateExamBtn');
+    if (activateBtn) {
+      activateBtn.addEventListener('click', async () => {
+        if (!confirm('Aktifkan ujian sekarang? Setelah diaktifkan, ujian dapat dikerjakan oleh siswa.')) {
+          return;
+        }
+
+        const ujianId = activateBtn.dataset.ujianId;
+        const btnText = activateBtn.querySelector('span');
+        const btnIcon = activateBtn.querySelector('i');
+        
+        // Show loading state
+        btnText.textContent = 'Mengaktifkan...';
+        btnIcon.className = 'ti ti-loader animate-spin';
+        activateBtn.disabled = true;
+
+        try {
+          const response = await fetch('../logic/update-status-ujian.php', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+              ujian_id: ujianId,
+              status: 'aktif'
+            })
+          });
+
+          const result = await response.json();
+
+          if (result.success) {
+            showToast('Ujian berhasil diaktifkan! Siswa sekarang dapat mengerjakan ujian.', 'success');
+            
+            // Redirect to ujian list after 1.5 seconds
+            setTimeout(() => {
+              window.location.href = 'ujian-guru.php?updated=1';
+            }, 1500);
+          } else {
+            throw new Error(result.message || 'Gagal mengaktifkan ujian');
+          }
+        } catch (error) {
+          showToast(error.message || 'Terjadi kesalahan saat mengaktifkan ujian', 'error');
+          
+          // Reset button state
+          btnText.textContent = 'Aktifkan';
+          btnIcon.className = 'ti ti-player-play';
+          activateBtn.disabled = false;
+        }
+      });
+    }
   </script>
 
   <style>
@@ -382,6 +430,19 @@ function statusBadgeClass($status)
 
     .animate-fade-in {
       animation: fade-in .25s ease-out;
+    }
+
+    @keyframes spin {
+      from {
+        transform: rotate(0deg);
+      }
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .animate-spin {
+      animation: spin 1s linear infinite;
     }
 
     #toast-container .toast {
