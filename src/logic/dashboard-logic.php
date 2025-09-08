@@ -339,7 +339,7 @@ class DashboardLogic {
     // Helper function to get post images
     private function getGambarPostingan($postingan_id) {
         try {
-            $sql = "SELECT nama_file, path_gambar, ukuran_file FROM postingan_gambar WHERE postingan_id = ? ORDER BY urutan";
+            $sql = "SELECT nama_file, path_gambar, ukuran_file, media_type, tipe_file FROM postingan_gambar WHERE postingan_id = ? ORDER BY urutan";
             $stmt = $this->conn->prepare($sql);
             $stmt->bind_param("i", $postingan_id);
             $stmt->execute();

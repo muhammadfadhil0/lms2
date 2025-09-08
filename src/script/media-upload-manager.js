@@ -16,19 +16,32 @@ class MediaUploadManager {
     }
     
     init() {
-        this.setupMediaInput();
+        console.log('Initializing media upload manager...');
+        
+        // Check if we're in a page that supports media upload
+        const isPostingPage = document.getElementById('mediaInput') || document.getElementById('postForm');
+        
+        if (isPostingPage) {
+            console.log('📝 Page supports media upload - setting up input handler');
+            this.setupMediaInput();
+        } else {
+            console.log('👀 View-only page - media upload not needed');
+            // In view-only pages, we still want the class available for other functions
+            return;
+        }
     }
     
     setupMediaInput() {
         const mediaInput = document.getElementById('mediaInput');
         
         if (mediaInput) {
+            console.log('✅ Media input found - adding event listeners');
             mediaInput.addEventListener('change', (e) => {
                 console.log('Media files selected:', e.target.files.length);
                 this.handleFileSelection(e.target.files);
             });
         } else {
-            console.warn('Media input not found');
+            console.log('ℹ️ Media input not found (normal for view-only pages)');
         }
     }
     

@@ -46,6 +46,7 @@ if (!$dashboardData) {
     <meta name="user-id" content="<?php echo $_SESSION['user']['id']; ?>">
     <?php require '../../assets/head.php'; ?>
     <link rel="stylesheet" href="../css/kelas-posting.css?v=<?php echo time(); ?>">
+    <link rel="stylesheet" href="../css/media-upload.css?v=<?php echo time(); ?>">
     <link rel="stylesheet" href="../css/file-upload.css?v=<?php echo time(); ?>">
     <title>Beranda</title>
     <style>
@@ -517,35 +518,99 @@ if (!$dashboardData) {
 
                                     <!-- Post Images -->
                                     <?php if (!empty($post['gambar'])): ?>
-                                        <div class="mt-3 grid grid-cols-2 md:grid-cols-3 gap-2">
-                                            <?php foreach ($post['gambar'] as $index => $gambar): ?>
-                                                <?php
-                                                // Handle different image path formats
-                                                $imagePath = '';
-                                                if (isset($gambar['path_gambar']) && !empty($gambar['path_gambar'])) {
-                                                    // New format with full path
-                                                    $imagePath = '../../' . $gambar['path_gambar'];
-                                                } else {
-                                                    // Old format with just filename
-                                                    $imagePath = '../../uploads/postingan/' . $gambar['nama_file'];
+                                        <!-- Debug: Let's see what media data we have -->
+                                        <?php 
+                                        // Debug output (temporarily enabled to see what data we have)
+                                        if (true) { // Set to false to disable debugging
+                                            echo '<div class="debug-info bg-yellow-100 border border-yellow-300 p-3 mb-3 text-xs rounded">';
+                                            echo '<strong>🐛 DEBUG - Media Data for Post ID ' . $post['id'] . ':</strong><br>';
+                                            echo 'Media count: ' . count($post['gambar']) . '<br>';
+                                            foreach ($post['gambar'] as $idx => $media) {
+                                                echo "<div class='ml-2 mt-1 p-2 bg-white rounded border'>";
+                                                echo "<strong>[$idx]</strong> ";
+                                                foreach ($media as $key => $value) {
+                                                    echo "<span class='text-blue-600'>$key:</span> <span class='text-gray-800'>" . htmlspecialchars($value) . "</span> | ";
                                                 }
-                                                ?>
-                                                <div class="relative aspect-square cursor-pointer rounded-lg overflow-hidden border border-gray-200 post-image-container">
-                                                    <img src="<?php echo htmlspecialchars($imagePath); ?>"
-                                                        alt="Gambar postingan"
-                                                        class="w-full h-full object-cover hover:scale-105 transition-transform post-image"
-                                                        data-pswp-src="<?php echo htmlspecialchars($imagePath); ?>"
-                                                        data-pswp-width="800"
-                                                        data-pswp-height="600"
-                                                        onerror="this.parentElement.remove();">
+                                                echo "</div>";
+                                            }
+                                            echo '</div>';
+                                        }
+                                        ?>
+                                        
+                                        <div class="mt-3 post-media-container">
+                                            <div class="post-media-grid grid-<?php echo count($post['gambar']); ?>">
+                                                <?php foreach ($post['gambar'] as $index => $media): ?>
+                                                    <?php
+                                                    // Handle different media path formats
+                                                    $mediaPath = '';
+                                                    if (isset($media['path_gambar']) && !empty($media['path_gambar'])) {
+                                                        // New format with full path
+                                                        $mediaPath = '../../' . $media['path_gambar'];
+                                                    } else {
+                                                        // Old format with just filename
+                                                        $mediaPath = '../../uploads/postingan/' . $media['nama_file'];
+                                                    }
+                                                    
+                                                    // Check if this is a video
+                                                    $isVideo = (isset($media['media_type']) && $media['media_type'] === 'video') ||
+                                                               (isset($media['tipe_file']) && strpos($media['tipe_file'], 'video/') === 0);
+                                                    $mediaClass = count($post['gambar']) === 1 ? 'single' : 'multiple';
+                                                    ?>
+                                                    
+                                                    <?php if ($isVideo): ?>
+                                                        <!-- Video Media -->
+                                                        <div class="post-media-item <?php echo $mediaClass; ?>">
+                                                            <video controls 
+                                                                   class="post-media" 
+                                                                   data-media-index="<?php echo $index; ?>"
+                                                                   preload="metadata">
+                                                                <source src="<?php echo htmlspecialchars($mediaPath); ?>" 
+                                                                        type="<?php echo htmlspecialchars($media['tipe_file'] ?? 'video/mp4'); ?>">
+                                                                Your browser does not support the video tag.
+                                                            </video>
+                                                            <div class="post-media-type-badge video">
+                                                                <i class="ti ti-video"></i> Video
+                                                            </div>
+                                                            <button class="media-download-btn" 
+                                                                    onclick="downloadMedia('<?php echo htmlspecialchars($mediaPath); ?>', '<?php echo htmlspecialchars($media['nama_file']); ?>')" 
+                                                                    title="Download Video">
+                                                                <i class="ti ti-download"></i>
+                                                            </button>
+                                                        </div>
+                                                    <?php else: ?>
+                                                        <!-- Image Media -->
+                                                        <div class="post-media-item <?php echo $mediaClass; ?>">
+                                                            <img src="<?php echo htmlspecialchars($mediaPath); ?>"
+                                                                alt="<?php echo htmlspecialchars($media['nama_file'] ?? 'Media postingan'); ?>"
+                                                                class="post-media"
+                                                                data-media-index="<?php echo $index; ?>"
+                                                                data-pswp-src="<?php echo htmlspecialchars($mediaPath); ?>"
+                                                                data-pswp-width="800"
+                                                                data-pswp-height="600"
+                                                                style="cursor: pointer;"
+                                                                onerror="this.style.display='none';">
+                                                            <div class="post-media-type-badge image">
+                                                                <i class="ti ti-photo"></i> Gambar
+                                                            </div>
+                                                            <button class="media-download-btn" 
+                                                                    onclick="downloadMedia('<?php echo htmlspecialchars($mediaPath); ?>', '<?php echo htmlspecialchars($media['nama_file']); ?>')" 
+                                                                    title="Download Gambar">
+                                                                <i class="ti ti-download"></i>
+                                                            </button>
+                                                        </div>
+                                                    <?php endif; ?>
+                                                    
                                                     <?php if (count($post['gambar']) > 3 && $index == 2): ?>
-                                                        <div class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                                                            <span class="text-white font-bold text-lg">+<?php echo count($post['gambar']) - 3; ?></span>
+                                                        <!-- Show overflow indicator -->
+                                                        <div class="post-media-item multiple relative">
+                                                            <div class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-lg">
+                                                                <span class="text-white font-bold text-lg">+<?php echo count($post['gambar']) - 3; ?></span>
+                                                            </div>
                                                         </div>
                                                         <?php break; ?>
                                                     <?php endif; ?>
-                                                </div>
-                                            <?php endforeach; ?>
+                                                <?php endforeach; ?>
+                                            </div>
                                         </div>
                                     <?php endif; ?>
 
@@ -714,16 +779,70 @@ if (!$dashboardData) {
 
     <script src="../script/menu-bar-script.js"></script>
     <script src="../script/kelas-management.js"></script>
+    <script src="../script/media-upload-manager.js"></script>
     <script src="../script/photoswipe-simple.js"></script>
     <script src="../script/assignment-manager.js"></script>
     <script src="../script/kelas-posting-stable.js?v=<?php echo time(); ?>"></script>
     <script>
+        // BERANDA DEBUG & MEDIA FUNCTIONS
+        console.log('🏠 BERANDA-USER.PHP DEBUG INITIALIZED');
+        console.log('📱 Current User ID:', <?php echo $_SESSION['user']['id']; ?>);
+        console.log('👤 Current User Role:', '<?php echo $_SESSION['user']['role']; ?>');
+        console.log('📊 Recent Posts Count:', <?php echo count($recentPosts); ?>);
+        
+        // Global download function for media
+        window.downloadMedia = function(url, filename) {
+            console.log('📥 Downloading media:', filename, 'from:', url);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename || 'media-file';
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        };
+        
         // Initialize global variables
         window.currentUserId = <?php echo $_SESSION['user']['id']; ?>;
         window.currentUserRole = '<?php echo $_SESSION['user']['role']; ?>';
 
         // Initialize like functionality
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 DOM Content Loaded - Initializing Beranda...');
+            
+            // Media debugging - check if we have media elements
+            const mediaContainers = document.querySelectorAll('.post-media-container');
+            const videoElements = document.querySelectorAll('video.post-media');
+            const imageElements = document.querySelectorAll('img.post-media');
+            
+            console.log('🎬 Media Debug:');
+            console.log('  - Media containers found:', mediaContainers.length);
+            console.log('  - Video elements found:', videoElements.length);
+            console.log('  - Image elements found:', imageElements.length);
+            
+            if (videoElements.length > 0) {
+                console.log('🎥 Video elements details:');
+                videoElements.forEach((video, index) => {
+                    console.log(`  Video ${index + 1}:`, {
+                        src: video.querySelector('source')?.src,
+                        type: video.querySelector('source')?.type,
+                        controls: video.hasAttribute('controls'),
+                        preload: video.preload
+                    });
+                });
+            }
+            
+            if (imageElements.length > 0) {
+                console.log('🖼️ Image elements details:');
+                imageElements.forEach((img, index) => {
+                    console.log(`  Image ${index + 1}:`, {
+                        src: img.src,
+                        alt: img.alt,
+                        loaded: img.complete
+                    });
+                });
+            }
+            
             // Initialize KelasPosting for comments functionality (beranda context)
             window.kelasPosting = new KelasPosting(null, {
                 canPost: false, // No posting in beranda
