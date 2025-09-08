@@ -518,24 +518,7 @@ if (!$dashboardData) {
 
                                     <!-- Post Images -->
                                     <?php if (!empty($post['gambar'])): ?>
-                                        <!-- Debug: Let's see what media data we have -->
-                                        <?php 
-                                        // Debug output (temporarily enabled to see what data we have)
-                                        if (true) { // Set to false to disable debugging
-                                            echo '<div class="debug-info bg-yellow-100 border border-yellow-300 p-3 mb-3 text-xs rounded">';
-                                            echo '<strong>🐛 DEBUG - Media Data for Post ID ' . $post['id'] . ':</strong><br>';
-                                            echo 'Media count: ' . count($post['gambar']) . '<br>';
-                                            foreach ($post['gambar'] as $idx => $media) {
-                                                echo "<div class='ml-2 mt-1 p-2 bg-white rounded border'>";
-                                                echo "<strong>[$idx]</strong> ";
-                                                foreach ($media as $key => $value) {
-                                                    echo "<span class='text-blue-600'>$key:</span> <span class='text-gray-800'>" . htmlspecialchars($value) . "</span> | ";
-                                                }
-                                                echo "</div>";
-                                            }
-                                            echo '</div>';
-                                        }
-                                        ?>
+
                                         
                                         <div class="mt-3 post-media-container">
                                             <div class="post-media-grid grid-<?php echo count($post['gambar']); ?>">
