@@ -127,7 +127,7 @@
     transform: translateY(-50%);
     width: 3px;
     height: 0;
-    background-color: #16a34a;
+    background-color: orange;
     transition: height 0.2s ease;
 }
 

@@ -41,7 +41,6 @@
                     'exam_description' => $desc,
                     'exam_topic' => $topic,
                     'exam_class' => $ujianData['kelas_id'] ?? '',
-                    'exam_subject' => $ujianData['mataPelajaran'] ?? '',
                     'exam_date' => $ujianData['tanggalUjian'] ?? '',
                     'exam_start_time' => isset($ujianData['waktuMulai']) ? substr($ujianData['waktuMulai'], 0, 5) : '',
                     'exam_duration' => $ujianData['durasi'] ?? '',
@@ -162,56 +161,51 @@
                                     <p class="text-xs text-gray-500 mt-1">Opsional: Berikan deskripsi untuk membantu siswa memahami ujian</p>
                                 </div>
 
-                                <!-- Pilih Kelas -->
-                                <div class="mb-6">
-                                    <label for="exam_class" class="block text-sm font-medium text-gray-700 mb-2">
-                                        Kelas <span class="text-red-500">*</span>
-                                    </label>
-                                    <select id="exam_class" name="exam_class" required
-                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors bg-white">
-                                        <option value="">Pilih Kelas</option>
-                                        <?php foreach ($kelasGuru as $k): ?>
-                                            <option value="<?= (int)$k['id'] ?>" <?= (isset($old['exam_class']) && (int)$old['exam_class'] == (int)$k['id']) ? 'selected' : '' ?>><?= htmlspecialchars($k['namaKelas']) ?> (<?= htmlspecialchars($k['mataPelajaran']) ?>)</option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                    <p class="text-xs text-gray-500 mt-1">Pilih kelas yang akan mengikuti ujian ini</p>
-                                </div>
-
-                                <!-- Materi Ujian -->
-                                <div class="mb-6">
-                                    <label for="exam_subject" class="block text-sm font-medium text-gray-700 mb-2">
-                                        Mata Pelajaran <span class="text-red-500">*</span>
-                                        <span class="ml-2 inline-flex items-center text-[10px] font-medium px-2 py-1 rounded bg-orange-100 text-orange-700 border border-orange-200">
-                                            <i class="ti ti-sparkles mr-1 text-[12px]"></i>Pingo AI mengakses data ini
-                                        </span>
-                                    </label>
-
-                                    <select id="exam_subject" name="exam_subject" required
-                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors bg-white">
-                                        <option value="">Pilih Mata Pelajaran</option>
-                                        <?php $subjects = ['matematika' => 'Matematika', 'bahasa_indonesia' => 'Bahasa Indonesia', 'bahasa_inggris' => 'Bahasa Inggris', 'ipa' => 'IPA', 'ips' => 'IPS', 'ppkn' => 'PPKn', 'seni_budaya' => 'Seni Budaya', 'pendidikan_jasmani' => 'Pendidikan Jasmani'];
-                                        foreach ($subjects as $val => $label): ?>
-                                            <option value="<?= $val ?>" <?= (($old['exam_subject'] ?? '') === $val) ? 'selected' : '' ?>><?= $label ?></option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                </div>
+                <!-- Pilih Kelas -->
+                <div class="mb-6">
+                    <label for="exam_class" class="block text-sm font-medium text-gray-700 mb-2">
+                        Kelas <span class="text-red-500">*</span>
+                        <span class="ml-2 inline-flex items-center text-[10px] font-medium px-2 py-1 rounded bg-orange-100 text-orange-700 border border-orange-200">
+                            <i class="ti ti-sparkles mr-1 text-[12px]"></i>Pingo AI mengakses data ini
+                        </span>
+                    </label>
+                    <select id="exam_class" name="exam_class" required
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors bg-white">
+                        <option value="">Pilih Kelas</option>
+                        <?php foreach ($kelasGuru as $k): ?>
+                            <option value="<?= (int)$k['id'] ?>" <?= (isset($old['exam_class']) && (int)$old['exam_class'] == (int)$k['id']) ? 'selected' : '' ?>><?= htmlspecialchars($k['namaKelas']) ?> (<?= htmlspecialchars($k['mataPelajaran']) ?>)</option>
+                        <?php endforeach; ?>
+                    </select>
+                    <p class="text-xs text-gray-500 mt-1">Pilih kelas yang akan mengikuti ujian ini. Pingo AI akan memahami mata pelajaran dari informasi kelas.</p>
+                </div>
 
                                 <!-- Materi/Topik -->
                                 <div class="mb-6">
-                                    <label for="exam_topic" class="block text-sm font-medium text-gray-700 mb-2">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
                                         Materi/Topik <span class="text-gray-400 text-xs font-normal">(Opsional)</span>
                                         <span class="ml-2 inline-flex items-center text-[10px] font-medium px-2 py-1 rounded bg-orange-100 text-orange-700 border border-orange-200">
                                             <i class="ti ti-sparkles mr-1 text-[12px]"></i>Pingo AI mengakses data ini
                                         </span>
-
                                     </label>
-                                    <input type="text" id="exam_topic" name="exam_topic" value="<?= htmlspecialchars($old['exam_topic'] ?? '') ?>"
-                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
-                                        placeholder="Contoh: Aljabar, Persamaan Linear">
-                                    <p class="text-xs text-gray-500 mt-1">Sebutkan topik atau bab yang akan diujikan</p>
-                                </div>
-
-                                <!-- Pengaturan Waktu -->
+                                    
+                                    <div id="topicContainer" class="space-y-3">
+                                        <!-- Topic input pertama -->
+                                        <div class="topic-input-group">
+                                            <input type="text" name="exam_topics[]" value="<?= htmlspecialchars($old['exam_topic'] ?? '') ?>"
+                                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
+                                                placeholder="Contoh: Aljabar, Persamaan Linear">
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Tombol tambah topik -->
+                                    <button type="button" id="addTopicBtn" 
+                                        class="mt-3 inline-flex items-center px-3 py-2 text-sm border border-orange-300 text-orange-600 rounded-lg hover:bg-orange-50 transition-colors">
+                                        <i class="ti ti-plus mr-2"></i>
+                                        Tambah Topik
+                                    </button>
+                                    
+                                    <p class="text-xs text-gray-500 mt-2">Sebutkan topik atau bab yang akan diujikan (maksimal 10 topik)</p>
+                                </div>                                <!-- Pengaturan Waktu -->
                                 <div class="mb-8">
                                     <h3 class="text-lg font-medium text-gray-800 mb-4">Pengaturan Waktu</h3>
 
@@ -407,7 +401,7 @@
             // Form validation
             document.getElementById('createExamForm').addEventListener('submit', function(e) {
                 // Basic validation
-                const requiredFields = ['exam_name', 'exam_class', 'exam_subject', 'exam_date', 'exam_start_time'];
+                const requiredFields = ['exam_name', 'exam_class', 'exam_date', 'exam_start_time'];
                 let isValid = true;
                 requiredFields.forEach(field => {
                     const input = document.getElementById(field);
@@ -425,6 +419,65 @@
                     document.getElementById('submitBtn').disabled = true;
                 }
             });
+
+            // Dynamic topic inputs management
+            let topicCount = 1;
+            const maxTopics = 10;
+            
+            // Initialize existing topics (for edit mode)
+            (function initializeTopics() {
+                const existingTopic = document.querySelector('input[name="exam_topics[]"]').value.trim();
+                if (existingTopic) {
+                    // If there's existing topic data, we might want to split it by comma or handle it
+                    // For now, we'll keep the single input with the existing value
+                }
+            })();
+            
+            document.getElementById('addTopicBtn').addEventListener('click', function() {
+                if (topicCount >= maxTopics) {
+                    showToast('Maksimal 10 topik yang dapat ditambahkan', 'warning');
+                    return;
+                }
+                
+                topicCount++;
+                const container = document.getElementById('topicContainer');
+                
+                // Create new topic input group
+                const newTopicGroup = document.createElement('div');
+                newTopicGroup.className = 'topic-input-group flex items-center space-x-2';
+                newTopicGroup.innerHTML = `
+                    <input type="text" name="exam_topics[]" 
+                        class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors"
+                        placeholder="Topik tambahan...">
+                    <button type="button" class="remove-topic-btn p-3 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                        title="Hapus topik">
+                        <i class="ti ti-trash text-lg"></i>
+                    </button>
+                `;
+                
+                container.appendChild(newTopicGroup);
+                
+                // Add remove functionality
+                newTopicGroup.querySelector('.remove-topic-btn').addEventListener('click', function() {
+                    newTopicGroup.remove();
+                    topicCount--;
+                    updateAddButton();
+                });
+                
+                updateAddButton();
+                
+                // Focus on new input
+                newTopicGroup.querySelector('input').focus();
+            });
+            
+            function updateAddButton() {
+                const addBtn = document.getElementById('addTopicBtn');
+                if (topicCount >= maxTopics) {
+                    addBtn.style.display = 'none';
+                } else {
+                    addBtn.style.display = 'inline-flex';
+                }
+            }
 
             // Save as draft functionality
             document.getElementById('saveAsDraft').addEventListener('click', function() {
@@ -461,6 +514,25 @@
 
             #toast-container .toast {
                 transition: all .3s ease;
+            }
+            
+            .topic-input-group {
+                animation: slideIn 0.3s ease-out;
+            }
+            
+            @keyframes slideIn {
+                from {
+                    opacity: 0;
+                    transform: translateY(-10px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+            
+            .remove-topic-btn:hover {
+                transform: scale(1.05);
             }
         </style>
     </body>
