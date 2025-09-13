@@ -5,11 +5,11 @@ if(function_exists('date_default_timezone_set')) {
 }
 $servername = "localhost";
 $username ="root";
-$password = "";
+$password = "kemambuan";
 $dbname = "lms";
 
-// MySQLi connection (for existing code)
-$koneksi = mysqli_connect($servername, $username, $password, $dbname, 3306, '/opt/lampp/var/mysql/mysql.sock');
+// MySQLi connection (for existing code) - tanpa socket path
+$koneksi = mysqli_connect($servername, $username, $password, $dbname);
 
 if (!$koneksi) {
     die("Koneksi gagal: " . mysqli_connect_error());
@@ -17,7 +17,7 @@ if (!$koneksi) {
 
 // PDO connection (for new assignment features)
 try {
-    $dsn = "mysql:host=localhost;port=3306;dbname=$dbname;charset=utf8mb4;unix_socket=/opt/lampp/var/mysql/mysql.sock";
+    $dsn = "mysql:host=localhost;port=3306;dbname=$dbname;charset=utf8mb4";
     $pdo = new PDO($dsn, $username, $password);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);

@@ -24,10 +24,10 @@
                             <div>
                                 <label class="block text-base font-medium text-gray-700 mb-2">Gambar Saat Ini</label>
                                 <div class="relative w-full h-32 rounded-lg overflow-hidden border-2 border-gray-200">
-                                    <img id="current-background" src="<?php echo !empty($detailKelas['gambarKover']) ? '../../' . htmlspecialchars($detailKelas['gambarKover']) : ''; ?>" 
-                                         alt="Latar belakang kelas" class="w-full h-full object-cover <?php echo empty($detailKelas['gambarKover']) ? 'hidden' : ''; ?>"
+                                    <img id="current-background" src="<?php echo !empty($detailKelas['gambar_kelas']) ? '../../' . htmlspecialchars($detailKelas['gambar_kelas']) : ''; ?>" 
+                                         alt="Latar belakang kelas" class="w-full h-full object-cover <?php echo empty($detailKelas['gambar_kelas']) ? 'hidden' : ''; ?>"
                                          onerror="this.style.display='none'; document.getElementById('no-background').classList.remove('hidden');">
-                                    <div id="no-background" class="w-full h-full bg-gradient-to-r from-orange-500 to-orange-600 flex items-center justify-center <?php echo !empty($detailKelas['gambarKover']) ? 'hidden' : ''; ?>">
+                                    <div id="no-background" class="w-full h-full bg-gradient-to-r from-orange-500 to-orange-600 flex items-center justify-center <?php echo !empty($detailKelas['gambar_kelas']) ? 'hidden' : ''; ?>">
                                         <i class="ti ti-photo text-white text-4xl opacity-50"></i>
                                     </div>
                                 </div>
@@ -71,9 +71,13 @@
                         class="inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500">
                         Batal
                     </button>
-                    <button type="submit" form="background-form"
-                        class="inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-orange-600 text-base font-medium text-white hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500">
-                        Simpan
+                    <button id="save-background-btn" type="submit" form="background-form"
+                        class="inline-flex items-center justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-orange-600 text-base font-medium text-white hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500">
+                        <svg id="save-background-spinner" class="animate-spin -ml-1 mr-2 h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                        </svg>
+                        <span id="save-background-text">Simpan</span>
                     </button>
                 </div>
             </el-dialog-panel>

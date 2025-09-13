@@ -26,7 +26,8 @@ function applySidebarCollapseImmediate() {
         
         if (sidebar) {
             sidebar.classList.remove('w-64');
-            sidebar.classList.add('w-27');
+            sidebar.classList.add('w-16');
+            document.documentElement.classList.add('sidebar-collapsed');
         }
         
         if (mainContent) {
@@ -56,7 +57,8 @@ function applySidebarCollapse(withAnimation = true) {
         // Collapse sidebar
         if (sidebar) {
             sidebar.classList.remove('w-64');
-            sidebar.classList.add('w-27');
+            sidebar.classList.add('w-16');
+            document.documentElement.classList.add('sidebar-collapsed');
         }
 
         // Hide text elements
@@ -89,13 +91,14 @@ function applySidebarCollapse(withAnimation = true) {
         // Adjust main content margin
         if (mainContent) {
             mainContent.classList.remove('md:ml-64');
-            mainContent.classList.add('md:ml-25');
+            mainContent.classList.add('md:ml-16');
         }
     } else {
         // Expand sidebar
         if (sidebar) {
             sidebar.classList.remove('w-16');
             sidebar.classList.add('w-64');
+            document.documentElement.classList.remove('sidebar-collapsed');
         }
 
         // remove justify in button

@@ -66,7 +66,7 @@ $navigationItems = getNavigationItems($userRole);
 
 <div id="sidebar" class="fixed left-0 top-0 h-full w-64 bg-white shadow-lg border-r border-gray-200 flex flex-col hidden md:flex transition-all duration-300 ease-in-out z-40">
     <!-- Logo/Header with Toggle -->
-    <div class="p-4 flex items-center gap-2 border-b border-gray-200 min-h-[80px]">
+    <div class="p-4 flex items-center gap-2 border-b border-gray-200 min-h-[5.5rem] transition-all duration-200 ease-in-out">
         <button onclick="toggleSidebar()" class="flex items-center justify-center p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0">
             <i id="toggleIcon" class="ti ti-menu-2 text-xl"></i>
         </button>

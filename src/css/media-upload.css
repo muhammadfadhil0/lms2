@@ -56,13 +56,16 @@
 }
 
 .media-preview-grid.grid-3 {
+    /* Two columns on the first row, and a second row for the third item */
     grid-template-columns: 1fr 1fr;
-    grid-template-rows: 1fr 1fr;
+    grid-auto-rows: minmax(120px, 1fr);
     max-width: 400px;
 }
 
-.media-preview-grid.grid-3 .preview-item:first-child {
-    grid-row: span 2;
+/* Make the third preview item span both columns (full width) */
+.media-preview-grid.grid-3 .preview-item:nth-child(3) {
+    grid-column: 1 / -1;
+    aspect-ratio: 2.2 / 1;
 }
 
 .media-preview-grid.grid-4 {
@@ -190,6 +193,18 @@ video.preview-media::-webkit-media-controls {
     .preview-item {
         min-height: 150px;
     }
+
+    /* Ensure third item spans full width on mobile for grid-3 */
+    .media-preview-grid.grid-3 {
+        grid-template-columns: 1fr 1fr;
+        grid-auto-rows: minmax(120px, auto);
+    }
+
+    .media-preview-grid.grid-3 .preview-item:nth-child(3) {
+        grid-column: 1 / -1;
+        aspect-ratio: auto;
+        min-height: 140px;
+    }
 }
 
 /* Post display styles for media */
@@ -213,12 +228,29 @@ video.preview-media::-webkit-media-controls {
 }
 
 .post-media-grid.grid-3 {
+    /* Layout for 3 media files: two thumbnails on top, one full-width below */
     grid-template-columns: 1fr 1fr;
-    grid-template-rows: 1fr 1fr;
+    grid-auto-rows: minmax(140px, 1fr);
 }
 
-.post-media-grid.grid-3 .post-media-item:first-child {
-    grid-row: span 2;
+/* Third media item spans both columns to form a wide image below */
+.post-media-grid.grid-3 .post-media-item:nth-child(3) {
+    grid-column: 1 / -1;
+    aspect-ratio: 2.6 / 1;
+}
+
+/* Round bottom corners for the wide third media item */
+.post-media-grid.grid-3 .post-media-item:nth-child(3) {
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
+    overflow: hidden;
+}
+
+/* If the media element itself needs rounding (img/video) */
+.post-media-grid.grid-3 .post-media-item:nth-child(3) img,
+.post-media-grid.grid-3 .post-media-item:nth-child(3) video {
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
 }
 
 .post-media-grid.grid-4 {

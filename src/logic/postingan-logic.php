@@ -195,7 +195,7 @@ class PostinganLogic {
             $stmt->bind_param("si", $konten, $postingan_id);
             
             if ($stmt->execute()) {
-                return ['success' => true, 'message' => 'Postingan berhasil diupdate'];
+                return ['success' => true, 'message' => 'Postingan berhasil di update'];
             } else {
                 return ['success' => false, 'message' => 'Gagal mengupdate postingan'];
             }
@@ -462,7 +462,7 @@ class PostinganLogic {
             $this->conn->begin_transaction();
             
             // Update konten postingan dan tandai sebagai edited
-            $sql = "UPDATE postingan_kelas SET konten = ?, diupdate = CURRENT_TIMESTAMP, is_edited = 1 WHERE id = ?";
+            $sql = "UPDATE postingan_kelas SET konten = ?, diubah = CURRENT_TIMESTAMP, is_edited = 1 WHERE id = ?";
             $stmt = $this->conn->prepare($sql);
             $stmt->bind_param("si", $konten, $postingan_id);
             
@@ -484,7 +484,7 @@ class PostinganLogic {
             }
             
             $this->conn->commit();
-            return ['success' => true, 'message' => 'Postingan berhasil diupdate'];
+            return ['success' => true, 'message' => 'Postingan berhasil di update'];
             
         } catch (Exception $e) {
             $this->conn->rollback();

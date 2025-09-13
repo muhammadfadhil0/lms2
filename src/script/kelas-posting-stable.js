@@ -333,6 +333,26 @@ class KelasPosting {
                         // Track this timeout too
                         this.pendingTimeouts.push(loadMoreTimeoutId);
                     }
+                    
+                    // Check for notification highlight after posts are loaded (only on refresh)
+                    if (refresh && window.NotificationHighlight && window.location.hash) {
+                        const highlightTimeoutId = setTimeout(() => {
+                            // Only call if element exists and hasn't been highlighted yet
+                            const targetElement = document.querySelector(window.location.hash);
+                            if (targetElement && !window.NotificationHighlight.highlightExecuted) {
+                                window.NotificationHighlight.handleNotificationHighlight();
+                            }
+                            
+                            // Remove this timeout from pending list
+                            const timeoutIndex = this.pendingTimeouts.indexOf(highlightTimeoutId);
+                            if (timeoutIndex > -1) {
+                                this.pendingTimeouts.splice(timeoutIndex, 1);
+                            }
+                        }, result.data.length * 50 + 200); // Wait for all posts to be rendered
+                        
+                        // Track this timeout
+                        this.pendingTimeouts.push(highlightTimeoutId);
+                    }
                 } else {
                     this.hasMorePosts = false;
                     
@@ -438,6 +458,7 @@ class KelasPosting {
         
         const postElement = document.createElement('div');
         postElement.className = 'bg-white rounded-lg shadow-sm mb-6';
+        postElement.id = `post-${post.id}`;
         postElement.setAttribute('data-post-id', post.id);
         postElement.setAttribute('data-user-id', post.user_id);
         
@@ -772,7 +793,22 @@ class KelasPosting {
                 body: formData
             });
             
-            const result = await response.json();
+            // Check if response is ok
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            // Get response text first to check for JSON validity
+            const responseText = await response.text();
+            
+            // Try to parse JSON
+            let result;
+            try {
+                result = JSON.parse(responseText);
+            } catch (jsonError) {
+                console.error('Invalid JSON response:', responseText);
+                throw new Error('Server returned invalid response');
+            }
             
             if (result.success) {
                 // Close modal first

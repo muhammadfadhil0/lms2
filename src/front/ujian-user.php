@@ -196,9 +196,9 @@ function statusText($status)
                             $statusP = $u['status_ujian'];
                             $badge = statusBadge($statusP);
                             $totalNilai = $u['totalNilai'] ?? null;
-                            $cover = !empty($u['gambarKover']) ? '../../' . htmlspecialchars($u['gambarKover']) : '';
+                            $cover = !empty($u['gambar_kelas']) ? '../../' . htmlspecialchars($u['gambar_kelas']) : '';
                         ?>
-                            <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all group relative">
+                            <div id="ujian-<?= $u['id'] ?>" class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all group relative" data-ujian-id="<?= $u['id'] ?>">
                                 <div class="h-32 sm:h-40 md:h-48 bg-gradient-to-br from-indigo-400 to-indigo-600 relative">
                                     <?php if ($cover): ?>
                                         <img src="<?= $cover ?>" alt="<?= $nama ?>" class="w-full h-full object-cover">
@@ -280,6 +280,7 @@ function statusText($status)
     <div id="toast-container" class="fixed top-4 right-4 space-y-3 z-[10000]"></div>
 
     <script src="../script/menu-bar-script.js"></script>
+    <script src="../script/notification-highlight.js?v=<?php echo time(); ?>"></script>
 
     <script>
         // Toast notification system

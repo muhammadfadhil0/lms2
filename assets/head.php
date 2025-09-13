@@ -57,3 +57,85 @@
         --tw-ring-color: rgb(255, 99, 71);
     }
 </style>
+
+<!-- Global Notifications Modal -->
+<?php 
+// Determine correct path for modal-notifications.php based on current directory
+$modal_path = '';
+if (file_exists('../src/component/modal-notifications.php')) {
+    // Called from assets/ directory (normal case)
+    $modal_path = '../src/component/modal-notifications.php';
+} elseif (file_exists('src/component/modal-notifications.php')) {
+    // Called from root directory
+    $modal_path = 'src/component/modal-notifications.php';
+} elseif (file_exists('../../src/component/modal-notifications.php')) {
+    // Called from subdirectory like front/
+    $modal_path = '../../src/component/modal-notifications.php';
+}
+
+if ($modal_path && file_exists($modal_path)) {
+    include $modal_path;
+} else {
+    // Fallback: try to include with absolute path from document root
+    $absolute_path = $_SERVER['DOCUMENT_ROOT'] . '/lms/src/component/modal-notifications.php';
+    if (file_exists($absolute_path)) {
+        include $absolute_path;
+    }
+}
+?>
+
+<!-- Global Notification Handler Script -->
+<script>
+// Global notification click handler
+document.addEventListener('DOMContentLoaded', function() {
+    // Add click event listener for notification icon elements
+    document.addEventListener('click', function(e) {
+        // Check if clicked element or its parent has the notification trigger classes
+        const notificationTrigger = e.target.closest('.p-2.text-gray-400.hover\\:text-gray-600.transition-colors');
+        
+        if (notificationTrigger) {
+            // Check if it's a notification icon (bell icon)
+            const bellIcon = notificationTrigger.querySelector('.ti-bell, .ti-bell-filled');
+            
+            if (bellIcon) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // Open notifications modal
+                if (typeof openNotificationsModal === 'function') {
+                    openNotificationsModal();
+                } else {
+                    console.warn('openNotificationsModal function not found');
+                }
+            }
+        }
+    });
+    
+    // Alternative selector for more specific targeting
+    document.addEventListener('click', function(e) {
+        // Check for elements with notification-trigger attribute or data attribute
+        const triggerElement = e.target.closest('[data-notification-trigger="true"]') || 
+                              e.target.closest('.notification-trigger');
+        
+        if (triggerElement) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            if (typeof openNotificationsModal === 'function') {
+                openNotificationsModal();
+            } else {
+                console.warn('openNotificationsModal function not found');
+            }
+        }
+    });
+});
+
+// Global helper function to trigger notifications modal
+function triggerNotificationsModal() {
+    if (typeof openNotificationsModal === 'function') {
+        openNotificationsModal();
+    } else {
+        console.warn('Notifications modal not available');
+    }
+}
+</script>

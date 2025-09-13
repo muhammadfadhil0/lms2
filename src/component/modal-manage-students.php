@@ -42,8 +42,8 @@
                                 <div class="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 student-item" data-student-id="<?php echo $siswa['id']; ?>">
                                     <!-- Foto Profil -->
                                     <div class="w-12 h-12 rounded-full bg-orange-500 flex items-center justify-center text-white font-medium mr-4 shrink-0">
-                                        <?php if (!empty($siswa['foto_profil'])): ?>
-                                            <img src="<?php echo htmlspecialchars($siswa['foto_profil']); ?>" 
+                                        <?php if (!empty($siswa['fotoProfil'])): ?>
+                                            <img src="<?php echo htmlspecialchars($siswa['fotoProfil']); ?>" 
                                                  alt="<?php echo htmlspecialchars($siswa['namaLengkap']); ?>" 
                                                  class="w-full h-full object-cover rounded-full">
                                         <?php else: ?>

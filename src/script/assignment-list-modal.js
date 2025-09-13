@@ -7,7 +7,9 @@ class AssignmentListModal {
         this.assignments = [];
         this.filteredAssignments = [];
         this.currentSearch = '';
-        this.currentSort = 'created_desc';
+         return `
+            <div id="assignment-${assignment.id}" class="assignment-item group p-3 border border-gray-200 rounded-md hover:border-purple-400 hover:bg-purple-50 transition cursor-pointer ${statusClass}"
+             data-assignment-id="${assignment.id}">`;    this.currentSort = 'created_desc';
         this.searchTimeout = null;
         
         this.init();

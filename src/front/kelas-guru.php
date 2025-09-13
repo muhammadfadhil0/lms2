@@ -54,15 +54,45 @@ require_once '../logic/profile-photo-helper.php';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <?php require '../../assets/head.php'; ?>
-    <link rel="stylesheet" href="../css/kelas-posting.css">
-    <link rel="stylesheet" href="../css/class-settings.css">
-    <link rel="stylesheet" href="../css/media-upload.css">
+    <link rel="stylesheet" href="../css/kelas-posting.css?v=<?php echo time(); ?>">
+    <link rel="stylesheet" href="../css/class-settings.css?v=<?php echo time(); ?>">
+    <link rel="stylesheet" href="../css/media-upload.css?v=<?php echo time(); ?>">
     <link rel="stylesheet" href="../css/file-upload.css?v=<?php echo time(); ?>">
     <title><?php echo htmlspecialchars($detailKelas['namaKelas']); ?> - Kelola Kelas</title>
     <style>
         /* Hide scrollbar for horizontal quick actions on mobile */
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Toast notification styles */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: #10b981;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            font-size: 14px;
+            font-weight: 500;
+            z-index: 9999;
+            transform: translateX(100%);
+            opacity: 0;
+            transition: all 0.3s ease-in-out;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .toast.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        
+        .toast .toast-icon {
+            font-size: 16px;
+        }
     </style>
 </head>
 
@@ -83,8 +113,8 @@ require_once '../logic/profile-photo-helper.php';
 
         <!-- Jumbotron -->
         <div class="relative h-60 lg:h-80 overflow-hidden" style="background: linear-gradient(45deg, #f97316, #ea580c);">
-            <?php if (!empty($detailKelas['gambarKover'])): ?>
-                <img src="../../<?php echo htmlspecialchars($detailKelas['gambarKover']); ?>"
+            <?php if (!empty($detailKelas['gambar_kelas'])): ?>
+                <img src="../../<?php echo htmlspecialchars($detailKelas['gambar_kelas']); ?>"
                     alt="<?php echo htmlspecialchars($detailKelas['namaKelas']); ?>"
                     class="w-full h-full object-cover absolute inset-0"
                     style="z-index: 1;">
@@ -127,9 +157,10 @@ require_once '../logic/profile-photo-helper.php';
                         <i class="ti ti-users mr-1"></i>
                         <?php echo $jumlahSiswa; ?> Siswa
                     </span>
-                    <span class="flex items-center">
+                    <span class="flex items-center cursor-pointer hover:bg-orange-400 hover:bg-opacity-20 rounded px-2 py-1 transition-all duration-200" onclick="copyClassCode('<?php echo htmlspecialchars($detailKelas['kodeKelas']); ?>')" title="Klik untuk menyalin kode kelas">
                         <i class="ti ti-key mr-1"></i>
                         <?php echo htmlspecialchars($detailKelas['kodeKelas']); ?>
+                        <i class="ti ti-copy ml-1 text-sm opacity-70"></i>
                     </span>
                 </div>
             </div>
@@ -201,7 +232,7 @@ require_once '../logic/profile-photo-helper.php';
                                             <div class="media-upload-container">
                                                 <input type="file" id="mediaInput" name="media[]" multiple accept="image/*,video/*" class="media-upload-input">
                                                 <label for="mediaInput" class="media-upload-label flex items-center text-gray-600 hover:text-orange transition-colors text-sm lg:text-base cursor-pointer">
-                                                    <i class="ti ti-device-camera mr-1 lg:mr-2"></i>
+                                                    <i class="ti ti-photo mr-1 lg:mr-2"></i>
                                                     <span class="hidden sm:inline">Media</span>
                                                 </label>
                                             </div>
@@ -292,12 +323,15 @@ require_once '../logic/profile-photo-helper.php';
                                         <p class="text-sm text-gray-600">Mata Pelajaran</p>
                                     </div>
                                 </div>
-                                <div class="flex items-center">
+                                <div class="flex items-center cursor-pointer hover:bg-gray-50 rounded-lg p-2 -m-2 transition-all duration-200" onclick="copyClassCode('<?php echo htmlspecialchars($detailKelas['kodeKelas']); ?>')" title="Klik untuk menyalin kode kelas">
                                     <div class="w-10 h-10 bg-orange-tipis rounded-lg flex items-center justify-center mr-3">
                                         <i class="ti ti-key text-orange"></i>
                                     </div>
-                                    <div>
-                                        <p class="text-xl font-bold text-gray-900"><?php echo htmlspecialchars($detailKelas['kodeKelas']); ?></p>
+                                    <div class="flex-1">
+                                        <p class="text-xl font-bold text-gray-900 flex items-center">
+                                            <?php echo htmlspecialchars($detailKelas['kodeKelas']); ?>
+                                            <i class="ti ti-copy ml-2 text-sm text-gray-400"></i>
+                                        </p>
                                         <p class="text-sm text-gray-600">Kode Kelas</p>
                                     </div>
                                 </div>
@@ -349,6 +383,57 @@ require_once '../logic/profile-photo-helper.php';
         // Initialize global variables
         window.currentUserId = <?php echo $_SESSION['user']['id']; ?>;
         window.currentUserRole = '<?php echo $_SESSION['user']['role']; ?>';
+        
+        // Function to copy class code and show toast
+        function copyClassCode(classCode) {
+            navigator.clipboard.writeText(classCode).then(function() {
+                showToast('Kode kelas telah disalin!');
+            }).catch(function(err) {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = classCode;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showToast('Kode kelas telah disalin!');
+            });
+        }
+        
+        // Function to show toast notification
+        function showToast(message) {
+            // Remove existing toast if any
+            const existingToast = document.querySelector('.toast');
+            if (existingToast) {
+                existingToast.remove();
+            }
+            
+            // Create new toast
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.innerHTML = `
+                <i class="ti ti-check toast-icon"></i>
+                <span>${message}</span>
+            `;
+            
+            // Add to body
+            document.body.appendChild(toast);
+            
+            // Show toast with animation
+            setTimeout(() => {
+                toast.classList.add('show');
+            }, 100);
+            
+            // Hide toast after 3 seconds
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.parentNode.removeChild(toast);
+                    }
+                }, 300);
+            }, 3000);
+        }
         
         // Initialize posting system when page loads
         document.addEventListener('DOMContentLoaded', function() {

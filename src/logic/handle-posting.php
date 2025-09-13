@@ -1,6 +1,12 @@
 <?php
+// Suppress PHP warnings untuk AJAX requests
+ini_set('display_errors', 0);
+error_reporting(E_ERROR | E_PARSE);
+
 session_start();
 require_once 'postingan-logic.php';
+require_once 'notification-logic.php';
+require_once 'kelas-logic.php';
 
 header('Content-Type: application/json');
 
@@ -143,13 +149,13 @@ function handleFileUploads($files, $kelas_id, $user_id) {
     return $uploadedFiles;
 }
 
-// Check if user is logged in
-if (!isset($_SESSION['user'])) {
+// Check if user is logged in and is a guru
+if (!isset($_SESSION['user']) || $_SESSION['user']['role'] != 'guru') {
     echo json_encode(['success' => false, 'message' => 'Unauthorized access']);
     exit();
 }
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+if ((!isset($_SERVER['REQUEST_METHOD']) || $_SERVER['REQUEST_METHOD'] == 'POST') && !empty($_POST)) {
     $postinganLogic = new PostinganLogic();
     $user_id = $_SESSION['user']['id'];
     
@@ -258,6 +264,52 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     
     // Create post
     $result = $postinganLogic->buatPostingan($kelas_id, $user_id, $konten, $tipePost, $deadline, $uploadedMedia, $uploadedFiles);
+    
+    // If post creation was successful, create notifications for all students in the class
+    if ($result['success']) {
+        try {
+            $notificationLogic = new NotificationLogic();
+            $kelasLogic = new KelasLogic();
+            
+            // Get class information and author name
+            $kelasInfo = $kelasLogic->getDetailKelas($kelas_id);
+            $authorInfo = $kelasLogic->getUserById($user_id);
+            
+            if ($kelasInfo && $authorInfo) {
+                $className = $kelasInfo['namaKelas']; // Changed from nama_kelas to namaKelas
+                $authorName = $authorInfo['nama'];
+                
+                // Get all students in this class
+                $siswaList = $kelasLogic->getSiswaKelas($kelas_id);
+                
+                if ($siswaList && count($siswaList) > 0) {
+                    foreach ($siswaList as $siswa) {
+                        // Create notification for each student
+                        $notificationLogic->createPostinganBaruNotification(
+                            $siswa['id'],
+                            $authorName,
+                            $className,
+                            $result['postingan_id'],
+                            $kelas_id
+                        );
+                    }
+                    
+                    // Add notification count to response
+                    $result['notifications_sent'] = count($siswaList);
+                } else {
+                    $result['notifications_sent'] = 0;
+                    $result['notification_message'] = 'No students in class to notify';
+                }
+            } else {
+                error_log("Failed to get class or author info: kelas_id=$kelas_id, user_id=$user_id");
+                $result['notification_error'] = 'Failed to get class or author information';
+            }
+        } catch (Exception $e) {
+            // Don't fail the main request if notifications fail
+            error_log("Failed to create notifications for post: " . $e->getMessage());
+            $result['notification_error'] = 'Failed to send notifications: ' . $e->getMessage();
+        }
+    }
     
     echo json_encode($result);
 } else {

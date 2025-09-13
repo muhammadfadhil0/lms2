@@ -161,6 +161,13 @@ class KelasPosting {
                     
                     this.currentOffset += result.data.length;
                     
+                    // Check for notification highlight after posts are loaded
+                    if (refresh && window.NotificationHighlight) {
+                        setTimeout(() => {
+                            window.NotificationHighlight.handleNotificationHighlight();
+                        }, 100);
+                    }
+                    
                     if (result.data.length < this.limit) {
                         this.hasMorePosts = false;
                         console.log('No more posts available');
@@ -247,6 +254,8 @@ class KelasPosting {
         
         const postElement = document.createElement('div');
         postElement.className = 'bg-white rounded-lg shadow-sm mb-6 post-enter';
+        postElement.id = `post-${post.id}`;
+        postElement.setAttribute('data-post-id', post.id);
         postElement.innerHTML = `
             <div class="p-4 lg:p-6">
                 <div class="flex items-start space-x-3 lg:space-x-4 mb-4">

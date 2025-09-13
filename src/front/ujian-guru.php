@@ -105,7 +105,7 @@ function badgeColor($status)
                             $kelas = htmlspecialchars($u['namaKelas'] ?? '-');
                             $soal = (int)($u['jumlahSoal'] ?? $u['totalSoal'] ?? 0);
                             $peserta = (int)($u['jumlahPeserta'] ?? 0);
-                            $cover = !empty($u['gambarKover']) ? '../../' . htmlspecialchars($u['gambarKover']) : '';
+                            $cover = !empty($u['gambar_kelas']) ? '../../' . htmlspecialchars($u['gambar_kelas']) : '';
                         ?>
                             <div class="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-all group relative">
                                 <div class="h-32 sm:h-40 md:h-48 bg-gradient-to-br from-orange-400 to-orange-600 relative overflow-hidden rounded-t-lg">

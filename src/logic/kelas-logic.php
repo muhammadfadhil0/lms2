@@ -112,7 +112,7 @@ class KelasLogic {
             }
             
             // Cek apakah sudah join
-            $sql = "SELECT id FROM kelas_siswa WHERE kelas_id = ? AND siswa_id = ?";
+            $sql = "SELECT id FROM kelas_siswa WHERE kelas_id = ? AND siswa_id = ? AND status = 'aktif'";
             $stmt = $this->conn->prepare($sql);
             $stmt->bind_param("ii", $kelas_id, $siswa_id);
             $stmt->execute();
@@ -169,18 +169,37 @@ class KelasLogic {
     // Mendapatkan siswa dalam kelas
     public function getSiswaKelas($kelas_id) {
         try {
-            $sql = "SELECT u.id, u.namaLengkap, u.email, ks.tanggalBergabung
+            $sql = "SELECT u.id, u.namaLengkap, u.email, u.fotoProfil, ks.tanggal_bergabung as tanggalBergabung
                     FROM users u 
                     JOIN kelas_siswa ks ON u.id = ks.siswa_id
                     WHERE ks.kelas_id = ? AND ks.status = 'aktif'
-                    ORDER BY ks.tanggalBergabung ASC";
+                    ORDER BY ks.tanggal_bergabung ASC";
             
             $stmt = $this->conn->prepare($sql);
-            $stmt->bind_param("i", $kelas_id);
-            $stmt->execute();
+            if (!$stmt) {
+                error_log("getSiswaKelas: Prepare failed - " . $this->conn->error);
+                return [];
+            }
             
-            return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+            if (!$stmt->bind_param("i", $kelas_id)) {
+                error_log("getSiswaKelas: Bind param failed - " . $stmt->error);
+                return [];
+            }
+            
+            if (!$stmt->execute()) {
+                error_log("getSiswaKelas: Execute failed - " . $stmt->error);
+                return [];
+            }
+            
+            $result = $stmt->get_result();
+            if (!$result) {
+                error_log("getSiswaKelas: Get result failed - " . $stmt->error);
+                return [];
+            }
+            
+            return $result->fetch_all(MYSQLI_ASSOC);
         } catch (Exception $e) {
+            error_log("getSiswaKelas: Exception - " . $e->getMessage());
             return [];
         }
     }
@@ -221,16 +240,16 @@ class KelasLogic {
     }
 
     // Update background kelas
-    public function updateBackground($kelas_id, $gambarKover = null, $removeBackground = false) {
+    public function updateBackground($kelas_id, $gambar_kelas = null, $removeBackground = false) {
         try {
             if ($removeBackground) {
-                $sql = "UPDATE kelas SET gambarKover = NULL WHERE id = ?";
+                $sql = "UPDATE kelas SET gambar_kelas = NULL WHERE id = ?";
                 $stmt = $this->conn->prepare($sql);
                 $stmt->bind_param("i", $kelas_id);
-            } else if ($gambarKover) {
-                $sql = "UPDATE kelas SET gambarKover = ? WHERE id = ?";
+            } else if ($gambar_kelas) {
+                $sql = "UPDATE kelas SET gambar_kelas = ? WHERE id = ?";
                 $stmt = $this->conn->prepare($sql);
-                $stmt->bind_param("si", $gambarKover, $kelas_id);
+                $stmt->bind_param("si", $gambar_kelas, $kelas_id);
             } else {
                 return ['success' => false, 'message' => 'Tidak ada perubahan yang dilakukan'];
             }
@@ -300,9 +319,9 @@ class KelasLogic {
     // Upload dan handle file gambar
     public function handleImageUpload($file, $uploadDir = null) {
         try {
-            // Set default upload directory relative to the logic folder
+            // Set default upload directory 
             if ($uploadDir === null) {
-                $uploadDir = dirname(dirname(__DIR__)) . '/uploads/kelas/';
+                $uploadDir = __DIR__ . '/../../uploads/kelas/';
             }
             
             // Create directory if it doesn't exist
@@ -350,10 +369,25 @@ class KelasLogic {
             return ['success' => false, 'message' => 'Error: ' . $e->getMessage()];
         }
     }
+    
+    // Get user information by ID
+    public function getUserById($user_id) {
+        try {
+            $sql = "SELECT id, namaLengkap as nama, email, fotoProfil, role FROM users WHERE id = ?";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bind_param("i", $user_id);
+            $stmt->execute();
+            
+            return $stmt->get_result()->fetch_assoc();
+        } catch (Exception $e) {
+            error_log("Error in getUserById: " . $e->getMessage());
+            return null;
+        }
+    }
 }
 
-// Handle AJAX requests
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+// Handle AJAX requests - only if this file is accessed directly
+if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && basename($_SERVER['SCRIPT_NAME']) === 'kelas-logic.php') {
     session_start();
     
     // Check if user is logged in and is a guru
@@ -369,19 +403,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     switch ($action) {
         case 'update_background':
             $removeBackground = isset($_POST['remove_background']);
-            $gambarKover = null;
+            $gambar_kelas = null;
             
             if (!$removeBackground && isset($_FILES['background_image']) && $_FILES['background_image']['error'] === UPLOAD_ERR_OK) {
                 $uploadResult = $kelasLogic->handleImageUpload($_FILES['background_image']);
+                
                 if ($uploadResult['success']) {
-                    $gambarKover = $uploadResult['filePath'];
+                    $gambar_kelas = $uploadResult['filePath'];
                 } else {
                     echo json_encode($uploadResult);
                     exit();
                 }
             }
             
-            echo json_encode($kelasLogic->updateBackground($kelas_id, $gambarKover, $removeBackground));
+            $result = $kelasLogic->updateBackground($kelas_id, $gambar_kelas, $removeBackground);
+            echo json_encode($result);
             break;
 
         case 'update_class':
@@ -399,16 +435,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             break;
 
         case 'update_permissions':
-            // Debug logging
-            error_log("Received permissions data: " . print_r($_POST, true));
-            
             $permissions = [
                 'restrict_posting' => isset($_POST['restrict_posting']) ? ($_POST['restrict_posting'] === 'on' || $_POST['restrict_posting'] === 'true' || $_POST['restrict_posting'] === true) : false,
                 'restrict_comments' => isset($_POST['restrict_comments']) ? ($_POST['restrict_comments'] === 'on' || $_POST['restrict_comments'] === 'true' || $_POST['restrict_comments'] === true) : false,
                 'lock_class' => isset($_POST['lock_class']) ? ($_POST['lock_class'] === 'on' || $_POST['lock_class'] === 'true' || $_POST['lock_class'] === true) : false
             ];
-            
-            error_log("Processed permissions: " . print_r($permissions, true));
             
             echo json_encode($kelasLogic->updatePermissions($kelas_id, $permissions));
             break;

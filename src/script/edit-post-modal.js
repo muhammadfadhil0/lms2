@@ -228,7 +228,7 @@ class EditPostModal {
             const data = await response.json();
             
             if (data.success) {
-                this.showSuccess('Postingan berhasil diupdate');
+                this.showSuccess(data.message || 'Postingan berhasil di update');
                 this.closeModal();
                 
                 // Reload posts if kelasPosting exists
@@ -274,13 +274,19 @@ class EditPostModal {
     }
     
     showError(message) {
-        // You can implement a toast notification here
-        alert(message);
+        if (typeof window.showToast === 'function') {
+            window.showToast(message, 'error');
+        } else {
+            alert(message);
+        }
     }
-    
+
     showSuccess(message) {
-        // You can implement a toast notification here
-        alert(message);
+        if (typeof window.showToast === 'function') {
+            window.showToast(message, 'success');
+        } else {
+            alert(message);
+        }
     }
 }
 

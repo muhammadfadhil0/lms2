@@ -142,6 +142,17 @@ class ClassSettingsManager {
         formData.append('action', 'update_background');
         formData.append('kelas_id', this.kelasId);
 
+        // Button + spinner elements
+        const saveBtn = document.getElementById('save-background-btn');
+        const spinner = document.getElementById('save-background-spinner');
+        const btnText = document.getElementById('save-background-text');
+        const originalText = btnText ? btnText.textContent : null;
+
+        // Disable button and show spinner
+        if (saveBtn) saveBtn.disabled = true;
+        if (spinner) spinner.classList.remove('hidden');
+        if (btnText) btnText.textContent = 'Menyimpan...';
+
         try {
             const response = await fetch('../logic/kelas-logic.php', {
                 method: 'POST',
@@ -162,6 +173,10 @@ class ClassSettingsManager {
             console.error('Error:', error);
             this.showModalAlert('error', 'Kesalahan!', 'Terjadi kesalahan saat memperbarui latar belakang');
         }
+        // Re-enable button and hide spinner
+        if (saveBtn) saveBtn.disabled = false;
+        if (spinner) spinner.classList.add('hidden');
+        if (btnText && originalText) btnText.textContent = originalText;
     }
 
     // Class Edit Functions
@@ -172,6 +187,16 @@ class ClassSettingsManager {
         const formData = new FormData(form);
         formData.append('action', 'update_class');
         formData.append('kelas_id', this.kelasId);
+
+        // Button + spinner elements for edit-class
+        const editSaveBtn = document.getElementById('save-editclass-btn');
+        const editSpinner = document.getElementById('save-editclass-spinner');
+        const editBtnText = document.getElementById('save-editclass-text');
+        const editOriginalText = editBtnText ? editBtnText.textContent : null;
+
+        if (editSaveBtn) editSaveBtn.disabled = true;
+        if (editSpinner) editSpinner.classList.remove('hidden');
+        if (editBtnText) editBtnText.textContent = 'Menyimpan...';
 
         try {
             const response = await fetch('../logic/kelas-logic.php', {
@@ -193,6 +218,10 @@ class ClassSettingsManager {
             console.error('Error:', error);
             this.showModalAlert('error', 'Kesalahan!', 'Terjadi kesalahan saat memperbarui kelas');
         }
+        // Restore button state
+        if (editSaveBtn) editSaveBtn.disabled = false;
+        if (editSpinner) editSpinner.classList.add('hidden');
+        if (editBtnText && editOriginalText) editBtnText.textContent = editOriginalText;
     }
 
     // Student Management Functions

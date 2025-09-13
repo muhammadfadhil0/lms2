@@ -123,8 +123,8 @@ require_once '../logic/profile-photo-helper.php';
 
         <!-- Jumbotron -->
         <div class="relative h-60 lg:h-80 overflow-hidden" style="background: linear-gradient(45deg, #f97316, #ea580c);">
-            <?php if (!empty($detailKelas['gambarKover'])): ?>
-                <img src="../../<?php echo htmlspecialchars($detailKelas['gambarKover']); ?>"
+            <?php if (!empty($detailKelas['gambar_kelas'])): ?>
+                <img src="../../<?php echo htmlspecialchars($detailKelas['gambar_kelas']); ?>"
                     alt="<?php echo htmlspecialchars($detailKelas['namaKelas']); ?>"
                     class="w-full h-full object-cover absolute inset-0"
                     style="z-index: 1;">
@@ -262,7 +262,7 @@ require_once '../logic/profile-photo-helper.php';
                             </div>
                             <div>
                                 <h4 class="text-sm font-medium text-orange-800">Posting Dibatasi</h4>
-                                <p class="text-sm text-orange-700 mt-1">Saat ini hanya dosen yang dapat membuat postingan baru di kelas ini.</p>
+                                <p class="text-sm text-orange-700 mt-1">Saat ini hanya pengajar yang dapat membuat postingan baru di kelas ini.</p>
                             </div>
                         </div>
                     </div>
@@ -406,6 +406,7 @@ require_once '../logic/profile-photo-helper.php';
     <?php require '../component/modal-material-list.php'; ?>
     <?php require '../component/modal-classmates-list.php'; ?>
     <script src="../script/menu-bar-script.js"></script>
+    <script src="../script/notification-highlight.js?v=<?php echo time(); ?>"></script>
     <script src="../script/media-upload-manager.js"></script>
     <script src="../script/file-upload-manager.js?v=<?php echo time(); ?>"></script>
     <script src="../script/photoswipe-simple.js"></script>
@@ -441,6 +442,17 @@ require_once '../logic/profile-photo-helper.php';
             
             // Initialize assignment list modal
             window.assignmentListModal = new AssignmentListModal(kelasId);
+            
+            // Check for tab parameter in URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const tab = urlParams.get('tab');
+            if (tab === 'assignments') {
+                setTimeout(() => {
+                    if (window.assignmentListModal && typeof window.assignmentListModal.open === 'function') {
+                        window.assignmentListModal.open();
+                    }
+                }, 500); // Wait for modal to be initialized
+            }
             
             // Add event listener for "View All Assignments" button
             const viewAllBtn = document.getElementById('view-all-assignments');

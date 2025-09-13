@@ -5,7 +5,20 @@ class DashboardLogic {
     private $conn;
     
     public function __construct() {
-        $this->conn = getConnection();
+        try {
+            $this->conn = getConnection();
+            if (!$this->conn) {
+                error_log("DashboardLogic: getConnection() returned null");
+                throw new Exception("Database connection failed");
+            }
+            if ($this->conn->connect_error) {
+                error_log("DashboardLogic: Connection error: " . $this->conn->connect_error);
+                throw new Exception("Database connection error: " . $this->conn->connect_error);
+            }
+        } catch (Exception $e) {
+            error_log("DashboardLogic constructor error: " . $e->getMessage());
+            throw $e;
+        }
     }
     
     // Dashboard Guru
@@ -86,9 +99,21 @@ class DashboardLogic {
             // Total kelas yang diikuti
             $sql = "SELECT COUNT(*) as total FROM kelas_siswa WHERE siswa_id = ? AND status = 'aktif'";
             $stmt = $this->conn->prepare($sql);
+            if (!$stmt) {
+                error_log("Dashboard: Failed to prepare query 1: " . $this->conn->error);
+                return [];
+            }
             $stmt->bind_param("i", $siswa_id);
-            $stmt->execute();
-            $stats['totalKelas'] = $stmt->get_result()->fetch_assoc()['total'];
+            if (!$stmt->execute()) {
+                error_log("Dashboard: Failed to execute query 1: " . $stmt->error);
+                return [];
+            }
+            $result = $stmt->get_result();
+            if (!$result) {
+                error_log("Dashboard: Failed to get result 1: " . $stmt->error);
+                return [];
+            }
+            $stats['totalKelas'] = $result->fetch_assoc()['total'];
             
             // Total ujian yang tersedia
             $sql = "SELECT COUNT(DISTINCT u.id) as total 
@@ -97,24 +122,42 @@ class DashboardLogic {
                     JOIN kelas_siswa ks ON k.id = ks.kelas_id
                     WHERE ks.siswa_id = ? AND ks.status = 'aktif' AND u.status = 'aktif'";
             $stmt = $this->conn->prepare($sql);
+            if (!$stmt) {
+                error_log("Dashboard: Failed to prepare query 2: " . $this->conn->error);
+                return [];
+            }
             $stmt->bind_param("i", $siswa_id);
-            $stmt->execute();
-            $stats['totalUjian'] = $stmt->get_result()->fetch_assoc()['total'];
+            if (!$stmt->execute()) {
+                error_log("Dashboard: Failed to execute query 2: " . $stmt->error);
+                return [];
+            }
+            $result = $stmt->get_result();
+            if (!$result) {
+                error_log("Dashboard: Failed to get result 2: " . $stmt->error);
+                return [];
+            }
+            $stats['totalUjian'] = $result->fetch_assoc()['total'];
             
-            // Ujian yang sudah dikerjakan
-            $sql = "SELECT COUNT(*) as total FROM ujian_siswa WHERE siswa_id = ? AND status = 'selesai'";
-            $stmt = $this->conn->prepare($sql);
-            $stmt->bind_param("i", $siswa_id);
-            $stmt->execute();
-            $stats['ujianSelesai'] = $stmt->get_result()->fetch_assoc()['total'];
-            
-            // Rata-rata nilai
-            $sql = "SELECT AVG(totalNilai) as rata FROM ujian_siswa WHERE siswa_id = ? AND status = 'selesai'";
-            $stmt = $this->conn->prepare($sql);
-            $stmt->bind_param("i", $siswa_id);
-            $stmt->execute();
-            $rataResult = $stmt->get_result()->fetch_assoc();
-            $stats['rataNilai'] = $rataResult['rata'] ? round($rataResult['rata'], 2) : 0;
+            // Ujian yang sudah dikerjakan (set to 0 if ujian_siswa table doesn't exist)
+            $checkTable = $this->conn->query("SHOW TABLES LIKE 'ujian_siswa'");
+            if ($checkTable && $checkTable->num_rows > 0) {
+                $sql = "SELECT COUNT(*) as total FROM ujian_siswa WHERE siswa_id = ? AND status = 'selesai'";
+                $stmt = $this->conn->prepare($sql);
+                $stmt->bind_param("i", $siswa_id);
+                $stmt->execute();
+                $stats['ujianSelesai'] = $stmt->get_result()->fetch_assoc()['total'];
+                
+                // Rata-rata nilai
+                $sql = "SELECT AVG(totalNilai) as rata FROM ujian_siswa WHERE siswa_id = ? AND status = 'selesai'";
+                $stmt = $this->conn->prepare($sql);
+                $stmt->bind_param("i", $siswa_id);
+                $stmt->execute();
+                $rataResult = $stmt->get_result()->fetch_assoc();
+                $stats['rataNilai'] = $rataResult['rata'] ? round($rataResult['rata'], 2) : 0;
+            } else {
+                $stats['ujianSelesai'] = 0;
+                $stats['rataNilai'] = 0;
+            }
             
             // Kelas yang diikuti
             $sql = "SELECT k.*, u.namaLengkap as namaGuru,
@@ -125,7 +168,7 @@ class DashboardLogic {
                     LEFT JOIN kelas_siswa ks2 ON k.id = ks2.kelas_id AND ks2.status = 'aktif'
                     WHERE ks.siswa_id = ? AND ks.status = 'aktif' AND k.status = 'aktif'
                     GROUP BY k.id
-                    ORDER BY ks.tanggalBergabung DESC
+                    ORDER BY ks.tanggal_bergabung DESC
                     LIMIT 5";
             $stmt = $this->conn->prepare($sql);
             $stmt->bind_param("i", $siswa_id);
@@ -133,36 +176,58 @@ class DashboardLogic {
             $stats['kelasTerbaru'] = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
             
             // Ujian mendatang
-            $sql = "SELECT u.*, k.namaKelas, us.status as statusPengerjaan
-                    FROM ujian u 
-                    JOIN kelas k ON u.kelas_id = k.id
-                    JOIN kelas_siswa ks ON k.id = ks.kelas_id
-                    LEFT JOIN ujian_siswa us ON u.id = us.ujian_id AND us.siswa_id = ?
-                    WHERE ks.siswa_id = ? AND ks.status = 'aktif' 
-                          AND u.status = 'aktif' AND u.tanggalUjian >= CURDATE()
-                          AND (us.id IS NULL OR us.status != 'selesai')
-                    ORDER BY u.tanggalUjian ASC, u.waktuMulai ASC
-                    LIMIT 5";
-            $stmt = $this->conn->prepare($sql);
-            $stmt->bind_param("ii", $siswa_id, $siswa_id);
-            $stmt->execute();
-            $stats['ujianMendatang'] = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+            if ($checkTable && $checkTable->num_rows > 0) {
+                $sql = "SELECT u.*, k.namaKelas, us.status as statusPengerjaan
+                        FROM ujian u 
+                        JOIN kelas k ON u.kelas_id = k.id
+                        JOIN kelas_siswa ks ON k.id = ks.kelas_id
+                        LEFT JOIN ujian_siswa us ON u.id = us.ujian_id AND us.siswa_id = ?
+                        WHERE ks.siswa_id = ? AND ks.status = 'aktif' 
+                              AND u.status = 'aktif' AND u.tanggalUjian >= CURDATE()
+                              AND (us.id IS NULL OR us.status != 'selesai')
+                        ORDER BY u.tanggalUjian ASC, u.waktuMulai ASC
+                        LIMIT 5";
+                $stmt = $this->conn->prepare($sql);
+                $stmt->bind_param("ii", $siswa_id, $siswa_id);
+                $stmt->execute();
+                $stats['ujianMendatang'] = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+            } else {
+                // Simple ujian mendatang without ujian_siswa dependency
+                $sql = "SELECT u.*, k.namaKelas
+                        FROM ujian u 
+                        JOIN kelas k ON u.kelas_id = k.id
+                        JOIN kelas_siswa ks ON k.id = ks.kelas_id
+                        WHERE ks.siswa_id = ? AND ks.status = 'aktif' 
+                              AND u.status = 'aktif' AND u.tanggalUjian >= CURDATE()
+                        ORDER BY u.tanggalUjian ASC, u.waktuMulai ASC
+                        LIMIT 5";
+                $stmt = $this->conn->prepare($sql);
+                $stmt->bind_param("i", $siswa_id);
+                $stmt->execute();
+                $stats['ujianMendatang'] = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+            }
             
-            // Nilai terbaru
-            $sql = "SELECT u.namaUjian, k.namaKelas, us.totalNilai, us.waktuSelesai
-                    FROM ujian_siswa us
-                    JOIN ujian u ON us.ujian_id = u.id
-                    JOIN kelas k ON u.kelas_id = k.id
-                    WHERE us.siswa_id = ? AND us.status = 'selesai'
-                    ORDER BY us.waktuSelesai DESC
-                    LIMIT 5";
-            $stmt = $this->conn->prepare($sql);
-            $stmt->bind_param("i", $siswa_id);
-            $stmt->execute();
-            $stats['nilaiTerbaru'] = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+            // Nilai terbaru (only if ujian_siswa exists)
+            if ($checkTable && $checkTable->num_rows > 0) {
+                $sql = "SELECT u.namaUjian, k.namaKelas, us.totalNilai, us.waktuSelesai
+                        FROM ujian_siswa us
+                        JOIN ujian u ON us.ujian_id = u.id
+                        JOIN kelas k ON u.kelas_id = k.id
+                        WHERE us.siswa_id = ? AND us.status = 'selesai'
+                        ORDER BY us.waktuSelesai DESC
+                        LIMIT 5";
+                $stmt = $this->conn->prepare($sql);
+                $stmt->bind_param("i", $siswa_id);
+                $stmt->execute();
+                $stats['nilaiTerbaru'] = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+            } else {
+                $stats['nilaiTerbaru'] = [];
+            }
             
             return $stats;
         } catch (Exception $e) {
+            error_log("Dashboard getDashboardSiswa error: " . $e->getMessage());
+            error_log("Dashboard stack trace: " . $e->getTraceAsString());
             return [];
         }
     }

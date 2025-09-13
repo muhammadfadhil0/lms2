@@ -120,7 +120,7 @@ class UjianLogic {
     // Mendapatkan ujian berdasarkan guru
     public function getUjianByGuru($guru_id) {
         try {
-            $sql = "SELECT u.*, k.namaKelas, k.gambarKover,
+            $sql = "SELECT u.*, k.namaKelas, k.gambar_kelas,
                            COUNT(DISTINCT us.siswa_id) as jumlahPeserta,
                            COUNT(DISTINCT s.id) as jumlahSoal
                     FROM ujian u 
@@ -150,7 +150,7 @@ class UjianLogic {
                 $this->conn->query("SELECT 1");
             }
             
-            $sql = "SELECT u.*, k.namaKelas, k.gambarKover, us.status as statusPengerjaan, us.totalNilai, us.waktuMulai, us.waktuSelesai, us.id as ujian_siswa_id,
+            $sql = "SELECT u.*, k.namaKelas, k.gambar_kelas, us.status as statusPengerjaan, us.totalNilai, us.waktuMulai, us.waktuSelesai, us.id as ujian_siswa_id,
                            CASE 
                                WHEN us.id IS NULL THEN 
                                    CASE 
@@ -754,7 +754,7 @@ class UjianLogic {
     // Mendapatkan ujian yang diarsipkan (status selesai) berdasarkan guru
     public function getArchivedUjianByGuru($guru_id) {
         try {
-            $sql = "SELECT u.*, k.namaKelas, k.gambarKover,
+            $sql = "SELECT u.*, k.namaKelas, k.gambar_kelas,
                            COUNT(DISTINCT us.siswa_id) as jumlahPeserta,
                            COUNT(DISTINCT s.id) as jumlahSoal,
                            u.dibuat as updatedAt

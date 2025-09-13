@@ -56,13 +56,16 @@
 }
 
 .image-preview-grid.grid-3 {
+    /* Two columns on the first row, and a second row for the third item */
     grid-template-columns: 1fr 1fr;
-    grid-template-rows: 1fr 1fr;
+    grid-auto-rows: minmax(120px, 1fr);
     max-width: 400px;
 }
 
-.image-preview-grid.grid-3 .preview-item:first-child {
-    grid-row: span 2;
+/* Third preview image spans full width below the top two */
+.image-preview-grid.grid-3 .preview-item:nth-child(3) {
+    grid-column: 1 / -1;
+    aspect-ratio: 2.2 / 1;
 }
 
 .image-preview-grid.grid-4 {
@@ -135,12 +138,27 @@
 }
 
 .post-images-grid.grid-3 {
+    /* Two columns on the first row, third image full-width on second row */
     grid-template-columns: 1fr 1fr;
-    grid-template-rows: 1fr 1fr;
+    grid-auto-rows: minmax(140px, 1fr);
 }
 
-.post-images-grid.grid-3 .post-image-item:first-child {
-    grid-row: span 2;
+.post-images-grid.grid-3 .post-image-item:nth-child(3) {
+    grid-column: 1 / -1;
+    aspect-ratio: 2.6 / 1;
+}
+
+/* Round bottom corners for the wide third post image */
+.post-images-grid.grid-3 .post-image-item:nth-child(3) {
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
+    overflow: hidden;
+}
+
+.post-images-grid.grid-3 .post-image-item:nth-child(3) .post-image,
+.post-images-grid.grid-3 .post-image-item:nth-child(3) img {
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
 }
 
 .post-images-grid.grid-4 {
@@ -214,6 +232,22 @@
     
     .post-image-item.multiple {
         max-height: 200px;
+    }
+}
+
+/* Mobile-specific tweak for 3-image layout */
+@media (max-width: 480px) {
+    .image-preview-grid.grid-3,
+    .post-images-grid.grid-3 {
+        grid-template-columns: 1fr 1fr;
+        grid-auto-rows: minmax(100px, auto);
+    }
+
+    .image-preview-grid.grid-3 .preview-item:nth-child(3),
+    .post-images-grid.grid-3 .post-image-item:nth-child(3) {
+        grid-column: 1 / -1;
+        aspect-ratio: auto;
+        min-height: 120px;
     }
 }
 

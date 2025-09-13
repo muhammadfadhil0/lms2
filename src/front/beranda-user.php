@@ -12,15 +12,21 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['role'] != 'siswa') {
 // Include logic files
 require_once '../logic/dashboard-logic.php';
 require_once '../logic/kelas-logic.php';
+require_once '../logic/notification-logic.php';
 
 // Get dashboard data
 $dashboardLogic = new DashboardLogic();
 $kelasLogic = new KelasLogic();
+$notificationLogic = new NotificationLogic();
 $siswa_id = $_SESSION['user']['id'];
 $dashboardData = $dashboardLogic->getDashboardSiswa($siswa_id);
 
 // Get recent posts from all classes
 $recentPosts = $dashboardLogic->getPostinganTerbaruSiswa($siswa_id, 5); // Reduced from 15 to 5
+
+// Get recent notifications (2 latest)
+$recentNotifications = $notificationLogic->getUserNotifications($siswa_id, 2);
+$unreadNotificationsCount = $notificationLogic->getUnreadCount($siswa_id);
 
 // Ensure default values if data is null
 if (!$dashboardData) {
@@ -37,6 +43,7 @@ if (!$dashboardData) {
 <?php require '../component/sidebar.php'; ?>
 <?php require '../component/menu-bar-mobile.php'; ?>
 <?php require '../component/modal-join-class.php'; ?>
+<?php require '../component/modal-notifications.php'; ?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -98,65 +105,83 @@ if (!$dashboardData) {
 
 <body class="bg-gray-50">
 
-    <!-- Main Content -->
-    <div data-main-content class="md:ml-64 min-h-screen pb-20 md:pb-0 transition-all duration-300 ease-in-out">
-        <!-- Header -->
-        <header class="bg-white p-2 md:p-6 header-compact border-b border-gray-200">
-            <style>
-                @media (max-width: 768px) {
-                    .header-compact {
-                        padding: .5rem .75rem;
-                    }
+    <!-- Header (fixed, shifted right on desktop and below left sidebar) -->
+    <header class="site-header md:hidden bg-white px-3 py-1 header-compact border-b border-gray-200 fixed top-0 z-30" style="height:3.5rem; left:0; right:0;">
+        <style>
+            /* Header transition and collapsed state support */
+            .site-header {
+                transition: left 220ms cubic-bezier(0.4,0,0.2,1), width 220ms cubic-bezier(0.4,0,0.2,1);
+            }
 
-                    .header-compact .mobile-logo-wrap img {
-                        height: 28px;
-                        width: 28px;
-                    }
-
-                    .header-compact .mobile-logo-text {
-                        font-size: 1.35rem;
-                        line-height: 1.45rem;
-                    }
-
-                    .header-compact .action-buttons {
-                        gap: .25rem;
-                    }
-
-                    .header-compact .action-buttons button {
-                        padding: .4rem;
-                    }
-
-                    .header-compact .action-buttons i {
-                        font-size: 1.05rem;
-                    }
+            /* When sidebar is collapsed, shift header left to align next to collapsed sidebar */
+            .sidebar-collapsed .site-header {
+                left: 4rem; /* collapsed sidebar width approximation (w-16 = 4rem) */
+            }
+            /* Shift header to the right on md+ so it sits beside the left sidebar
+               and keep header z-index lower than the sidebar (sidebar z-40) */
+            @media (min-width: 768px) {
+                .site-header {
+                    left: 16rem; /* equal to sidebar width (w-64) */
+                    right: 0;
                 }
-            </style>
-            <div class="flex items-center justify-between">
-                <div class="hidden md:block">
-                    <h1 class="text-xl md:text-2xl font-bold text-gray-800">Beranda</h1>
-                    <p class="text-gray-600">Selamat datang, <?php echo htmlspecialchars($_SESSION['user']['namaLengkap']); ?>!</p>
-                </div>
-                <div class="flex md:hidden items-center gap-2 mobile-logo-wrap">
-                    <img src="../../assets/img/logo.png" alt="Logo" class="h-7 w-7 flex-shrink-0">
-                    <div id="logoTextContainer" class="transition-all duration-300 ease-in-out overflow-hidden whitespace-nowrap">
-                        <h1 id="logoText" class="mobile-logo-text font-bold text-gray-800">Point</h1>
-                    </div>
-                </div>
-                <div class="flex items-center action-buttons gap-1 md:space-x-4">
-                    <button command="show-modal" commandfor="join-class-modal" class="p-1 md:p-2 border rounded-full text-gray-400 hover:text-orange-600 transition-colors flex items-center">
-                        <i class="ti ti-user-plus text-base md:text-xl"></i>
-                        <span class="inline md:hidden ml-1 text-sm">Gabung</span>
-                        <span class="hidden md:inline ml-1 text-sm">Gabung Kelas</span>
-                    </button>
-                    <button class="p-1 md:p-2 text-gray-400 hover:text-gray-600 transition-colors">
-                        <i class="ti ti-bell text-base md:text-xl"></i>
-                    </button>
-                    <button class="p-1 md:p-2 text-gray-400 hover:text-gray-600 transition-colors">
-                        <i class="ti ti-search text-base md:text-xl"></i>
-                    </button>
+            }
+
+            @media (max-width: 768px) {
+                .header-compact {
+                    padding: .5rem .75rem;
+                }
+
+                .header-compact .mobile-logo-wrap img {
+                    height: 28px;
+                    width: 28px;
+                }
+
+                .header-compact .mobile-logo-text {
+                    font-size: 1.35rem;
+                    line-height: 1.45rem;
+                }
+
+                .header-compact .action-buttons {
+                    gap: .25rem;
+                }
+
+                .header-compact .action-buttons button {
+                    padding: .4rem;
+                }
+
+                .header-compact .action-buttons i {
+                    font-size: 1.05rem;
+                }
+            }
+        </style>
+        <div class="flex items-center justify-between">
+            <div class="hidden md:block">
+                <h1 class="text-xl md:text-2xl font-bold text-gray-800 m-0">Beranda</h1>
+                <p class="text-gray-600 m-0">Selamat datang, <?php echo htmlspecialchars($_SESSION['user']['namaLengkap']); ?>!</p>
+            </div>
+            <div class="flex md:hidden items-center gap-2 mobile-logo-wrap">
+                <img src="../../assets/img/logo.png" alt="Logo" class="h-7 w-7 flex-shrink-0">
+                <div id="logoTextContainer" class="transition-all duration-300 ease-in-out overflow-hidden whitespace-nowrap">
+                    <h1 id="logoText" class="mobile-logo-text font-bold text-gray-800">Point</h1>
                 </div>
             </div>
-        </header>
+            <div class="flex items-center action-buttons gap-1 md:space-x-4">
+                <button command="show-modal" commandfor="join-class-modal" class="p-1 md:p-2 border rounded-full text-gray-400 hover:text-orange-600 transition-colors flex items-center">
+                    <i class="ti ti-user-plus text-base md:text-xl"></i>
+                    <span class="inline md:hidden ml-1 text-sm">Gabung</span>
+                    <span class="hidden md:inline ml-1 text-sm">Gabung Kelas</span>
+                </button>
+                <button class="p-1 md:p-2 text-gray-400 hover:text-gray-600 transition-colors">
+                    <i class="ti ti-bell text-base md:text-xl"></i>
+                </button>
+                <button class="p-1 md:p-2 text-gray-400 hover:text-gray-600 transition-colors">
+                    <i class="ti ti-search text-base md:text-xl"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div data-main-content class="pt-[3.5rem] md:pt-0 md:ml-64 md:mr-96 min-h-screen pb-20 md:pb-0 transition-all duration-300 ease-in-out">
 
         <!-- Main Content Area -->
         <main class="p-4 md:p-6">
@@ -174,7 +199,7 @@ if (!$dashboardData) {
                     }
                 }
             </style>
-            <div class="mb-6 md:mb-8">
+            <div class="mb-6 md:mb-8 md:hidden">
                 <div class="stats-scroll flex overflow-x-auto gap-3 -mx-1 px-1 
                                 md:grid md:overflow-visible md:gap-6 md:mx-0 md:px-0 md:grid-cols-3">
                     <!-- Card: Total Kelas -->
@@ -210,10 +235,212 @@ if (!$dashboardData) {
                 </div>
             </div>
 
+            <!-- Right Sidebar (Desktop-only, fixed) -->
+            <style>
+                /* Small custom styles for the right sidebar */
+                @media (min-width: 768px) {
+                    .beranda-right-sidebar {
+                        width: 360px;
+                        position: fixed;
+                        right: 1.5rem; /* align with padding */
+                        top: 0; /* pin to top because header hidden on desktop */
+                        height: 100vh;
+                        overflow: hidden;
+                        z-index: 40;
+                    }
+
+                    .beranda-right-sidebar .sidebar-scroll {
+                        height: 100%;
+                        overflow-y: auto;
+                        -ms-overflow-style: none;
+                        scrollbar-width: thin;
+                        overscroll-behavior: contain; /* prevent scroll chaining to page */
+                    }
+
+                    .beranda-right-sidebar .sidebar-scroll::-webkit-scrollbar {
+                        width: 8px;
+                    }
+
+                    .beranda-right-sidebar .sidebar-scroll::-webkit-scrollbar-thumb {
+                        background: rgba(0,0,0,0.08);
+                        border-radius: 999px;
+                    }
+                }
+            </style>
+
+            <aside class="hidden md:block beranda-right-sidebar">
+                <div class="bg-transparent h-full rounded-lg shadow-none">
+                    <div class="sidebar-scroll bg-transparent p-2 mt-4 ps-5 overflow-y-auto">
+                        <!-- Card: Rekomendasi (image above text) -->
+                        <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-4 overflow-hidden">
+                            <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                                <h3 class="text-base font-semibold text-gray-800">Rekomendasi</h3>
+                                <button class="text-sm text-gray-500 hover:text-gray-700">Lihat Semua</button>
+                            </div>
+                            <div class="p-3 space-y-4">
+                                <!-- Recommended card item with image above -->
+                                <div class="rounded-lg overflow-hidden bg-gray-50 border border-gray-100 hover:shadow-md transition-shadow">
+                                    <div class="w-full h-40 bg-cover bg-center" style="background-image: url('../../assets/img/rekomendasi-sample-1.jpg');"></div>
+                                    <div class="p-3">
+                                        <div class="text-sm font-semibold text-gray-900">Kelas: Matematika Dasar</div>
+                                        <div class="text-xs text-gray-500 mt-1">Ringkasan & latihan soal tersedia</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Minimal Info Card (Desktop-only moved from top stats) -->
+                        <div class="hidden md:block bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-4">
+                            <h3 class="text-sm font-semibold text-gray-800 mb-3">Info</h3>
+                            <div class="space-y-3 text-sm text-gray-700">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-gray-500">Total Kelas</span>
+                                    <span class="font-semibold text-gray-800"><?php echo $dashboardData['totalKelas'] ?? 0; ?></span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-gray-500">Ujian Selesai</span>
+                                    <span class="font-semibold text-gray-800"><?php echo $dashboardData['ujianSelesai'] ?? 0; ?></span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-gray-500">Rata-rata Nilai</span>
+                                    <span class="font-semibold text-gray-800"><?php echo $dashboardData['rataNilai'] ?? 0; ?></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Card: Pemberitahuan -->
+                        <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-4 overflow-hidden">
+                            <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                                <h3 class="text-sm font-semibold text-gray-800">
+                                    Pemberitahuan
+                                    <?php if ($unreadNotificationsCount > 0): ?>
+                                        <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                                            <?php echo $unreadNotificationsCount; ?>
+                                        </span>
+                                    <?php endif; ?>
+                                </h3>
+                                <button onclick="openNotificationsModal()" class="text-xs text-gray-500 hover:text-gray-700">
+                                    Lihat Semua
+                                </button>
+                            </div>
+                            <div class="p-2" id="beranda-notifications-container">
+                                <?php if (!empty($recentNotifications)): ?>
+                                    <ul class="divide-y divide-gray-100">
+                                        <?php foreach ($recentNotifications as $notification): ?>
+                                            <?php 
+                                                $redirectUrl = $notificationLogic->getNotificationRedirectUrl($notification);
+                                                $hasValidRedirect = $notificationLogic->hasValidRedirect($notification);
+                                            ?>
+                                            <li class="px-3 py-2 flex items-start space-x-3 hover:bg-gray-50 cursor-pointer <?php echo $notification['is_read'] ? 'opacity-75' : ''; ?>" 
+                                                onclick="handleNotificationClick(<?php echo $notification['id']; ?>, '<?php echo $redirectUrl; ?>', <?php echo $hasValidRedirect ? 'true' : 'false'; ?>, this)">
+                                                <div class="flex-shrink-0 mt-1">
+                                                    <i class="ti <?php echo $notificationLogic->getNotificationIcon($notification['type']); ?> <?php echo $notificationLogic->getNotificationColor($notification['type']); ?>"></i>
+                                                    <?php if (!$notification['is_read']): ?>
+                                                        <div class="w-2 h-2 bg-orange-500 rounded-full -mt-1 -ml-1"></div>
+                                                    <?php endif; ?>
+                                                </div>
+                                                <div class="flex-1 min-w-0">
+                                                    <div class="text-sm text-gray-900 font-medium"><?php echo htmlspecialchars($notification['title']); ?></div>
+                                                    <div class="text-xs text-gray-600 mb-1"><?php echo htmlspecialchars($notification['message']); ?></div>
+                                                    <div class="text-xs text-gray-500">
+                                                        <?php if ($notification['nama_kelas']): ?>
+                                                            Kelas: <?php echo htmlspecialchars($notification['nama_kelas']); ?> • 
+                                                        <?php endif; ?>
+                                                        <?php echo $notificationLogic->getTimeAgo($notification['created_at']); ?>
+                                                    </div>
+                                                </div>
+                                            </li>
+                                        <?php endforeach; ?>
+                                    </ul>
+                                <?php else: ?>
+                                    <div class="px-3 py-4 text-center text-gray-500 text-sm">
+                                        <i class="ti ti-bell-off text-2xl mb-2 block"></i>
+                                        Tidak ada pemberitahuan
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+
+                        <!-- Card: Tugas Terbaru -->
+                        <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-4 overflow-hidden">
+                            <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                                <h3 class="text-sm font-semibold text-gray-800">Tugas Terbaru</h3>
+                                <button class="text-xs text-gray-500 hover:text-gray-700">Lihat Semua</button>
+                            </div>
+                            <div class="p-2 space-y-2">
+                                <div class="px-3 py-2 bg-gray-50 rounded hover:bg-gray-100">
+                                    <div class="flex items-center justify-between">
+                                        <div class="min-w-0">
+                                            <div class="text-sm font-medium text-gray-900 truncate">Tugas: Laporan Kimia</div>
+                                            <div class="text-xs text-gray-500">Deadline: 18 Sep 2025</div>
+                                        </div>
+                                        <button class="ml-3 px-2 py-1 bg-blue-600 text-white text-xs rounded">Kumpulkan</button>
+                                    </div>
+                                </div>
+
+                                <div class="px-3 py-2 bg-gray-50 rounded hover:bg-gray-100">
+                                    <div class="flex items-center justify-between">
+                                        <div class="min-w-0">
+                                            <div class="text-sm font-medium text-gray-900 truncate">Tugas: Soal Matematika</div>
+                                            <div class="text-xs text-gray-500">Deadline: 20 Sep 2025</div>
+                                        </div>
+                                        <button class="ml-3 px-2 py-1 bg-white border border-gray-200 text-sm rounded">Lihat</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Card: Teman Sekelas -->
+                        <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-4 overflow-hidden">
+                            <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                                <h3 class="text-sm font-semibold text-gray-800">Teman Sekelas</h3>
+                                <button class="text-xs text-gray-500 hover:text-gray-700">Lihat Semua</button>
+                            </div>
+                            <div class="p-2 space-y-2">
+                                <div class="flex items-center space-x-3 px-2 py-2 hover:bg-gray-50 rounded">
+                                    <div class="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-sm text-gray-700">A</div>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="text-sm font-medium text-gray-900">Aisyah Putri</div>
+                                        <div class="text-xs text-gray-500">Guru: Matematika</div>
+                                    </div>
+                                    <button class="ml-2 px-2 py-1 bg-white border border-gray-200 text-sm rounded">Chat</button>
+                                </div>
+
+                                <div class="flex items-center space-x-3 px-2 py-2 hover:bg-gray-50 rounded">
+                                    <div class="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-sm text-gray-700">R</div>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="text-sm font-medium text-gray-900">Rizky Pratama</div>
+                                        <div class="text-xs text-gray-500">Siswa • Kelas A</div>
+                                    </div>
+                                    <button class="ml-2 px-2 py-1 bg-white border border-gray-200 text-sm rounded">Chat</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+            <script>
+                (function() {
+                    // Enable sidebar-only scrolling when pointer is over the right sidebar
+                    var sidebarScroll = document.querySelector('.beranda-right-sidebar .sidebar-scroll');
+                    if (!sidebarScroll) return;
+
+                    // Ensure the element can receive wheel events and prevent page scroll
+                    sidebarScroll.addEventListener('wheel', function(e) {
+                        // Only intercept vertical scrolling
+                        if (Math.abs(e.deltaY) < 1) return;
+                        // Scroll the sidebar container
+                        sidebarScroll.scrollTop += e.deltaY;
+                        // Prevent the page from scrolling
+                        e.preventDefault();
+                    }, { passive: false });
+                })();
+            </script>
+
             <!-- Recent Posts Section -->
             <div class="mb-6">
                 <div class="flex items-center justify-between mb-4">
-                    <h2 class="text-lg md:text-xl font-bold text-gray-800">Postingan Terbaru</h2>
+                    <h2 class="text-lg md:text-xl font-bold text-gray-800">Beranda</h2>
                 </div>
 
                 <!-- Posts Container for Dynamic Loading -->
@@ -583,11 +810,15 @@ if (!$dashboardData) {
                                                         </div>
                                                     <?php endif; ?>
                                                     
-                                                    <?php if (count($post['gambar']) > 3 && $index == 2): ?>
-                                                        <!-- Show overflow indicator -->
+                                                    <?php
+                                                    // If there are more than 4 images, after rendering the 4th (index 3)
+                                                    // show an overlay on the 4th image indicating how many more images exist.
+                                                    $totalGambar = count($post['gambar']);
+                                                    if ($totalGambar > 4 && $index == 3): ?>
+                                                        <!-- Show overflow indicator on the 4th image only when >4 images -->
                                                         <div class="post-media-item multiple relative">
                                                             <div class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-lg">
-                                                                <span class="text-white font-bold text-lg">+<?php echo count($post['gambar']) - 3; ?></span>
+                                                                <span class="text-white font-bold text-lg">+<?php echo $totalGambar - 4; ?></span>
                                                             </div>
                                                         </div>
                                                         <?php break; ?>
@@ -772,6 +1003,176 @@ if (!$dashboardData) {
         console.log('📱 Current User ID:', <?php echo $_SESSION['user']['id']; ?>);
         console.log('👤 Current User Role:', '<?php echo $_SESSION['user']['role']; ?>');
         console.log('📊 Recent Posts Count:', <?php echo count($recentPosts); ?>);
+        console.log('🔔 Notifications Count:', <?php echo count($recentNotifications); ?>);
+        console.log('🔴 Unread Notifications:', <?php echo $unreadNotificationsCount; ?>);
+        
+        // Notification functions
+        window.markNotificationAsRead = async function(notificationId, element) {
+            if (element.classList.contains('opacity-75')) {
+                // Already read, just open modal
+                openNotificationsModal();
+                return;
+            }
+            
+            try {
+                const response = await fetch('../logic/mark-notification-read.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ notification_id: notificationId })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Update UI
+                    element.classList.add('opacity-75');
+                    const unreadDot = element.querySelector('.bg-orange-500');
+                    if (unreadDot) unreadDot.remove();
+                    
+                    // Update unread count badge
+                    updateUnreadBadge();
+                    
+                    // Open full notifications modal
+                    openNotificationsModal();
+                }
+            } catch (error) {
+                console.error('Error marking notification as read:', error);
+                // Still open modal even if mark as read fails
+                openNotificationsModal();
+            }
+        };
+        
+        // Handle notification click with redirect
+        window.handleNotificationClick = async function(notificationId, redirectUrl, hasValidRedirect, element) {
+            console.log('🔔 Notification clicked:', {notificationId, redirectUrl, hasValidRedirect});
+            
+            // First, mark as read if not already read
+            if (!element.classList.contains('opacity-75')) {
+                try {
+                    const response = await fetch('../logic/mark-notification-read.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ notification_id: notificationId })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        // Update UI
+                        element.classList.add('opacity-75');
+                        const unreadDot = element.querySelector('.bg-orange-500');
+                        if (unreadDot) unreadDot.remove();
+                        
+                        // Update unread count badge
+                        updateUnreadBadge();
+                    }
+                } catch (error) {
+                    console.error('Error marking notification as read:', error);
+                }
+            }
+            
+            // Then redirect if valid target exists
+            if (hasValidRedirect && redirectUrl && redirectUrl !== 'beranda-user.php') {
+                console.log('🔗 Redirecting to:', redirectUrl);
+                // Add a small delay to ensure UI updates are visible
+                setTimeout(() => {
+                    window.location.href = redirectUrl;
+                }, 300);
+            } else {
+                console.log('📝 No valid redirect, staying on beranda');
+                // If no valid redirect, just show a message or do nothing
+                showToast('Notifikasi ditandai sebagai dibaca');
+            }
+        };
+        
+        window.loadBerandaNotifications = async function() {
+            try {
+                const response = await fetch('../logic/get-notifications.php?limit=2');
+                const data = await response.json();
+                
+                if (data.success) {
+                    updateBerandaNotificationsUI(data.notifications);
+                    updateUnreadBadge();
+                }
+            } catch (error) {
+                console.error('Error loading beranda notifications:', error);
+            }
+        };
+        
+        function updateBerandaNotificationsUI(notifications) {
+            const container = document.getElementById('beranda-notifications-container');
+            if (!container) return;
+            
+            if (notifications.length === 0) {
+                container.innerHTML = `
+                    <div class="px-3 py-4 text-center text-gray-500 text-sm">
+                        <i class="ti ti-bell-off text-2xl mb-2 block"></i>
+                        Tidak ada pemberitahuan
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '<ul class="divide-y divide-gray-100">';
+            notifications.forEach(notification => {
+                const isRead = notification.is_read == '1';
+                const iconClass = getNotificationIcon(notification.type);
+                const colorClass = getNotificationColor(notification.type);
+                
+                html += `
+                    <li class="px-3 py-2 flex items-start space-x-3 hover:bg-gray-50 cursor-pointer ${isRead ? 'opacity-75' : ''}" 
+                        onclick="markNotificationAsRead(${notification.id}, this)">
+                        <div class="flex-shrink-0 mt-1 relative">
+                            <i class="ti ${iconClass} ${colorClass}"></i>
+                            ${!isRead ? '<div class="w-2 h-2 bg-orange-500 rounded-full absolute -mt-1 -ml-1"></div>' : ''}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="text-sm text-gray-900 font-medium">${escapeHtml(notification.title)}</div>
+                            <div class="text-xs text-gray-600 mb-1">${escapeHtml(notification.message)}</div>
+                            <div class="text-xs text-gray-500">
+                                ${notification.nama_kelas ? 'Kelas: ' + escapeHtml(notification.nama_kelas) + ' • ' : ''}
+                                ${notification.time_ago || formatTimeAgo(notification.created_at)}
+                            </div>
+                        </div>
+                    </li>
+                `;
+            });
+            html += '</ul>';
+            
+            container.innerHTML = html;
+        }
+        
+        async function updateUnreadBadge() {
+            try {
+                const response = await fetch('../logic/get-notifications.php?unread_only=1');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const unreadCount = data.notifications.length;
+                    const badge = document.querySelector('.bg-orange-100.text-orange-800');
+                    const headerText = document.querySelector('#beranda-notifications-container').closest('.bg-white').querySelector('h3');
+                    
+                    if (unreadCount > 0) {
+                        if (!badge) {
+                            const newBadge = document.createElement('span');
+                            newBadge.className = 'ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800';
+                            newBadge.textContent = unreadCount;
+                            headerText.appendChild(newBadge);
+                        } else {
+                            badge.textContent = unreadCount;
+                        }
+                    } else {
+                        if (badge) badge.remove();
+                    }
+                }
+            } catch (error) {
+                console.error('Error updating unread badge:', error);
+            }
+        }
         
         // Global download function for media
         window.downloadMedia = function(url, filename) {
@@ -1144,7 +1545,7 @@ if (!$dashboardData) {
 
                 console.log('Beranda API Response:', result); // Debug
 
-                if (result.success && result.posts && result.posts.length > 0) {
+                    if (result.success && result.posts && result.posts.length > 0) {
                     // Add new posts to container
                     result.posts.forEach(post => {
                         const postElement = createBerandaPostElement(post);
@@ -1218,6 +1619,37 @@ if (!$dashboardData) {
             }
 
             // Create full post template
+            // Build images HTML separately to support up to 4 visible images and overlay for >4
+            function buildMediaHtml(post) {
+                if (!post.gambar || post.gambar.length === 0) return '';
+                const total = post.gambar.length;
+                const maxShow = 4;
+                const images = post.gambar.slice(0, maxShow);
+                let html = '<div class="mt-3 post-media-container"><div class="post-media-grid grid-' + images.length + '">';
+
+                images.forEach((media, idx) => {
+                    const mediaPath = (media.path_gambar && media.path_gambar.startsWith('uploads')) ? ('../../' + media.path_gambar) : ('../../uploads/postingan/' + (media.nama_file || ''));
+                    const isVideo = (media.media_type && media.media_type === 'video') || (media.tipe_file && media.tipe_file.indexOf('video/') === 0);
+                    const mediaClass = images.length === 1 ? 'single' : 'multiple';
+
+                    if (isVideo) {
+                        html += `<div class="post-media-item ${mediaClass}"><video controls class="post-media" data-media-index="${idx}" preload="metadata"><source src="${mediaPath}" type="${media.tipe_file || 'video/mp4'}">Your browser does not support the video tag.</video><div class="post-media-type-badge video"><i class="ti ti-video"></i> Video</div><button class="media-download-btn" onclick="downloadMedia('${mediaPath}', '${media.nama_file || ''}')" title="Download Video"><i class="ti ti-download"></i></button></div>`;
+                    } else {
+                        // For the 4th image when total > 4, we'll add overlay later
+                        html += `<div class="post-media-item ${mediaClass}"><img src="${mediaPath}" alt="${media.nama_file || 'Media postingan'}" class="post-media" data-media-index="${idx}" data-pswp-src="${mediaPath}" data-pswp-width="800" data-pswp-height="600" style="cursor: pointer;" onerror="this.style.display='none';"><div class="post-media-type-badge image"><i class="ti ti-photo"></i> Gambar</div><button class="media-download-btn" onclick="downloadMedia('${mediaPath}', '${media.nama_file || ''}')" title="Download Gambar"><i class="ti ti-download"></i></button></div>`;
+                    }
+                });
+
+                // If there are more than maxShow, add overlay on the last shown image
+                if (total > maxShow) {
+                    const moreCount = total - maxShow;
+                    html += `<div class="post-media-item multiple relative"><div class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-lg"><span class="text-white font-bold text-lg">+${moreCount}</span></div></div>`;
+                }
+
+                html += '</div></div>';
+                return html;
+            }
+
             postDiv.innerHTML = `
                 <!-- Post Header -->
                 <div class="flex items-start justify-between mb-3">
@@ -1282,6 +1714,7 @@ if (!$dashboardData) {
                     <!-- Preview comments will be loaded here -->
                 </div>
                 ` : ''}
+                ${buildMediaHtml(post)}
             `;
 
             return postDiv;

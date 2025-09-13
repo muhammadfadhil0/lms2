@@ -142,8 +142,8 @@ if (!$dashboardData) {
                         <?php foreach ($dashboardData['kelasTerbaru'] as $kelas): ?>
                             <div class="relative bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all">
                                 <div class="h-32 sm:h-40 md:h-48 bg-gradient-to-br from-orange-400 to-orange-600 relative">
-                                    <?php if (!empty($kelas['gambarKover'])): ?>
-                                        <img src="../../<?php echo htmlspecialchars($kelas['gambarKover']); ?>" alt="<?php echo htmlspecialchars($kelas['namaKelas']); ?>" class="w-full h-full object-cover">
+                                    <?php if (!empty($kelas['gambar_kelas'])): ?>
+                                        <img src="../../<?php echo htmlspecialchars($kelas['gambar_kelas']); ?>" alt="<?php echo htmlspecialchars($kelas['namaKelas']); ?>" class="w-full h-full object-cover">
                                     <?php else: ?>
                                         <div class="w-full h-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center">
                                             <i class="ti ti-book text-white text-4xl"></i>
