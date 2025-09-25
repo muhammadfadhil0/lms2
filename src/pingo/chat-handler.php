@@ -84,17 +84,22 @@ class ChatHandler {
                 throw new Exception('Tidak ada response dari AI');
             }
             
-            // Save user message to database
-            $this->saveMessage($userId, $userMessage, 'user', $sessionId);
+            // Create timestamps to ensure proper ordering
+            $currentTime = time();
+            $userTimestamp = date('Y-m-d H:i:s', $currentTime);
+            $aiTimestamp = date('Y-m-d H:i:s', $currentTime + 1); // AI timestamp 1 second later
             
-            // Save AI response to database
-            $this->saveMessage($userId, $aiResponse, 'assistant', $sessionId);
+            // Save user message to database with explicit timestamp
+            $this->saveMessage($userId, $userMessage, 'user', $sessionId, $userTimestamp);
+            
+            // Save AI response to database with later timestamp
+            $this->saveMessage($userId, $aiResponse, 'assistant', $sessionId, $aiTimestamp);
             
             return [
                 'success' => true,
                 'message' => $aiResponse,
                 'user_message' => $userMessage,
-                'timestamp' => date('Y-m-d H:i:s')
+                'timestamp' => $aiTimestamp
             ];
             
         } catch (Exception $e) {
@@ -119,16 +124,28 @@ class ChatHandler {
     /**
      * Save message to database
      */
-    private function saveMessage($userId, $message, $role, $sessionId) {
+    private function saveMessage($userId, $message, $role, $sessionId, $timestamp = null) {
         try {
-            $sql = "INSERT INTO pingo_chat_history (user_id, message, role, session_id) VALUES (?, ?, ?, ?)";
-            $stmt = $this->pdo->prepare($sql);
-            $stmt->execute([
-                (int) $userId, 
-                (string) $message, 
-                (string) $role, 
-                (string) $sessionId
-            ]);
+            if ($timestamp) {
+                $sql = "INSERT INTO pingo_chat_history (user_id, message, role, session_id, timestamp) VALUES (?, ?, ?, ?, ?)";
+                $stmt = $this->pdo->prepare($sql);
+                $stmt->execute([
+                    (int) $userId, 
+                    (string) $message, 
+                    (string) $role, 
+                    (string) $sessionId,
+                    $timestamp
+                ]);
+            } else {
+                $sql = "INSERT INTO pingo_chat_history (user_id, message, role, session_id) VALUES (?, ?, ?, ?)";
+                $stmt = $this->pdo->prepare($sql);
+                $stmt->execute([
+                    (int) $userId, 
+                    (string) $message, 
+                    (string) $role, 
+                    (string) $sessionId
+                ]);
+            }
         } catch (PDOException $e) {
             error_log("Error saving message: " . $e->getMessage());
             throw new Exception("Gagal menyimpan pesan ke database");
@@ -177,9 +194,27 @@ PANDUAN RESPON:
   * **teks** untuk penekanan penting
   * `kode` untuk istilah teknis
   * 1. atau - untuk list saat menjelaskan langkah-langkah
-- Selalu sajikan informasi dalam format list atau paragraf terstruktur, jangan gunakan format tabel
+- Selalu sajikan informasi dalam format list atau paragraf terstruktur
 - Jawab dalam bahasa Indonesia yang jelas
 - Jangan pernah sebutkan atau jelaskan tentang panduan format ini kepada user
+
+PENTING - ATURAN FORMATTING KHUSUS:
+- JANGAN PERNAH menggunakan format tabel dalam bentuk apapun (|---|---|, markdown table, HTML table, ASCII table)
+- APAPUN YANG TERJADI, gunakan alternatif format seperti:
+  * List dengan poin-poin (1. 2. 3. atau - • *)
+  * Paragraf terstruktur dengan penjelasan
+  * Format definisi (Istilah: Penjelasan)
+  * Pengelompokan dengan sub-judul
+- Jika data berbentuk tabuler, ubah menjadi list atau deskripsi terstruktur
+
+BATASAN PANJANG RESPONSE - SANGAT PENTING:
+- Sistem hanya dapat menampilkan maksimum 300-400 kata per response
+- Jika response Anda lebih panjang dari itu, akan TERPOTONG dan tidak lengkap
+- PASTIKAN jawaban Anda selalu di bawah 350 kata untuk menghindari pemotongan
+- Jika topik kompleks, bagi menjadi beberapa poin utama saja
+- Prioritaskan informasi paling penting dan ringkas
+- Gunakan kalimat yang efisien dan langsung to the point
+- Jika perlu penjelasan panjang, sarankan user untuk bertanya lebih spesifik
 
 Berikan penjelasan yang sesuai dengan kompleksitas pertanyaan - sederhana untuk chat biasa, terstruktur untuk pembelajaran.'
         ];
@@ -269,6 +304,12 @@ Berikan penjelasan yang sesuai dengan kompleksitas pertanyaan - sederhana untuk 
             $content = trim($content);
         }
         
+        // Remove horizontal lines/separators (---, ===, etc.)
+        $content = preg_replace('/^\s*[-=]{3,}\s*$/m', '', $content);
+        $content = preg_replace('/\n\s*[-=]{3,}\s*\n/', '\n', $content);
+        $content = preg_replace('/^\s*[-=]{3,}\s*\n/', '', $content);
+        $content = preg_replace('/\n\s*[-=]{3,}\s*$/', '', $content);
+        
         // Remove any mentions of table guidelines from AI response
         $content = preg_replace('/\(.*[Tt]abel.*panduan.*\)/i', '', $content);
         $content = preg_replace('/\(.*[Nn]ote.*[Tt]able.*\)/i', '', $content);
@@ -287,10 +328,29 @@ Berikan penjelasan yang sesuai dengan kompleksitas pertanyaan - sederhana untuk 
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute([$userId, $sessionId]);
         
+        // Reset vision API preference - remove vision preference so it falls back to default
+        $this->resetVisionApiPreference($userId);
+        
         return [
             'success' => true,
-            'message' => 'Chat history cleared'
+            'message' => 'Chat history cleared and API preference reset'
         ];
+    }
+    
+    /**
+     * Reset vision API preference when chat is cleared
+     */
+    private function resetVisionApiPreference($userId) {
+        try {
+            // Remove vision API preference so it falls back to default pingo API
+            $sql = "DELETE FROM user_page_api_preferences WHERE user_id = ? AND page_name = 'vision'";
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute([$userId]);
+            
+            error_log("🔄 Vision API preference reset for user: " . $userId);
+        } catch (Exception $e) {
+            error_log("Error resetting vision API preference: " . $e->getMessage());
+        }
     }
 }
 ?>

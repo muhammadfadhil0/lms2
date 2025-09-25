@@ -1,9 +1,14 @@
 <?php
+// DEBUG: Show all errors for troubleshooting
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 session_start();
 require_once '../logic/koneksi.php';
 require_once '../logic/ujian-logic.php';
 require_once '../logic/soal-logic.php';
 require_once 'pingo-ai.php';
+require_once 'pingo-api-helper.php';
 
 header('Content-Type: application/json');
 
@@ -55,6 +60,13 @@ try {
         throw new Exception('Ujian tidak ditemukan atau Anda tidak memiliki akses');
     }
     
+    // Check if autoScore mode is enabled and validate question type
+    $isAutoScore = isset($ujian['autoScore']) && (bool)$ujian['autoScore'];
+    
+    if ($isAutoScore && $questionType === 'essay') {
+        throw new Exception('Soal essay tidak dapat dibuat dalam mode penilaian otomatis. Hanya soal pilihan ganda yang diperbolehkan.');
+    }
+    
     // Get existing questions to avoid duplication
     $existingQuestions = [];
     $existingSoal = $soalLogic->getSoalByUjian($ujian_id);
@@ -67,6 +79,7 @@ try {
         'exam_name' => $ujian['namaUjian'],
         'subject' => $ujian['mataPelajaran'] ?? 'Umum',
         'description' => $ujian['deskripsi'] ?? '',
+        'topik' => $ujian['topik'] ?? '', // ← Tambahkan topik spesifik
         'question_count' => $questionCount,
         'question_type' => $questionType,
         'answer_options' => $answerOptions,
@@ -74,28 +87,34 @@ try {
         'existing_questions' => $existingQuestions
     ];
     
-    // Initialize PingoAI
-    $pingoAI = new PingoAI();
+    // Initialize API helper and use selected API key
+    $apiHelper = new PingoApiHelper();
+    $userId = $_SESSION['user']['id'];
     
-    // Validate parameters
-    $validationErrors = $pingoAI->validateParams($params);
-    if (!empty($validationErrors)) {
-        throw new Exception(implode(', ', $validationErrors));
-    }
-    
-    // Generate questions using AI
-    $result = $pingoAI->generateQuestions($params);
+    // Generate questions using selected API
+    $result = $apiHelper->generateQuestions($userId, $params, 'buat-soal');
     
     if (!$result['success']) {
         throw new Exception($result['error']);
+    }
+    
+    if (empty($result['questions'])) {
+        throw new Exception('AI tidak menghasilkan soal apapun');
     }
     
     // Process and save generated questions
     $savedQuestions = [];
     $totalQuestions = 0;
     
-    foreach ($result['questions'] as $question) {
+    foreach ($result['questions'] as $index => $question) {
         try {
+            $savedQuestion = ['success' => false, 'message' => 'Unknown question type']; // Default
+            
+            // Validate required fields
+            if (empty($question['question'])) {
+                continue;
+            }
+            
             if ($question['type'] === 'multiple_choice') {
                 // Get next question number
                 $conn = getConnection();
@@ -128,7 +147,7 @@ try {
                     $ujian_id,
                     $nomor,
                     $question['question'],
-                    'jawaban_panjang',
+                    'essay',
                     $question['sample_answer'] ?? '',
                     $question['points']
                 );

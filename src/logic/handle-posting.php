@@ -149,9 +149,9 @@ function handleFileUploads($files, $kelas_id, $user_id) {
     return $uploadedFiles;
 }
 
-// Check if user is logged in and is a guru
-if (!isset($_SESSION['user']) || $_SESSION['user']['role'] != 'guru') {
-    echo json_encode(['success' => false, 'message' => 'Unauthorized access']);
+// Check if user is logged in
+if (!isset($_SESSION['user'])) {
+    echo json_encode(['success' => false, 'message' => 'User not logged in']);
     exit();
 }
 
@@ -228,6 +228,13 @@ if ((!isset($_SERVER['REQUEST_METHOD']) || $_SERVER['REQUEST_METHOD'] == 'POST')
         }
         if (!$isEnrolled) {
             echo json_encode(['success' => false, 'message' => 'Anda tidak terdaftar dalam kelas ini']);
+            exit();
+        }
+        
+        // Check if posting is restricted for students in this class
+        $detailKelas = $kelasLogic->getDetailKelas($kelas_id);
+        if ($detailKelas && isset($detailKelas['restrict_posting']) && $detailKelas['restrict_posting'] == 1) {
+            echo json_encode(['success' => false, 'message' => 'Posting dibatasi untuk siswa di kelas ini']);
             exit();
         }
     }

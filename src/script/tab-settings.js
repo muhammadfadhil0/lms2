@@ -24,15 +24,3 @@
         // Set initial active tab
         document.querySelector('.tab-btn[data-tab="profile"]').classList.add('border-orange', 'text-orange');
         document.querySelector('.tab-btn[data-tab="profile"]').classList.remove('border-transparent', 'text-gray-500');
-        
-        // Profile photo preview
-        document.getElementById('profile-photo').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    document.getElementById('profile-preview').src = e.target.result;
-                };
-                reader.readAsDataURL(file);
-            }
-        });

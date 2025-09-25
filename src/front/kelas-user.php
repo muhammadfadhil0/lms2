@@ -5,7 +5,7 @@ $currentPage = 'kelas';
 
 // Check if user is logged in and is a siswa
 if (!isset($_SESSION['user']) || $_SESSION['user']['role'] != 'siswa') {
-    header("Location: ../../index.php");
+    header("Location: ../../login.php");
     exit();
 }
 
@@ -169,7 +169,11 @@ require_once '../logic/profile-photo-helper.php';
                 <div class="flex-1 lg:w-2/3">
                     <!-- Mobile Quick Actions (UI only, no logic yet) -->
                     <div class="md:hidden bg-white rounded-lg p-3 shadow-sm mb-4">
-                        <div class="grid grid-cols-4 gap-2">
+                        <div class="grid grid-cols-5 gap-2">
+                            <button type="button" class="group flex flex-col items-center justify-center rounded-lg bg-white border border-gray-200 text-[10px] font-medium text-gray-600 shadow-sm active:scale-95 transition hover:border-cyan-300 hover:bg-cyan-50 h-20">
+                                <i class="ti ti-info-circle text-cyan-600 text-xl mb-1"></i>
+                                <span class="leading-tight">Info</span>
+                            </button>
                             <button type="button" data-action="assignments" aria-controls="assignment-list-modal" class="group flex flex-col items-center justify-center rounded-lg bg-white border border-gray-200 text-[10px] font-medium text-gray-600 shadow-sm active:scale-95 transition hover:border-blue-300 hover:bg-blue-50 h-20">
                                 <i class="ti ti-clipboard-list text-blue-600 text-xl mb-1"></i>
                                 <span class="leading-tight">Tugas</span>
@@ -323,9 +327,10 @@ require_once '../logic/profile-photo-helper.php';
                                         $deadlineFormatted = date('j M Y', strtotime($assignment['deadline']));
                                         $isDeadlineSoon = strtotime($assignment['deadline']) - time() < (24 * 60 * 60 * 3); // 3 days
                                         ?>
-                                        <div class="assignment-card p-3 <?php echo $statusClass; ?> border rounded-lg cursor-pointer hover:bg-opacity-80 transition-all duration-200" data-assignment-id="<?php echo $assignment['id']; ?>">
-                                            <div class="flex items-start justify-between">
-                                                <div class="flex-1">
+                                        <div id="post-assignment-<?php echo $assignment['id']; ?>" class="assignment-card p-3 <?php echo $statusClass; ?> border rounded-lg cursor-pointer hover:bg-opacity-80 transition-all duration-200" data-assignment-id="<?php echo $assignment['id']; ?>"
+                                            onclick="window.location.href='kelas-user.php?id=<?php echo $kelas_id; ?>#post-assignment-<?php echo $assignment['id']; ?>'">
+                                            <div class="">
+                                                <div class="gap-2">
                                                     <h4 class="font-medium text-gray-900 text-sm"><?php echo htmlspecialchars($assignment['judul']); ?></h4>
                                                     <p class="text-xs text-gray-600 mt-1">
                                                         Deadline: <?php echo $deadlineFormatted; ?>
@@ -334,7 +339,7 @@ require_once '../logic/profile-photo-helper.php';
                                                         <?php endif; ?>
                                                     </p>
                                                 </div>
-                                                <div class="flex flex-col items-end">
+                                                <div class="flex mt-5 gap-2">
                                                     <i class="<?php echo $statusIcon; ?> text-sm mb-1"></i>
                                                     <span class="text-xs font-medium"><?php echo $statusText; ?></span>
                                                 </div>
@@ -400,6 +405,7 @@ require_once '../logic/profile-photo-helper.php';
     <!-- Include Modal Components -->
     <?php require '../component/modal-delete-post.php'; ?>
     <?php require '../component/modal-comments.php'; ?>
+    <!-- modal-class-info removed -->
     <?php require '../component/modal-submit-assignment.php'; ?>
     <?php require '../component/modal-assignment-list.php'; ?>
     <?php require '../component/modal-schedule-list.php'; ?>
@@ -411,6 +417,7 @@ require_once '../logic/profile-photo-helper.php';
     <script src="../script/file-upload-manager.js?v=<?php echo time(); ?>"></script>
     <script src="../script/photoswipe-simple.js"></script>
     <script src="../script/assignment-manager.js"></script>
+    <script src="../script/assignment-file-manager.js?v=<?php echo time(); ?>"></script>
     <script src="../script/assignment-list-modal.js?v=<?php echo time(); ?>"></script>
     <script src="../script/kelas-files-manager.js"></script>
     <script src="../script/list-modals-manager.js?v=<?php echo time(); ?>"></script>
@@ -443,10 +450,11 @@ require_once '../logic/profile-photo-helper.php';
             // Initialize assignment list modal
             window.assignmentListModal = new AssignmentListModal(kelasId);
             
-            // Check for tab parameter in URL
+            // Check for tab parameter in URL, but do NOT open modal if hash is present (redirect from assignment modal)
             const urlParams = new URLSearchParams(window.location.search);
             const tab = urlParams.get('tab');
-            if (tab === 'assignments') {
+            const hasHash = window.location.hash && window.location.hash.length > 0;
+            if (tab === 'assignments' && !hasHash) {
                 setTimeout(() => {
                     if (window.assignmentListModal && typeof window.assignmentListModal.open === 'function') {
                         window.assignmentListModal.open();
@@ -630,6 +638,9 @@ require_once '../logic/profile-photo-helper.php';
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         }
     </script>
+    
+    <!-- Dynamic Modal Component -->
+    <?php require '../component/modal-dynamic.php'; ?>
 </body>
 
 </html>

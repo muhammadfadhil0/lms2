@@ -6,7 +6,7 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'guru') {
     if (isset($_GET['debug'])) {
         die(json_encode(['success' => false, 'message' => 'User tidak login sebagai guru']));
     }
-    header('Location: ../../index.php');
+    header('Location: ../../login.php');
     exit();
 }
 

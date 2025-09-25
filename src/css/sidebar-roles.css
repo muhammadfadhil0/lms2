@@ -135,3 +135,27 @@
 .siswa-nav-item.active::after {
     height: 24px;
 }
+
+/* Sidebar Collapsed Styling */
+.sidebar-collapsed #sidebar {
+    width: 7rem !important; /* w-28 = 7rem */
+}
+
+.sidebar-collapsed #sidebar .p-4 {
+    padding: 0.75rem 0.75rem;
+}
+
+.sidebar-collapsed #sidebar .w-10,
+.sidebar-collapsed #sidebar .h-8 {
+    width: 2.5rem;
+    height: 2.5rem;
+}
+
+/* Profile photo adjustment in collapsed state */
+.sidebar-collapsed #sidebar .profile-section {
+    padding: 0.5rem;
+}
+
+.sidebar-collapsed #sidebar .profile-section .w-10 {
+    margin: 0 auto;
+}

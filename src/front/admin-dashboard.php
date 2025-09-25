@@ -5,7 +5,7 @@ $currentPage = 'dashboard';
 
 // Check if user is logged in and is an admin
 if (!isset($_SESSION['user']) || $_SESSION['user']['role'] != 'admin') {
-    header("Location: ../../index.php");
+    header("Location: ../../login.php");
     exit();
 }
 

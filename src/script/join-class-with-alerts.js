@@ -28,6 +28,7 @@ async function submitJoinKelas() {
         
         const response = await fetch('../logic/join-kelas.php', {
             method: 'POST',
+            credentials: 'same-origin',
             body: formData
         });
         

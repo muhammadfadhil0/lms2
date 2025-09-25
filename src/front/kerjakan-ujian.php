@@ -5,12 +5,13 @@ session_start();
 $currentPage = 'ujian';
 
 if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'siswa') {
-    header('Location: ../../index.php');
+    header('Location: ../../login.php');
     exit();
 }
 
 require_once '../logic/ujian-logic.php';
 require_once '../logic/soal-logic.php';
+require_once '../logic/time-helper.php';
 
 $ujianLogic = new UjianLogic();
 $soalLogic = new SoalLogic();
@@ -145,11 +146,20 @@ if (!$ujian) {
 }
 
 $mulaiTs = strtotime($ujian['tanggalUjian'] . ' ' . $ujian['waktuMulai']);
-$selesaiTs = strtotime($ujian['tanggalUjian'] . ' ' . $ujian['waktuSelesai']);
 $nowTs = time();
+
+// Handle ujian yang melewati tengah malam
+if ($ujian['waktuSelesai'] < $ujian['waktuMulai']) {
+    // Ujian melewati tengah malam - waktu selesai di hari berikutnya
+    $selesaiTs = strtotime($ujian['tanggalUjian'] . ' ' . $ujian['waktuSelesai']) + (24 * 60 * 60);
+} else {
+    // Ujian dalam hari yang sama
+    $selesaiTs = strtotime($ujian['tanggalUjian'] . ' ' . $ujian['waktuSelesai']);
+}
+
 if (!$is_started && !$ujian_siswa_id) {
     if ($nowTs < $mulaiTs) {
-        $timeStatusNote = 'Ujian belum dimulai. Mulai: ' . date('H:i', $mulaiTs);
+        $timeStatusNote = 'Ujian belum dimulai. Mulai: ' . TimeHelper::format24Hour(date('H:i:s', $mulaiTs));
     } elseif ($nowTs > $selesaiTs) {
         $timeStatusNote = 'Waktu ujian sudah berakhir.';
     }
@@ -169,6 +179,8 @@ if ($ujian) {
 $saved_answers = [];
 if ($is_started && $ujian_siswa_id) {
     $saved_answers = $ujianLogic->getJawabanSiswa($ujian_siswa_id);
+    // Debug: uncomment the line below to see saved answers in browser console
+    // error_log("DEBUG: Saved answers for ujian_siswa_id $ujian_siswa_id: " . json_encode($saved_answers));
 }
 // Basic assumed student info keys: nama, foto (optional path)
 ?>
@@ -185,8 +197,16 @@ if ($is_started && $ujian_siswa_id) {
 </head>
 
 <body class="bg-gray-50">
+    <?php if ($is_started): ?>
+    <!-- Mobile Timer Toggle - hanya muncul di mobile -->
+    <div id="mobile-timer-toggle" class="mobile-timer-toggle">
+        <div id="mobile-timer" class="mobile-timer-text">00:00:00</div>
+        <div class="mobile-timer-label">Waktu Tersisa</div>
+    </div>
+    <?php endif; ?>
+    
     <div class="layout">
-        <aside class="left-col">
+        <aside class="left-col" id="left-sidebar">
             <div class="left-section border-b border-gray-200">
                 <div class="flex items-center gap-4">
                     <?php $foto = $_SESSION['user']['foto'] ?? null; ?>
@@ -197,8 +217,8 @@ if ($is_started && $ujian_siswa_id) {
                     </div>
                 </div>
                 <div class="mt-4">
-                    <div class="section-title">Mata Pelajaran</div>
-                    <div class="text-sm font-medium text-gray-700"><?= htmlspecialchars($ujian['mataPelajaran'] ?? ($ujian['namaUjian'] ?? 'Ujian')) ?></div>
+                    <div class="section-title">Nama Kelas</div>
+                    <div class="text-sm font-medium text-gray-700"><?= htmlspecialchars($ujian['namaKelas'] ?? ($ujian['namaUjian'] ?? 'Ujian')) ?></div>
                 </div>
                 <?php if ($is_started): ?>
                     <div class="mt-4">
@@ -235,20 +255,6 @@ if ($is_started && $ujian_siswa_id) {
             <?php endif; ?>
         </aside>
         <div class="content-area">
-            <div class="exam-header">
-                <div>
-                    <h1 class="text-xl font-semibold text-gray-800 leading-tight"><?= htmlspecialchars($ujian['namaUjian']) ?></h1>
-                    <?php if (!$is_started): ?>
-                        <p class="text-xs text-gray-500 mt-1">Durasi: <?= htmlspecialchars($ujian['durasi']) ?> menit | Total Soal: <?= count($soal_list) ?></p>
-                    <?php endif; ?>
-                </div>
-                <?php if ($is_started): ?>
-                    <div class="hidden md:block">
-                        <div class="text-xs font-medium text-gray-500 mb-1">Waktu Tersisa</div>
-                        <div id="timer-top" class="timer-box">00:00:00</div>
-                    </div>
-                <?php endif; ?>
-            </div>
             <div class="questions-wrapper">
                 <?php if (!$is_started): ?>
                     <div class="bg-white border border-gray-200 rounded-xl p-10 text-center max-w-3xl">
@@ -273,7 +279,7 @@ if ($is_started && $ujian_siswa_id) {
                             <div class="text-red-600 text-sm font-medium mb-4"><?= htmlspecialchars($error_message) ?></div>
                         <?php endif; ?>
                         <?php if (isset($timeStatusNote)): ?>
-                            <div class="text-blue-600 text-xs font-medium mb-4"><?= htmlspecialchars($timeStatusNote) ?> (Server: <?= date('H:i') ?>)</div>
+                            <div class="text-blue-600 text-xs font-medium mb-4"><?= htmlspecialchars($timeStatusNote) ?> (Server: <?= TimeHelper::format24Hour(date('H:i:s')) ?>)</div>
                         <?php endif; ?>
                         <form method="POST" onsubmit="return confirmStart()">
                             <input type="hidden" name="action" value="start">
@@ -285,7 +291,13 @@ if ($is_started && $ujian_siswa_id) {
                         <div class="question-card <?= $index === 0 ? 'active' : '' ?>" data-question="<?= $index + 1 ?>">
                             <div class="flex items-center justify-between mb-4">
                                 <h2 class="font-semibold text-gray-800">Soal <?= $soal['nomorSoal'] ?></h2>
-                                <span class="text-xs font-medium bg-blue-100 text-blue-700 px-2.5 py-1 rounded-md"><?= $soal['poin'] ?> poin</span>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs font-medium bg-blue-100 text-blue-700 px-2.5 py-1 rounded-md"><?= $soal['poin'] ?> poin</span>
+                                    <span class="mobile-save-indicator hidden" data-soal-id="<?= $soal['id'] ?>">
+                                        <i class="ti ti-check-circle"></i>
+                                        <span class="indicator-text">Tersimpan</span>
+                                    </span>
+                                </div>
                             </div>
                             <div class="question-text text-gray-800 mb-6"><?= nl2br(htmlspecialchars($soal['pertanyaan'])) ?></div>
                             <?php if ($soal['tipeSoal'] === 'pilihan_ganda'): ?>
@@ -313,14 +325,26 @@ if ($is_started && $ujian_siswa_id) {
     <?php if ($is_started): ?>
         <div class="bottom-bar">
             <div class="bar-left">
-                <button type="button" class="btn btn-secondary" id="btn-prev" disabled><i class="ti ti-arrow-left"></i> Sebelumnya</button>
+                <button type="button" class="btn btn-secondary" id="btn-prev" disabled>
+                    <i class="ti ti-arrow-left"></i> 
+                    <span class="btn-text">Sebelumnya</span>
+                </button>
             </div>
             <div class="bar-center">
-                <button type="button" class="btn btn-warning" id="btn-flag"><i class="ti ti-flag"></i> Tandai Soal</button>
-                <button type="button" class="btn btn-danger" id="btn-finish"><i class="ti ti-check"></i> Selesai</button>
+                <button type="button" class="btn btn-warning" id="btn-flag">
+                    <i class="ti ti-flag"></i> 
+                    <span class="btn-text">Tandai Soal</span>
+                </button>
+                <button type="button" class="btn btn-danger" id="btn-finish">
+                    <i class="ti ti-check"></i> 
+                    <span class="btn-text">Selesai</span>
+                </button>
             </div>
             <div class="bar-right">
-                <button type="button" class="btn btn-primary" id="btn-next">Selanjutnya <i class="ti ti-arrow-right"></i></button>
+                <button type="button" class="btn btn-primary" id="btn-next">
+                    <span class="btn-text">Selanjutnya</span> 
+                    <i class="ti ti-arrow-right"></i>
+                </button>
             </div>
         </div>
     <?php endif; ?>
@@ -360,6 +384,165 @@ if ($is_started && $ujian_siswa_id) {
             soalList: <?= json_encode(array_map(fn($s) => ['id' => $s['id'], 'nomor' => $s['nomorSoal']], $soal_list)) ?>,
             isStarted: <?= $is_started ? 'true' : 'false' ?>
         };
+        
+        // Global Mobile Save Indicator Functions
+        function showMobileSaveIndicator(soalId, status = 'saved') {
+            // Only show on mobile view
+            if (window.innerWidth <= 900) {
+                const indicator = document.querySelector(`.mobile-save-indicator[data-soal-id="${soalId}"]`);
+                if (indicator) {
+                    // Remove all status classes
+                    indicator.classList.remove('loading', 'saved');
+                    
+                    if (status === 'loading' || status === 'saving') {
+                        // Show loading state
+                        indicator.innerHTML = `
+                            <i class="ti ti-loader-2"></i>
+                            <span class="indicator-text">Menyimpan...</span>
+                        `;
+                        indicator.classList.add('show', 'loading');
+                    } else if (status === 'saved') {
+                        // Show saved state
+                        indicator.innerHTML = `
+                            <i class="ti ti-check-circle"></i>
+                            <span class="indicator-text">Tersimpan</span>
+                        `;
+                        indicator.classList.add('show');
+                        indicator.classList.remove('loading');
+                        
+                        // Auto hide after 2.5 seconds
+                        setTimeout(() => {
+                            indicator.classList.remove('show');
+                        }, 2500);
+                    }
+                }
+            }
+        }
+
+        function hideMobileSaveIndicator(soalId) {
+            const indicator = document.querySelector(`.mobile-save-indicator[data-soal-id="${soalId}"]`);
+            if (indicator) {
+                indicator.classList.remove('show', 'loading');
+            }
+        }
+
+        // Listen to question status changes from auto-save manager
+        document.addEventListener('questionStatusChanged', function(event) {
+            const { soalId, status } = event.detail;
+            
+            // Show mobile indicator based on status
+            if (status === 'saving') {
+                showMobileSaveIndicator(soalId, 'loading');
+            } else if (status === 'saved') {
+                showMobileSaveIndicator(soalId, 'saved');
+            } else if (status === 'error') {
+                hideMobileSaveIndicator(soalId);
+            }
+        });
+        
+        // Mobile Timer Toggle Functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const mobileTimerToggle = document.getElementById('mobile-timer-toggle');
+            const leftSidebar = document.getElementById('left-sidebar');
+            const mobileTimer = document.getElementById('mobile-timer');
+            let sidebarVisible = false;
+            
+            // Function to check if we're in mobile view
+            function isMobileView() {
+                return window.innerWidth <= 900;
+            }
+            
+            if (mobileTimerToggle && leftSidebar) {
+                // Initial state - sidebar hidden only on mobile
+                function updateSidebarState() {
+                    if (isMobileView()) {
+                        leftSidebar.classList.add('mobile-hidden');
+                        leftSidebar.classList.remove('mobile-visible');
+                        sidebarVisible = false;
+                    } else {
+                        // Remove mobile classes on desktop
+                        leftSidebar.classList.remove('mobile-hidden', 'mobile-visible');
+                        sidebarVisible = false;
+                    }
+                }
+                
+                updateSidebarState();
+                
+                // Update on resize
+                window.addEventListener('resize', updateSidebarState);
+                
+                // Toggle sidebar when mobile timer is clicked (only on mobile)
+                mobileTimerToggle.addEventListener('click', function() {
+                    if (!isMobileView()) return;
+                    
+                    if (sidebarVisible) {
+                        // Hide sidebar
+                        leftSidebar.classList.remove('mobile-visible');
+                        leftSidebar.classList.add('mobile-hidden');
+                        sidebarVisible = false;
+                    } else {
+                        // Show sidebar
+                        leftSidebar.classList.remove('mobile-hidden');
+                        leftSidebar.classList.add('mobile-visible');
+                        sidebarVisible = true;
+                    }
+                });
+                
+                // Hide sidebar when clicking outside (only on mobile)
+                document.addEventListener('click', function(e) {
+                    if (!isMobileView()) return;
+                    
+                    if (sidebarVisible && 
+                        !leftSidebar.contains(e.target) && 
+                        !mobileTimerToggle.contains(e.target)) {
+                        leftSidebar.classList.remove('mobile-visible');
+                        leftSidebar.classList.add('mobile-hidden');
+                        sidebarVisible = false;
+                    }
+                });
+            }
+            
+            // Sync mobile timer with main timer
+            function syncMobileTimer() {
+                const mainTimer = document.getElementById('timer');
+                if (mainTimer && mobileTimer) {
+                    mobileTimer.textContent = mainTimer.textContent;
+                }
+            }
+            
+            // Initial sync and setup interval
+            if (window.examData.isStarted) {
+                syncMobileTimer();
+                setInterval(syncMobileTimer, 1000);
+            }
+
+            // Check for existing saved answers on page load and show indicators
+            if (window.examData.isStarted && window.innerWidth <= 900) {
+                const questionCards = document.querySelectorAll('.question-card');
+                questionCards.forEach(card => {
+                    const radioInputs = card.querySelectorAll('input[type="radio"]:checked');
+                    const textareaInputs = card.querySelectorAll('textarea');
+                    
+                    // Check if this question has a saved answer
+                    const hasAnswer = radioInputs.length > 0 || 
+                                     (textareaInputs.length > 0 && textareaInputs[0].value.trim() !== '');
+                    
+                    if (hasAnswer) {
+                        const soalId = card.querySelector('.mobile-save-indicator')?.getAttribute('data-soal-id');
+                        if (soalId) {
+                            const indicator = card.querySelector('.mobile-save-indicator');
+                            if (indicator) {
+                                indicator.classList.add('show');
+                                // Auto hide existing answers after 1 second
+                                setTimeout(() => {
+                                    indicator.classList.remove('show');
+                                }, 1000);
+                            }
+                        }
+                    }
+                });
+            }
+        });
     </script>
     <script src="../script/auto-save-manager.js"></script>
     <script src="../script/kerjakan-ujian.js"></script>

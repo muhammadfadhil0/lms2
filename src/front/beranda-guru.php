@@ -5,7 +5,7 @@ $currentPage = 'beranda';
 
 // Check if user is logged in and is a guru
 if (!isset($_SESSION['user']) || $_SESSION['user']['role'] != 'guru') {
-    header("Location: ../../index.php");
+    header("Location: ../../login.php");
     exit();
 }
 
@@ -26,6 +26,7 @@ $newClassId = isset($_GET['new_class']) ? intval($_GET['new_class']) : null;
 <?php require '../component/sidebar.php'; ?>
 <?php require '../component/menu-bar-mobile.php'; ?>
 <?php require '../component/modal-add-class.php'; ?>
+<?php require '../component/modal-delete-class.php'; ?>
 <?php // Profile photo helper for fresh avatar URL 
 ?>
 <?php require_once '../logic/profile-photo-helper.php'; ?>
@@ -35,10 +36,17 @@ $newClassId = isset($_GET['new_class']) ? intval($_GET['new_class']) : null;
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Dark mode removed by request -->
+
+
     <meta name="user-id" content="<?php echo $_SESSION['user']['id']; ?>">
     <?php require '../../assets/head.php'; ?>
+    <link rel="stylesheet" href="../css/search-system.css">
     <title>Beranda</title>
 </head>
+
+
 
 <body class="bg-gray-50">
 
@@ -79,23 +87,34 @@ $newClassId = isset($_GET['new_class']) ? intval($_GET['new_class']) : null;
             <div class="flex items-center justify-between">
                 <div class="hidden md:block">
                     <h1 class="text-xl md:text-2xl font-bold text-gray-800">Beranda</h1>
-                    <p class="text-gray-600">Selamat datang, <?php echo htmlspecialchars($_SESSION['user']['namaLengkap']); ?>!</p>
+                    <p class="text-gray-600">Selamat datang,
+                        <?php echo htmlspecialchars($_SESSION['user']['namaLengkap']); ?>!</p>
                 </div>
                 <div class="flex md:hidden items-center gap-2 mobile-logo-wrap">
                     <img src="../../assets/img/logo.png" alt="Logo" class="h-7 w-7 flex-shrink-0">
-                    <div id="logoTextContainer" class="transition-all duration-300 ease-in-out overflow-hidden whitespace-nowrap">
+                    <div id="logoTextContainer"
+                        class="transition-all duration-300 ease-in-out overflow-hidden whitespace-nowrap">
                         <h1 id="logoText" class="mobile-logo-text font-bold text-gray-800">Point</h1>
                     </div>
                 </div>
-                <div class="flex items-center space-x-2 md:space-x-4">
-                    <button command="show-modal" commandfor="add-class-modal" class="p-2 border rounded-full text-gray-400 hover:text-orange-600 transition-colors flex items-center">
-                        <i class="ti ti-plus text-lg md:text-xl"></i>
-                        <span class="hidden md:inline ml-1 text-sm">Tambah Kelas</span>
-                    </button>
-                    <button class="p-2 text-gray-400 hover:text-gray-600 transition-colors">
-                        <i class="ti ti-bell text-lg md:text-xl"></i>
-                    </button>
-                    <button class="p-2 text-gray-400 hover:text-gray-600 transition-colors">
+                <div class="flex items-center space-x-2 md:space-x-4" style="align-items: center;">
+                    <div class="search-other-buttons flex items-center space-x-2 md:space-x-4">
+                        <button command="show-modal" commandfor="add-class-modal"
+                            class="p-2 border rounded-full text-gray-400 hover:text-orange-600 transition-colors flex items-center">
+                            <i class="ti ti-plus text-lg md:text-xl"></i>
+                            <span class="hidden md:inline ml-1 text-sm">Tambah Kelas</span>
+                        </button>
+                        <!-- Dark mode toggle removed -->
+                        <button class="relative p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                            data-notification-trigger="true">
+                            <i class="ti ti-bell text-lg md:text-xl"></i>
+                            <!-- Notification Badge -->
+                            <span id="notification-badge" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium hidden min-w-[20px]">
+                                <span id="notification-count">0</span>
+                            </span>
+                        </button>
+                    </div>
+                    <button class="search-btn p-2 text-gray-400 hover:text-gray-600 transition-colors">
                         <i class="ti ti-search text-lg md:text-xl"></i>
                     </button>
                 </div>
@@ -109,33 +128,39 @@ $newClassId = isset($_GET['new_class']) ? intval($_GET['new_class']) : null;
                 <div class="stats-scroll flex overflow-x-auto gap-3 -mx-1 px-1 
                             md:grid md:overflow-visible md:gap-6 md:mx-0 md:px-0 md:grid-cols-3">
                     <!-- Card: Total Kelas -->
-                    <div class="min-w-[150px] md:min-w-0 flex-1 bg-white rounded-lg shadow-sm border border-gray-200 p-3 md:p-6 flex items-center">
+                    <div
+                        class="min-w-[150px] md:min-w-0 flex-1 bg-white rounded-lg shadow-sm border border-gray-200 p-3 md:p-6 flex items-center">
                         <div class="p-2 md:p-3 md:me-4 bg-orange-tipis rounded-lg flex-shrink-0 md:mb-3">
                             <i class="ti ti-book text-orange-600 text-base md:text-xl"></i>
                         </div>
                         <div class="ml-3 md:ml-0">
                             <p class="text-[11px] md:text-sm text-gray-600 tracking-wide">Total Kelas</p>
-                            <p class="text-lg md:text-2xl font-bold text-gray-800 leading-tight"><?php echo $dashboardData['totalKelas'] ?? 0; ?></p>
+                            <p class="text-lg md:text-2xl font-bold text-gray-800 leading-tight">
+                                <?php echo $dashboardData['totalKelas'] ?? 0; ?></p>
                         </div>
                     </div>
                     <!-- Card: Ujian Selesai -->
-                    <div class="min-w-[150px] md:min-w-0 flex-1 bg-white rounded-lg shadow-sm border border-gray-200 p-3 md:p-6 flex items-center">
+                    <div
+                        class="min-w-[150px] md:min-w-0 flex-1 bg-white rounded-lg shadow-sm border border-gray-200 p-3 md:p-6 flex items-center">
                         <div class="p-2 md:p-3 md:me-4 bg-orange-tipis rounded-lg flex-shrink-0 md:mb-3">
                             <i class="ti ti-clipboard-check text-orange-600 text-base md:text-xl"></i>
                         </div>
                         <div class="ml-3 md:ml-0">
                             <p class="text-[11px] md:text-sm text-gray-600 tracking-wide">Total Siswa</p>
-                            <p class="text-lg md:text-2xl font-bold text-gray-800 leading-tight"><?php echo $dashboardData['totalSiswa'] ?? 0; ?></p>
+                            <p class="text-lg md:text-2xl font-bold text-gray-800 leading-tight">
+                                <?php echo $dashboardData['totalSiswa'] ?? 0; ?></p>
                         </div>
                     </div>
                     <!-- Card: Rata-rata Nilai -->
-                    <div class="hidden md:flex min-w-[150px] md:min-w-0 flex-1 bg-white rounded-lg shadow-sm border border-gray-200 p-3 md:p-6 flex items-center">
+                    <div
+                        class="hidden md:flex min-w-[150px] md:min-w-0 flex-1 bg-white rounded-lg shadow-sm border border-gray-200 p-3 md:p-6 flex items-center">
                         <div class="p-2 md:p-3 md:me-4 bg-orange-tipis rounded-lg flex-shrink-0 md:mb-3">
                             <i class="ti ti-star text-orange-600 text-base md:text-xl"></i>
                         </div>
                         <div class="ml-3 md:ml-0">
                             <p class="text-[11px] md:text-sm text-gray-600 tracking-wide">Ujian Aktif</p>
-                            <p class="text-lg md:text-2xl font-bold text-gray-800 leading-tight"><?php echo $dashboardData['ujianAktif'] ?? 0; ?></p>
+                            <p class="text-lg md:text-2xl font-bold text-gray-800 leading-tight">
+                                <?php echo $dashboardData['ujianAktif'] ?? 0; ?></p>
                         </div>
                     </div>
                 </div>
@@ -144,7 +169,7 @@ $newClassId = isset($_GET['new_class']) ? intval($_GET['new_class']) : null;
             <!-- Classes Section -->
             <div class="mb-6">
                 <h2 class="text-lg md:text-xl font-bold text-gray-800 mb-4">Kelas Tersedia</h2>
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+                <div class="search-results-container grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                     <?php if ($newClassId): ?>
                         <div class="col-span-full mb-4">
                             <div class="bg-green-50 border border-green-200 rounded-lg p-4">
@@ -152,21 +177,26 @@ $newClassId = isset($_GET['new_class']) ? intval($_GET['new_class']) : null;
                                     <i class="ti ti-check-circle text-green-600 text-xl mr-3"></i>
                                     <div>
                                         <h3 class="text-green-800 font-medium">Kelas Berhasil Dibuat!</h3>
-                                        <p class="text-green-700 text-sm">Kelas baru Anda sudah siap digunakan. Lihat kelas yang diberi highlight di bawah.</p>
+                                        <p class="text-green-700 text-sm">Kelas baru Anda sudah siap digunakan. Lihat kelas
+                                            yang diberi highlight di bawah.</p>
                                     </div>
                                 </div>
                             </div>
-                    </div>
+                        </div>
                     <?php endif; ?>
                     <?php if (!empty($dashboardData['kelasTerbaru'])): ?>
                         <?php foreach ($dashboardData['kelasTerbaru'] as $kelas): ?>
                             <?php $isNewClass = ($newClassId && $kelas['id'] == $newClassId); ?>
-                            <div class="relative bg-white rounded-lg shadow-sm border <?php echo $isNewClass ? 'border-orange-300 ring-2 ring-orange-200' : 'border-gray-200'; ?> overflow-hidden hover:shadow-md transition-all <?php echo $isNewClass ? 'animate-pulse' : ''; ?>">
+                            <div class="search-card relative bg-white rounded-lg shadow-sm border <?php echo $isNewClass ? 'border-orange-300 ring-2 ring-orange-200' : 'border-gray-200'; ?> overflow-hidden hover:shadow-md transition-all <?php echo $isNewClass ? 'animate-pulse' : ''; ?>"
+                                data-class-id="<?php echo $kelas['id']; ?>">
                                 <div class="h-32 sm:h-40 md:h-48 bg-gradient-to-br from-orange-400 to-orange-600 relative">
                                     <?php if (!empty($kelas['gambar_kelas'])): ?>
-                                        <img src="../../<?php echo htmlspecialchars($kelas['gambar_kelas']); ?>" alt="<?php echo htmlspecialchars($kelas['namaKelas']); ?>" class="w-full h-full object-cover">
+                                        <img src="../../<?php echo htmlspecialchars($kelas['gambar_kelas']); ?>"
+                                            alt="<?php echo htmlspecialchars($kelas['namaKelas']); ?>"
+                                            class="w-full h-full object-cover">
                                     <?php else: ?>
-                                        <div class="w-full h-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center">
+                                        <div
+                                            class="w-full h-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center">
                                             <i class="ti ti-book text-white text-4xl"></i>
                                         </div>
                                     <?php endif; ?>
@@ -183,18 +213,24 @@ $newClassId = isset($_GET['new_class']) ? intval($_GET['new_class']) : null;
                                         $ownerPhoto = getUserProfilePhotoUrl($ownerId);
                                         ?>
                                         <?php if ($ownerPhoto): ?>
-                                            <img src="<?php echo htmlspecialchars($ownerPhoto); ?>" alt="Foto Guru" class="w-16 h-16 md:w-20 md:h-20 rounded-full border-4 border-white object-cover shadow-md" onerror="this.parentElement.innerHTML='<div class=\'w-16 h-16 md:w-20 md:h-20 rounded-full border-4 border-white bg-orange-600 flex items-center justify-center\'><i class=\'ti ti-user text-white text-xl\'></i></div>'">
+                                            <img src="<?php echo htmlspecialchars($ownerPhoto); ?>" alt="Foto Guru"
+                                                class="w-16 h-16 md:w-20 md:h-20 rounded-full border-4 border-white object-cover shadow-md"
+                                                onerror="this.parentElement.innerHTML='<div class=\'w-16 h-16 md:w-20 md:h-20 rounded-full border-4 border-white bg-orange-600 flex items-center justify-center\'><i class=\'ti ti-user text-white text-xl\'></i></div>'">
                                         <?php else: ?>
-                                            <div class="w-16 h-16 md:w-20 md:h-20 rounded-full border-4 border-white bg-orange-600 flex items-center justify-center shadow-md">
+                                            <div
+                                                class="w-16 h-16 md:w-20 md:h-20 rounded-full border-4 border-white bg-orange-600 flex items-center justify-center shadow-md">
                                                 <i class="ti ti-user text-white text-xl"></i>
                                             </div>
                                         <?php endif; ?>
                                     </div>
                                 </div>
                                 <div class="pt-10 p-4 md:pt-12 md:p-6">
-                                    <h3 class="font-semibold text-gray-800"><?php echo htmlspecialchars($kelas['namaKelas']); ?></h3>
-                                    <p class="text-sm text-gray-600 mb-3"><?php echo htmlspecialchars($kelas['mataPelajaran']); ?></p>
-                                    <div class="flex items-center justify-between text-xs md:text-sm text-gray-600 mb-3 md:mb-4">
+                                    <h3 class="font-semibold text-gray-800"><?php echo htmlspecialchars($kelas['namaKelas']); ?>
+                                    </h3>
+                                    <p class="text-sm text-gray-600 mb-3">
+                                        <?php echo htmlspecialchars($kelas['mataPelajaran']); ?></p>
+                                    <div
+                                        class="flex items-center justify-between text-xs md:text-sm text-gray-600 mb-3 md:mb-4">
                                         <span class="flex items-center">
                                             <i class="ti ti-users mr-1"></i>
                                             <?php echo $kelas['jumlahSiswa'] ?? 0; ?> siswa
@@ -205,21 +241,15 @@ $newClassId = isset($_GET['new_class']) ? intval($_GET['new_class']) : null;
                                         </span>
                                     </div>
                                     <div class="flex items-center justify-between gap-2">
-                                        <a href="kelas-guru.php?id=<?php echo $kelas['id']; ?>" class="flex-1 bg-orange-600 text-white py-2 px-4 rounded-lg hover:bg-orange-700 transition-colors text-sm md:font-medium text-center">
+                                        <a href="kelas-guru.php?id=<?php echo $kelas['id']; ?>"
+                                            class="flex-1 bg-orange-600 text-white py-2 px-4 rounded-lg hover:bg-orange-700 transition-colors text-sm md:font-medium text-center">
                                             <?php echo $isNewClass ? 'Masuk Kelas Baru' : 'Kelola'; ?>
                                         </a>
                                         <div class="relative">
-                                            <button onclick="toggleDropdown('dropdown-<?php echo $kelas['id']; ?>')" class="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors">
+                                            <button onclick="toggleClassDropdown('class-dd-<?php echo $kelas['id']; ?>', this)"
+                                                class="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors">
                                                 <i class="ti ti-dots-vertical text-lg"></i>
                                             </button>
-                                            <div id="dropdown-<?php echo $kelas['id']; ?>" class="hidden fixed w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
-                                                <div class="py-1">
-                                                    <a href="#" onclick="hapusKelas(<?php echo $kelas['id']; ?>)" class="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50">
-                                                        <i class="ti ti-trash mr-2"></i>
-                                                        Hapus
-                                                    </a>
-                                                </div>
-                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -234,7 +264,8 @@ $newClassId = isset($_GET['new_class']) ? intval($_GET['new_class']) : null;
                             <p class="text-gray-500 text-sm text-center mb-8 max-w-sm">
                                 Mulai membuat kelas pertama untuk mengelola siswa dan ujian
                             </p>
-                            <button command="show-modal" commandfor="add-class-modal" class="inline-flex items-center px-6 py-3 bg-orange text-white font-medium rounded-lg hover:bg-orange-600 transition-colors">
+                            <button command="show-modal" commandfor="add-class-modal"
+                                class="inline-flex items-center px-6 py-3 bg-orange text-white font-medium rounded-lg hover:bg-orange-600 transition-colors">
                                 <i class="ti ti-plus mr-2"></i>
                                 Buat Kelas Pertama
                             </button>
@@ -245,12 +276,234 @@ $newClassId = isset($_GET['new_class']) ? intval($_GET['new_class']) : null;
         </main>
     </div>
 
+    <!-- Floating Dropdown Container - Outside of all other elements -->
+    <?php if (!empty($dashboardData['kelasTerbaru'])): ?>
+    <div id="floating-dropdowns" class="fixed top-0 left-0 w-full h-full pointer-events-none z-[10000]">
+        <?php foreach ($dashboardData['kelasTerbaru'] as $kelas): ?>
+            <div id="class-dd-<?php echo $kelas['id']; ?>"
+                class="hidden absolute w-48 bg-white border border-gray-200 rounded-lg shadow-xl py-1 text-sm pointer-events-auto"
+                style="box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);">
+                <a href="#"
+                    onclick="showDeleteClassModal(<?php echo $kelas['id']; ?>, '<?php echo htmlspecialchars($kelas['namaKelas'], ENT_QUOTES); ?>')"
+                    class="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors">
+                    <i class="ti ti-trash mr-2"></i>
+                    Hapus
+                </a>
+            </div>
+        <?php endforeach; ?>
+    </div>
+    <?php endif; ?>
+
     <script src="../script/menu-bar-script.js"></script>
     <script src="../script/dropdown-beranda-guru.js"></script>
     <script src="../script/kelas-management.js"></script>
+    <script src="../script/delete-class-modal.js"></script>
     <script src="../script/profile-sync.js"></script>
+    
+    <!-- Floating Dropdown Script -->
+    <script>
+        function toggleClassDropdown(id, buttonElement) {
+            // Close all other dropdowns
+            document.querySelectorAll('[id^="class-dd-"]').forEach(el => {
+                if (el.id !== id) el.classList.add('hidden');
+            });
+            
+            const dropdown = document.getElementById(id);
+            if (!dropdown) return;
+            
+            if (dropdown.classList.contains('hidden')) {
+                // Show dropdown - calculate position
+                const buttonRect = buttonElement.getBoundingClientRect();
+                const dropdownWidth = 192; // w-48 = 12rem = 192px
+                const dropdownHeight = dropdown.offsetHeight || 60; // estimate
+                
+                let left = buttonRect.right - dropdownWidth;
+                let top = buttonRect.bottom + 8;
+                
+                // Adjust if dropdown goes off-screen
+                if (left < 8) left = 8;
+                if (left + dropdownWidth > window.innerWidth - 8) {
+                    left = window.innerWidth - dropdownWidth - 8;
+                }
+                if (top + dropdownHeight > window.innerHeight - 8) {
+                    top = buttonRect.top - dropdownHeight - 8;
+                }
+                
+                dropdown.style.left = left + 'px';
+                dropdown.style.top = top + 'px';
+                dropdown.classList.remove('hidden');
+            } else {
+                // Hide dropdown
+                dropdown.classList.add('hidden');
+            }
+        }
 
-    <style src></style>
+        // Close dropdown when clicking outside
+        document.addEventListener('click', e => {
+            if (!e.target.closest('[id^="class-dd-"]') && !e.target.closest('button[onclick*="toggleClassDropdown"]')) {
+                document.querySelectorAll('[id^="class-dd-"]').forEach(el => el.classList.add('hidden'));
+            }
+        });
+        
+        // Close dropdown on scroll or resize
+        window.addEventListener('scroll', () => {
+            document.querySelectorAll('[id^="class-dd-"]').forEach(el => el.classList.add('hidden'));
+        });
+        
+        window.addEventListener('resize', () => {
+            document.querySelectorAll('[id^="class-dd-"]').forEach(el => el.classList.add('hidden'));
+        });
+    </script>
+    
+    <!-- Search System -->
+    <style>
+        /* Ensure search system doesn't break header layout */
+        .search-container {
+            display: inline-flex !important;
+            vertical-align: middle !important;
+            align-items: center !important;
+        }
+        
+        .search-container:not(.searching) {
+            width: auto !important;
+            height: auto !important;
+        }
+        
+        /* Maintain header button alignment */
+        .flex.items-center.space-x-2,
+        .flex.items-center.space-x-4 {
+            align-items: center !important;
+        }
+        
+        .search-other-buttons {
+            display: flex !important;
+            align-items: center !important;
+        }
+    </style>
+    <script>
+        // Configure search system for this page
+        window.searchSystemConfig = {
+            searchButtonSelector: '.search-btn',
+            otherButtonsSelector: '.search-other-buttons',
+            resultsContainerSelector: '.search-results-container',
+            cardSelector: '.search-card',
+            apiEndpoint: '../logic/search-kelas-api.php',
+            searchFields: ['namaKelas', 'mataPelajaran', 'deskripsi'],
+            debounceDelay: 800,
+            minSearchLength: 1
+        };
+    </script>
+    <script src="../script/search-system.js"></script>
+
+    <!-- Dynamic Modal Component -->
+    <?php require '../component/modal-dynamic.php'; ?>
+
+    <!-- Notification Badge Script -->
+    <script>
+        // Load notification count on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadNotificationBadge();
+            
+            // Add click event for notification bell
+            const notificationTrigger = document.querySelector('[data-notification-trigger="true"]');
+            if (notificationTrigger) {
+                notificationTrigger.addEventListener('click', function() {
+                    openNotificationsModal();
+                });
+            }
+        });
+
+        // Function to load notification badge count
+        async function loadNotificationBadge() {
+            try {
+                const response = await fetch('../logic/get-notifications.php?unread_only=1', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.notifications) {
+                    const unreadCount = data.notifications.length;
+                    updateNotificationBadge(unreadCount);
+                } else {
+                    updateNotificationBadge(0);
+                }
+            } catch (error) {
+                console.error('Error loading notification count:', error);
+                updateNotificationBadge(0);
+            }
+        }
+
+        // Function to update notification badge
+        function updateNotificationBadge(count) {
+            const badge = document.getElementById('notification-badge');
+            const countEl = document.getElementById('notification-count');
+            
+            if (badge && countEl) {
+                countEl.textContent = count;
+                
+                if (count > 0) {
+                    badge.classList.remove('hidden');
+                    // Add small animation
+                    badge.style.transform = 'scale(0.8)';
+                    setTimeout(() => {
+                        badge.style.transform = 'scale(1)';
+                    }, 100);
+                } else {
+                    badge.classList.add('hidden');
+                }
+            }
+        }
+
+        // Function called from modal-notifications.php to refresh badge
+        function updateBerandaNotifications() {
+            loadNotificationBadge();
+        }
+    </script>
+
+    <style>
+        /* Floating dropdown container */
+        #floating-dropdowns {
+            z-index: 10000;
+            pointer-events: none;
+        }
+
+        /* Floating dropdown styling */
+        #floating-dropdowns [id^="class-dd-"] {
+            pointer-events: auto;
+            backdrop-filter: blur(8px);
+            background-color: rgba(255, 255, 255, 0.95);
+            border: 1px solid #e5e7eb;
+            transition: all 0.2s ease-out;
+        }
+
+        #floating-dropdowns [id^="class-dd-"]:not(.hidden) {
+            animation: dropdownFadeIn 0.2s ease-out;
+        }
+
+        @keyframes dropdownFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-8px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        /* Mobile responsive adjustments */
+        @media (max-width: 640px) {
+            /* Ensure dropdown works well on mobile */
+            [id^="class-dd-"] {
+                min-width: 180px;
+                right: 0;
+            }
+        }
+    </style>
 </body>
 
 </html>

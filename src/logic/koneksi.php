@@ -5,7 +5,7 @@ if(function_exists('date_default_timezone_set')) {
 }
 $servername = "localhost";
 $username ="root";
-$password = "kemambuan";
+$password = "";
 $dbname = "lms";
 
 // MySQLi connection (for existing code) - tanpa socket path

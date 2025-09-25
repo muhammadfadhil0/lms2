@@ -3,11 +3,12 @@ session_start();
 $currentPage = 'ujian';
 
 if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'siswa') {
-    header('Location: ../../index.php');
+    header('Location: ../../login.php');
     exit();
 }
 
 require_once '../logic/ujian-logic.php';
+require_once '../logic/time-helper.php';
 
 $ujianLogic = new UjianLogic();
 $siswa_id = $_SESSION['user']['id'];
@@ -133,7 +134,7 @@ function getJawabanStatus($soal, $is_answered) {
                                 </div>
                                 <div>
                                     <p class="text-gray-600">Waktu:</p>
-                                    <p class="font-medium text-gray-800"><?= htmlspecialchars(substr($ujian['waktuMulai'], 0, 5)) ?> - <?= htmlspecialchars(substr($ujian['waktuSelesai'], 0, 5)) ?></p>
+                                    <p class="font-medium text-gray-800"><?= htmlspecialchars(TimeHelper::formatTimeRange($ujian['waktuMulai'], $ujian['waktuSelesai'])) ?> <span class="text-xs text-gray-500">(24 jam)</span></p>
                                 </div>
                                 <div>
                                     <p class="text-gray-600">Total Soal:</p>

@@ -23,6 +23,6 @@ if (isset($_COOKIE['remember_token'])) {
 }
 
 // Redirect ke halaman index
-header("Location: ../../index.php");
+header("Location: ../../login.php");
 exit();
 ?>

@@ -2,25 +2,33 @@
 // Auto Save API Endpoint
 session_start();
 
-// Set proper headers untuk AJAX
-header('Content-Type: application/json; charset=utf-8');
-header('Cache-Control: no-cache, must-revalidate');
+// Start output buffering to capture accidental output (warnings, stray text)
+if (!ob_get_level()) ob_start();
+
+// Helper to send a clean JSON response (clears any prior output)
+function send_json_response($data, $httpCode = 200) {
+    // Clear any buffered output to avoid mixing non-JSON text
+    while (ob_get_level()) {
+        ob_end_clean();
+    }
+    header('Content-Type: application/json; charset=utf-8');
+    header('Cache-Control: no-cache, must-revalidate');
+    http_response_code($httpCode);
+    echo json_encode($data);
+    exit();
+}
 
 // Cek apakah user sudah login dan role siswa
 if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'siswa') {
-    http_response_code(403);
-    echo json_encode(['success' => false, 'message' => 'Unauthorized']);
-    exit();
+    send_json_response(['success' => false, 'message' => 'Unauthorized'], 403);
 }
 
 // Hanya terima POST request
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    http_response_code(405);
-    echo json_encode(['success' => false, 'message' => 'Method not allowed']);
-    exit();
+    send_json_response(['success' => false, 'message' => 'Method not allowed'], 405);
 }
 
-require_once '../logic/auto-save-logic.php';
+require_once __DIR__ . '/auto-save-logic.php';
 
 try {
     $autoSave = new AutoSaveLogic();
@@ -41,7 +49,7 @@ try {
             }
             
             $result = $autoSave->autoSaveJawaban($ujian_siswa_id, $soal_id, $jawaban, $siswa_id);
-            echo json_encode($result);
+            send_json_response($result);
             break;
             
         case 'get_status':
@@ -53,7 +61,7 @@ try {
             }
             
             $result = $autoSave->getStatusJawaban($ujian_siswa_id, $siswa_id);
-            echo json_encode($result);
+            send_json_response($result);
             break;
             
         case 'delete_answer':
@@ -66,7 +74,7 @@ try {
             }
             
             $result = $autoSave->hapusJawaban($ujian_siswa_id, $soal_id, $siswa_id);
-            echo json_encode($result);
+            send_json_response($result);
             break;
             
         case 'clear_all':
@@ -78,7 +86,7 @@ try {
             }
             
             $result = $autoSave->clearAllAnswers($ujian_siswa_id, $siswa_id);
-            echo json_encode($result);
+            send_json_response($result);
             break;
             
         default:
@@ -87,7 +95,6 @@ try {
     
 } catch (Exception $e) {
     error_log("Auto Save API Error: " . $e->getMessage());
-    http_response_code(400);
-    echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+    send_json_response(['success' => false, 'message' => $e->getMessage()], 400);
 }
 ?>

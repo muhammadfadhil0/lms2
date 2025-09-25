@@ -1,5 +1,4 @@
 <?php
-session_start();
 require 'modal-logout.php';
 require '../logic/active-page-sidebar.php';
 require '../logic/profile-photo-helper.php';
@@ -37,7 +36,7 @@ function getNavigationItems($role)
     switch ($role) {
         case 'admin':
             return [
-                ['href' => '../front/admin-dashboard.php', 'icon' => 'ti ti-dashboard', 'text' => 'Dashboard', 'page' => 'dashboard'],
+                ['href' => '../front/beranda-admin.php', 'icon' => 'ti ti-home', 'text' => 'Beranda', 'page' => 'beranda'],
                 ['href' => '../front/admin-users.php', 'icon' => 'ti ti-users', 'text' => 'Manajemen User', 'page' => 'users'],
                 ['href' => '../front/admin-kelas.php', 'icon' => 'ti ti-school', 'text' => 'Manajemen Kelas', 'page' => 'kelas'],
                 ['href' => '../front/admin-ujian.php', 'icon' => 'ti ti-clipboard-check', 'text' => 'Manajemen Ujian', 'page' => 'ujian'],
@@ -67,12 +66,12 @@ $navigationItems = getNavigationItems($userRole);
 <div id="sidebar" class="fixed left-0 top-0 h-full w-64 bg-white shadow-lg border-r border-gray-200 flex flex-col hidden md:flex transition-all duration-300 ease-in-out z-40">
     <!-- Logo/Header with Toggle -->
     <div class="p-4 flex items-center gap-2 border-b border-gray-200 min-h-[5.5rem] transition-all duration-200 ease-in-out">
-        <button onclick="toggleSidebar()" class="flex items-center justify-center p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0">
+        <button onclick="toggleSidebar()" class="hidden flex items-center justify-center p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0">
             <i id="toggleIcon" class="ti ti-menu-2 text-xl"></i>
         </button>
         <img src="../../assets/img/logo.png" alt="Logo" class="h-8 w-8 flex-shrink-0">
         <div id="logoTextContainer" class="transition-all duration-300 ease-in-out overflow-hidden whitespace-nowrap">
-            <h1 id="logoText" class="text-3xl font-bold text-gray-800">Point</h1>
+            <h1 id="logoText" class="text-3xl font-bold text-gray-800">Edupoint</h1>
         </div>
     </div>
 
@@ -91,7 +90,7 @@ $navigationItems = getNavigationItems($userRole);
     </nav>
 
     <!-- Profile Section -->
-    <div class="p-4 border-t border-gray-200">
+    <div class="p-4 border-t border-gray-200 profile-section">
         <div class="relative">
             <button onclick="toggleProfileDropdown()" class="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors group min-h-[64px]">
                 <!-- Profile Photo -->

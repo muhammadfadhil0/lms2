@@ -56,6 +56,7 @@ class PingoAI {
         $examName = $params['exam_name'] ?? 'Ujian';
         $subject = $params['subject'] ?? 'Umum';
         $description = $params['description'] ?? '';
+        $topik = $params['topik'] ?? ''; // ← Tambahkan parameter topik
         $questionCount = $params['question_count'] ?? 5;
         $questionType = $params['question_type'] ?? 'multiple_choice';
         $answerOptions = $params['answer_options'] ?? 4;
@@ -67,10 +68,19 @@ class PingoAI {
         $prompt .= "INFORMASI UJIAN:\n";
         $prompt .= "- Nama Ujian: {$examName}\n";
         $prompt .= "- Mata Pelajaran: {$subject}\n";
+        if (!empty($topik)) {
+            $prompt .= "- TOPIK/MATERI SPESIFIK: {$topik}\n";
+        }
         if (!empty($description)) {
-            $prompt .= "- Deskripsi/Materi: {$description}\n";
+            $prompt .= "- Deskripsi Tambahan: {$description}\n";
         }
         $prompt .= "\n";
+        
+        // ← Tambahkan instruksi khusus untuk topik
+        if (!empty($topik)) {
+            $prompt .= "PENTING: Semua soal HARUS fokus pada topik/materi: \"{$topik}\"\n";
+            $prompt .= "Jangan membuat soal di luar topik ini, meskipun masih dalam mata pelajaran yang sama.\n\n";
+        }
         
         if (!empty($existingQuestions)) {
             $prompt .= "SOAL YANG SUDAH ADA (jangan duplikasi):\n";
@@ -110,7 +120,16 @@ class PingoAI {
             
         } else if ($questionType === 'essay') {
             $prompt .= "- Tipe: Essay\n";
-            $prompt .= "- Setiap soal bernilai 20 poin\n\n";
+            $prompt .= "- Setiap soal bernilai 20 poin\n";
+            $prompt .= "- PENTING: Jawaban essay harus dalam format poin-poin yang ringkas dan mudah dipahami\n\n";
+            
+            $prompt .= "PANDUAN KHUSUS JAWABAN ESSAY:\n";
+            $prompt .= "- Jawaban harus dibuat dalam format poin-poin (a, b, c, d, dst)\n";
+            $prompt .= "- Setiap poin maksimal 1-2 kalimat yang ringkas dan jelas\n";
+            $prompt .= "- Hindari penjelasan yang terlalu panjang\n";
+            $prompt .= "- Fokus pada poin-poin utama yang mudah dipahami\n";
+            $prompt .= "- Maksimal 5-6 poin per jawaban essay\n";
+            $prompt .= "- Contoh format: 'a. Poin utama pertama\\nb. Poin kedua yang relevan\\nc. Poin ketiga sebagai kesimpulan'\n\n";
             
             $prompt .= "FORMAT OUTPUT (HARUS TEPAT):\n";
             $prompt .= "Berikan response dalam format JSON seperti ini:\n";
@@ -118,20 +137,59 @@ class PingoAI {
             $prompt .= '  "questions": [' . "\n";
             $prompt .= "    {\n";
             $prompt .= '      "question": "Pertanyaan essay di sini",' . "\n";
-            $prompt .= '      "sample_answer": "Contoh jawaban yang diharapkan",' . "\n";
-            $prompt .= '      "grading_criteria": "Kriteria penilaian"' . "\n";
+            $prompt .= '      "sample_answer": "a. Poin utama pertama yang singkat\\nb. Poin kedua yang relevan\\nc. Poin ketiga sebagai kesimpulan",' . "\n";
+            $prompt .= '      "grading_criteria": "Kriteria penilaian berdasarkan kelengkapan poin-poin jawaban"' . "\n";
             $prompt .= "    }\n";
             $prompt .= "  ]\n";
             $prompt .= "}\n\n";
         }
         
         $prompt .= "PANDUAN PEMBUATAN SOAL:\n";
-        $prompt .= "1. Pastikan soal sesuai dengan mata pelajaran dan tingkat kesulitan\n";
-        $prompt .= "2. Gunakan bahasa Indonesia yang baik dan benar\n";
-        $prompt .= "3. Soal harus jelas, tidak ambigu, dan dapat dijawab\n";
-        $prompt .= "4. Untuk pilihan ganda: semua pilihan harus masuk akal, hanya 1 yang benar\n";
-        $prompt .= "5. Hindari pertanyaan yang terlalu mudah ditebak\n";
-        $prompt .= "6. Variasikan tingkat kognitif (ingat, paham, aplikasi, analisis)\n\n";
+        if (!empty($topik)) {
+            $prompt .= "1. PRIORITAS UTAMA: Pastikan SEMUA soal berfokus pada topik \"{$topik}\"\n";
+            $prompt .= "2. Jangan keluar dari topik meskipun masih dalam mata pelajaran {$subject}\n";
+            $prompt .= "3. Gunakan konsep, istilah, dan contoh yang spesifik dari topik tersebut\n";
+            $prompt .= "4. Pastikan soal sesuai dengan tingkat kesulitan {$difficulty}\n";
+            $prompt .= "5. Gunakan bahasa Indonesia yang baik dan benar\n";
+            $prompt .= "6. Soal harus jelas, tidak ambigu, dan dapat dijawab\n";
+            $prompt .= "7. Untuk pilihan ganda: semua pilihan harus masuk akal, hanya 1 yang benar\n";
+            if ($questionType === 'essay') {
+                $prompt .= "8. KHUSUS ESSAY: Jawaban sample_answer WAJIB format poin (a. b. c. dst), maksimal 5-6 poin singkat\n";
+            }
+            $prompt .= "9. Hindari pertanyaan yang terlalu mudah ditebak\n";
+            $prompt .= "10. Variasikan tingkat kognitif (ingat, paham, aplikasi, analisis)\n";
+            $prompt .= "11. PENTING: JANGAN PERNAH gunakan format tabel dalam soal atau penjelasan\n\n";
+        } else {
+            $prompt .= "1. Pastikan soal sesuai dengan mata pelajaran dan tingkat kesulitan\n";
+            $prompt .= "2. Gunakan bahasa Indonesia yang baik dan benar\n";
+            $prompt .= "3. Soal harus jelas, tidak ambigu, dan dapat dijawab\n";
+            $prompt .= "4. Untuk pilihan ganda: semua pilihan harus masuk akal, hanya 1 yang benar\n";
+            if ($questionType === 'essay') {
+                $prompt .= "5. KHUSUS ESSAY: Jawaban sample_answer WAJIB format poin (a. b. c. dst), maksimal 5-6 poin singkat\n";
+            }
+            $prompt .= "6. Hindari pertanyaan yang terlalu mudah ditebak\n";
+            $prompt .= "7. Variasikan tingkat kognitif (ingat, paham, aplikasi, analisis)\n";
+            $prompt .= "8. PENTING: JANGAN PERNAH gunakan format tabel dalam soal atau penjelasan\n\n";
+        }
+        
+        // ← Tambahkan penekanan topik di akhir prompt
+        if (!empty($topik)) {
+            $prompt .= "REMINDER: Semua soal harus 100% berfokus pada topik \"{$topik}\". ";
+            $prompt .= "Jangan membuat soal tentang topik lain dalam mata pelajaran {$subject}.\n\n";
+        }
+        
+        // Tambahkan penekanan khusus untuk essay
+        if ($questionType === 'essay') {
+            $prompt .= "WAJIB UNTUK ESSAY: sample_answer harus dalam format poin-poin seperti:\n";
+            $prompt .= "\"a. Poin pertama yang singkat\\nb. Poin kedua yang relevan\\nc. Poin ketiga sebagai penutup\"\n";
+            $prompt .= "JANGAN gunakan format paragraf panjang! Hanya poin-poin singkat dengan huruf a, b, c, dst.\n\n";
+        }
+        
+        $prompt .= "LARANGAN MUTLAK - JANGAN DILANGGAR:\n";
+        $prompt .= "- JANGAN PERNAH menggunakan format tabel (|---|---|) dalam soal, pilihan, atau penjelasan\n";
+        $prompt .= "- JANGAN menggunakan HTML table (<table>, <tr>, <td>)\n";
+        $prompt .= "- JANGAN menggunakan ASCII table atau format tabel apapun\n";
+        $prompt .= "- Gunakan format list, poin, atau paragraf sebagai gantinya\n\n";
         
         $prompt .= "PENTING: Response harus berupa JSON valid tanpa teks tambahan di luar JSON.";
         

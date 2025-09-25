@@ -1,0 +1,20 @@
+{
+    "name": "lms/document-parser",
+    "description": "LMS Document Parser with PDF support",
+    "type": "project",
+    "require": {
+        "php": ">=7.4",
+        "smalot/pdfparser": "^2.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "LMS\\": "src/"
+        }
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "platform": {
+            "php": "7.4"
+        }
+    }
+}

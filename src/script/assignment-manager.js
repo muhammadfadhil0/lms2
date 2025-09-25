@@ -31,16 +31,55 @@ class AssignmentManager {
     async handleCreateAssignment(event) {
         event.preventDefault();
         
+        console.log('✏️ [DEBUG] handleCreateAssignment started');
+        console.log('✏️ [DEBUG] window.assignmentFilesArray exists:', !!window.assignmentFilesArray);
+        console.log('✏️ [DEBUG] window.assignmentFilesArray content:', window.assignmentFilesArray);
+        
+        // Create new FormData from form
         const formData = new FormData(event.target);
         formData.append('kelas_id', this.kelasId);
         
+        // Add multiple files from file manager
+        if (window.assignmentFilesArray && window.assignmentFilesArray.length > 0) {
+            console.log('✏️ [DEBUG] Adding files from assignmentFilesArray to FormData');
+            // Remove any existing assignment_file entries
+            formData.delete('assignment_file');
+            formData.delete('assignment_files[]');
+            
+            // Add all selected files
+            console.log('Adding files to FormData:', window.assignmentFilesArray);
+            window.assignmentFilesArray.forEach((file, index) => {
+                console.log(`Adding file ${index}:`, file.name, file.size, file.type);
+                formData.append('assignment_files[]', file);
+            });
+            
+            // Debug: Check FormData content
+            console.log('FormData entries:');
+            for (let pair of formData.entries()) {
+                console.log(pair[0], pair[1]);
+            }
+        } else {
+            console.log('✏️ [DEBUG] No files in assignmentFilesArray or array is empty');
+            console.log('✏️ [DEBUG] assignmentFilesArray length:', window.assignmentFilesArray ? window.assignmentFilesArray.length : 'undefined');
+        }
+        
         // Debug logging
+        console.log('✏️ [DEBUG] Final FormData contents:');
+        for (let pair of formData.entries()) {
+            if (pair[1] instanceof File) {
+                console.log(`✏️ [DEBUG] FormData file: ${pair[0]} = ${pair[1].name} (${pair[1].size} bytes)`);
+            } else {
+                console.log(`✏️ [DEBUG] FormData field: ${pair[0]} = ${pair[1]}`);
+            }
+        }
+        
         console.log('Creating assignment with data:', {
             kelas_id: this.kelasId,
             assignmentTitle: formData.get('assignmentTitle'),
             assignmentDescription: formData.get('assignmentDescription'),
             assignmentDeadline: formData.get('assignmentDeadline'),
-            maxScore: formData.get('maxScore')
+            maxScore: formData.get('maxScore'),
+            fileCount: window.assignmentFilesArray ? window.assignmentFilesArray.length : 0
         });
         
         try {
@@ -116,6 +155,11 @@ class AssignmentManager {
         if (modal) {
             modal.close();
             document.getElementById('create-assignment-form').reset();
+            
+            // Reset file manager
+            if (typeof resetAssignmentFileManager === 'function') {
+                resetAssignmentFileManager();
+            }
         }
     }
 

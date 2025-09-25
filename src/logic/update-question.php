@@ -43,8 +43,8 @@ try {
         $ins = $conn->prepare('INSERT INTO pilihan_jawaban (soal_id, opsi, teksJawaban, benar) VALUES (?,?,?,?)');
         foreach($pilihan as $opsi=>$teks){ $benar = ($opsi===$kunciPilihan)?1:0; $ins->bind_param('issi',$soal_id,$opsi,$teks,$benar); $ins->execute(); }
     } elseif(in_array($tipe,['short_answer','long_answer'])){
-        $tipeDb = $tipe==='short_answer'?'jawaban_singkat':'jawaban_panjang';
-        $stmt = $conn->prepare('UPDATE soal SET pertanyaan=?, tipeSoal=?, kunciJawaban=?, poin=?, autoGrading=0 WHERE id=?');
+        $tipeDb = $tipe==='short_answer'?'isian_singkat':'essay';
+        $stmt = $conn->prepare('UPDATE soal SET pertanyaan=?, tipeSoal=?, kunciJawaban=?, poin=? WHERE id=?');
         $stmt->bind_param('sssii',$pertanyaan,$tipeDb,$kunci,$poin,$soal_id); $stmt->execute();
         // Hapus pilihan jika sebelumnya PG
         $del = $conn->prepare('DELETE FROM pilihan_jawaban WHERE soal_id=?');

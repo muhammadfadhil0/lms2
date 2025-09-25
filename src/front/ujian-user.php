@@ -10,19 +10,20 @@ header("Pragma: no-cache");
 $currentPage = 'ujian';
 
 if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'siswa') {
-    header('Location: ../../index.php');
+    header('Location: ../../login.php');
     exit();
 }
 
 require_once '../logic/ujian-logic.php';
 require_once '../logic/soal-logic.php';
+require_once '../logic/time-helper.php';
 $ujianLogic = new UjianLogic();
 $soalLogic = new SoalLogic();
 $siswa_id = $_SESSION['user']['id'];
 
 // Mulai ujian handler (POST sederhana)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['aksi']) && $_POST['aksi'] === 'mulai' && isset($_POST['ujian_id'])) {
-    $mulai = $ujianLogic->mulaiUjian((int)$_POST['ujian_id'], $siswa_id);
+    $mulai = $ujianLogic->mulaiUjian((int) $_POST['ujian_id'], $siswa_id);
     if ($mulai['success']) {
         header('Location: kerjakan-ujian.php?us_id=' . $mulai['ujian_siswa_id']);
         exit();
@@ -50,6 +51,33 @@ if (isset($_GET['finished']) && $_GET['finished'] === '1') {
 }
 
 $ujianList = $ujianLogic->getUjianBySiswa($siswa_id, $forceRefresh);
+
+// Debug helper: show session and query results when ?debug=1
+if (isset($_GET['debug']) && $_GET['debug'] === '1') {
+    error_log('DEBUG ujian-user SESSION: ' . json_encode($_SESSION['user'] ?? []));
+    error_log('DEBUG ujianList (siswa): ' . json_encode($ujianList));
+    echo '<div style="padding:12px;background:#fff;border:1px solid #eee;margin:12px;">';
+    echo '<h4>DEBUG: Session User</h4>';
+    echo '<pre>' . htmlspecialchars(print_r($_SESSION['user'] ?? [], true)) . '</pre>';
+    echo '<h4>DEBUG: ujianList</h4>';
+    echo '<pre>' . htmlspecialchars(print_r($ujianList, true)) . '</pre>';
+
+    // Additionally show kelas_siswa rows for classes referenced in ujianList
+    $kelasIds = array_unique(array_filter(array_map(function($u){ return $u['kelas_id'] ?? null; }, $ujianList)));
+    if (!empty($kelasIds)) {
+        $ids = implode(',', array_map('intval', $kelasIds));
+        $conn = getConnection();
+        $res = $conn->query("SELECT * FROM kelas_siswa WHERE kelas_id IN ($ids) LIMIT 100");
+        $rows = [];
+        if ($res) {
+            while($r = $res->fetch_assoc()) $rows[] = $r;
+        }
+        echo '<h4>DEBUG: kelas_siswa rows for related kelas</h4>';
+        echo '<pre>' . htmlspecialchars(print_r($rows, true)) . '</pre>';
+        error_log('DEBUG kelas_siswa rows: ' . json_encode($rows));
+    }
+    echo '</div>';
+}
 
 // Debug: Tampilkan status untuk debugging (hapus ini setelah fix)
 if (isset($_GET['debug'])) {
@@ -116,6 +144,8 @@ function statusText($status)
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <?php require '../../assets/head.php'; ?>
     <title>Ujian</title>
+    <!-- Search system styles -->
+    <link rel="stylesheet" href="../css/search-system.css">
 </head>
 
 <body class="bg-gray-50">
@@ -157,13 +187,15 @@ function statusText($status)
             <div class="flex items-center justify-between">
                 <div>
                     <h1 class="text-xl md:text-2xl font-bold text-gray-800">Ujian</h1>
-                    <p class="text-gray-600 text-sm hidden sm:block">Daftar ujian di kelas yang kamu ikuti</p>
+                    <p class="text-gray-600 hidden md:block">Daftar ujian di kelas yang kamu ikuti</p>
                 </div>
-                <div class="flex items-center space-x-2 md:space-x-4">
-                    <button class="p-2 text-gray-400 hover:text-gray-600 transition-colors">
-                        <i class="ti ti-bell text-lg md:text-xl"></i>
-                    </button>
-                    <button class="p-2 text-gray-400 hover:text-gray-600 transition-colors">
+                <div class="flex items-center space-x-2 md:space-x-4" style="align-items: center;">
+                    <div class="search-other-buttons flex items-center space-x-2 md:space-x-4">
+                        <button class="p-2 text-gray-400 hover:text-gray-600 transition-colors">
+                            <i class="ti ti-bell text-lg md:text-xl"></i>
+                        </button>
+                    </div>
+                    <button class="search-btn p-2 text-gray-400 hover:text-gray-600 transition-colors">
                         <i class="ti ti-search text-lg md:text-xl"></i>
                     </button>
                 </div>
@@ -174,9 +206,10 @@ function statusText($status)
         <main class="p-4 md:p-6">
 
             <!-- Ujian Siswa -->
-            <div class="mb-6">
+            <div class="mb-6 relative min-h-[40vh] md:min-h-[50vh]">
                 <?php if (isset($errorMulai)): ?>
-                    <div class="mb-4 p-3 border border-red-200 bg-red-50 text-sm text-red-600 rounded"><?= htmlspecialchars($errorMulai) ?></div>
+                    <div class="mb-4 p-3 border border-red-200 bg-red-50 text-sm text-red-600 rounded">
+                        <?= htmlspecialchars($errorMulai) ?></div>
                 <?php endif; ?>
                 <?php if ($showSuccessMessage): ?>
                     <div class="mb-4 p-3 border border-green-200 bg-green-50 text-sm text-green-600 rounded">
@@ -184,30 +217,60 @@ function statusText($status)
                     </div>
                 <?php endif; ?>
                 <?php if (empty($ujianList)): ?>
-                    <div class="p-6 bg-white border rounded-lg text-center text-gray-500">Belum ada ujian aktif untuk kelas yang kamu ikuti.</div>
+                    <div class="absolute inset-0 flex items-center justify-center text-center opacity-75">
+                        <div>
+                            <i class="ti ti-pencil-question text-6xl text-gray-400 mb-4"></i>
+                            <h3 class="text-xl font-medium text-gray-700 mb-2">Belum ada Ujian</h3>
+                            <p class="text-gray-500">Ujian yang Anda ikuti akan muncul di sini</p>
+                        </div>
+                    </div>
+
                 <?php else: ?>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+                    <div id="ujianGrid" class="search-results-container grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                         <?php foreach ($ujianList as $u):
                             $nama = htmlspecialchars($u['namaUjian']);
                             $kelas = htmlspecialchars($u['namaKelas']);
                             $tanggal = htmlspecialchars(date('d M Y', strtotime($u['tanggalUjian'])));
-                            $jam = htmlspecialchars(substr($u['waktuMulai'], 0, 5));
-                            $durasi = (int)$u['durasi'];
+                            
+                            // Gunakan waktu dari tabel ujian (jadwal ujian), bukan dari ujian_siswa - Format 24 jam
+                            $jam = htmlspecialchars(TimeHelper::formatTimeRange($u['waktuMulai'], $u['waktuSelesai']));
+                            
+                            $durasi = (int) $u['durasi'];
                             $statusP = $u['status_ujian'];
                             $badge = statusBadge($statusP);
-                            $totalNilai = $u['totalNilai'] ?? null;
+                            
+                            // Format nilai: (nilai siswa)/(total nilai soal) jika ada
+                            $nilaiSiswa = $u['totalNilai'] ?? null;
+                            $totalSoal = $u['totalBobot'] ?? $u['jumlahSoal'] ?? null;
+                            $displayNilai = null;
+                            if ($nilaiSiswa !== null) {
+                                if ($totalSoal !== null) {
+                                    $displayNilai = $nilaiSiswa . '/' . $totalSoal;
+                                } else {
+                                    $displayNilai = $nilaiSiswa;
+                                }
+                            }
+                            
                             $cover = !empty($u['gambar_kelas']) ? '../../' . htmlspecialchars($u['gambar_kelas']) : '';
-                        ?>
-                            <div id="ujian-<?= $u['id'] ?>" class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all group relative" data-ujian-id="<?= $u['id'] ?>">
+                            ?>
+                            <div id="ujian-<?= $u['id'] ?>"
+                                class="search-card bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all group relative"
+                                data-class-id="<?= $u['id'] ?>"
+                                data-nama-ujian="<?= htmlspecialchars($u['namaUjian']) ?>"
+                                data-nama-kelas="<?= htmlspecialchars($u['namaKelas']) ?>"
+                                data-mata-pelajaran="<?= htmlspecialchars($u['mataPelajaran'] ?? '') ?>"
+                                data-deskripsi="<?= htmlspecialchars($u['deskripsi'] ?? '') ?>"
+                                data-topik="<?= htmlspecialchars($u['topik'] ?? '') ?>">
                                 <div class="h-32 sm:h-40 md:h-48 bg-gradient-to-br from-indigo-400 to-indigo-600 relative">
                                     <?php if ($cover): ?>
                                         <img src="<?= $cover ?>" alt="<?= $nama ?>" class="w-full h-full object-cover">
                                     <?php else: ?>
-                                        <div class="w-full h-full bg-gradient-to-br from-indigo-400 to-indigo-600 flex items-center justify-center">
+                                        <div class="w-full h-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center">
                                             <i class="ti ti-clipboard-check text-white text-4xl"></i>
                                         </div>
                                     <?php endif; ?>
-                                    <span class="absolute top-2 md:top-3 right-2 md:right-3 text-[10px] px-2 py-1 rounded-full <?= $badge ?> font-medium uppercase tracking-wide bg-white/80 shadow-sm">
+                                    <span
+                                        class="absolute top-2 md:top-3 right-2 md:right-3 text-[10px] px-2 py-1 rounded-full <?= $badge ?> font-medium uppercase tracking-wide bg-white/80 shadow-sm">
                                         <?= htmlspecialchars(statusText($statusP)) ?>
                                     </span>
                                 </div>
@@ -218,53 +281,68 @@ function statusText($status)
                                 ?>
                                 <div class="relative -mt-8 z-20 ml-4 md:ml-6">
                                     <?php if ($ownerPhoto): ?>
-                                        <img src="<?= htmlspecialchars($ownerPhoto) ?>" alt="Foto Guru" class="w-16 h-16 md:w-20 md:h-20 rounded-full border-4 border-white object-cover shadow-md" onerror="this.parentElement.innerHTML='<div class=\'w-16 h-16 md:w-20 md:h-20 rounded-full border-4 border-white bg-orange-600 flex items-center justify-center\'><i class=\'ti ti-user text-white text-xl\'></i></div>'">
+                                        <img src="<?= htmlspecialchars($ownerPhoto) ?>" alt="Foto Guru"
+                                            class="w-16 h-16 md:w-20 md:h-20 rounded-full border-4 border-white object-cover shadow-md"
+                                            onerror="this.parentElement.innerHTML='<div class=\'w-16 h-16 md:w-20 md:h-20 rounded-full border-4 border-white bg-orange-600 flex items-center justify-center\'><i class=\'ti ti-user text-white text-xl\'></i></div>'">
                                     <?php else: ?>
-                                        <div class="w-16 h-16 md:w-20 md:h-20 rounded-full border-4 border-white bg-orange-600 flex items-center justify-center shadow-md">
+                                        <div
+                                            class="w-16 h-16 md:w-20 md:h-20 rounded-full border-4 border-white bg-orange-600 flex items-center justify-center shadow-md">
                                             <i class="ti ti-user text-white text-xl"></i>
                                         </div>
                                     <?php endif; ?>
                                 </div>
                                 <div class="p-4 md:p-5 space-y-3">
-                                    <h3 class="font-semibold leading-snug drop-shadow line-clamp-2 pb-0 mb-0 group-hover:line-clamp-none transition-all"><?= $nama ?></h3>
+                                    <h3
+                                        class="font-semibold leading-snug drop-shadow line-clamp-2 pb-0 mb-0 group-hover:line-clamp-none transition-all">
+                                        <?= $nama ?></h3>
                                     <p class="text-sm text-gray-600"><?= $kelas ?></p>
 
-                                    <div class="grid grid-cols-2 gap-2 text-[11px] text-gray-600">
+                                    <div class="grid grid-cols-2 gap-2 text-[12px] text-gray-600">
                                         <div class="flex items-center"><i class="ti ti-calendar mr-1"></i><?= $tanggal ?></div>
                                         <div class="flex items-center justify-end"><i class="ti ti-clock mr-1"></i><?= $jam ?></div>
                                         <div class="flex items-center"><i class="ti ti-hourglass mr-1"></i><?= $durasi ?> mnt</div>
-                                        <?php if ($totalNilai !== null): ?>
-                                            <div class="flex items-center justify-end"><i class="ti ti-scoreboard mr-1"></i><?= (int)$totalNilai ?></div>
-                                        <?php endif; ?>
+                                        <div class="flex items-center justify-end"><i class="ti ti-trophy mr-1"></i><?= $displayNilai !== null ? htmlspecialchars($displayNilai) : 'Tidak ada data' ?></div>
                                     </div>
                                     <div class="pt-1">
                                         <?php if ($statusP === 'belum_dikerjakan' || $statusP === 'dapat_dikerjakan'): ?>
                                             <form method="post" class="flex">
-                                                <input type="hidden" name="ujian_id" value="<?= (int)$u['id'] ?>">
+                                                <input type="hidden" name="ujian_id" value="<?= (int) $u['id'] ?>">
                                                 <input type="hidden" name="aksi" value="mulai">
-                                                <button class="flex-1 bg-green-600 text-white rounded-lg px-3 py-2 text-xs hover:bg-green-700 transition">
+                                                <button
+                                                    class="flex-1 bg-green-600 text-white rounded-lg px-3 py-2 text-xs hover:bg-green-700 transition">
                                                     <?= $statusP === 'dapat_dikerjakan' ? 'Mulai Ujian' : 'Mulai' ?>
                                                 </button>
                                             </form>
                                         <?php elseif ($statusP === 'sedang_mengerjakan'): ?>
-                                            <a href="kerjakan-ujian.php?us_id=<?= (int)$u['ujian_siswa_id'] ?>" class="block bg-yellow-500 text-white rounded-lg px-3 py-2 text-xs text-center hover:bg-yellow-600 transition">Lanjutkan</a>
+                                            <div class="flex">
+                                                <a href="kerjakan-ujian.php?us_id=<?= (int) $u['ujian_siswa_id'] ?>"
+                                                    class="flex-1 bg-yellow-500 text-white rounded-lg px-3 py-3 text-xs text-center hover:bg-yellow-600 transition">Lanjutkan</a>
+                                            </div>
                                         <?php elseif ($statusP === 'selesai'): ?>
                                             <div class="flex gap-2">
-                                                <button onclick="showModalUjianSelesai()" class="flex-1 bg-gray-400 text-white rounded-lg px-3 py-2 text-xs cursor-not-allowed">
+                                                <button onclick="showModalUjianSelesai()"
+                                                    class="flex-1 bg-gray-400 text-white rounded-lg px-3 py-3 text-xs cursor-not-allowed">
                                                     Ujian Selesai
                                                 </button>
-                                                <a href="review-ujian.php?ujian_id=<?= (int)$u['id'] ?>" class="flex-1 bg-orange text-white rounded-lg px-3 py-2 text-xs text-center hover:bg-orange-600 transition">
+                                                <a href="review-ujian.php?ujian_id=<?= (int) $u['id'] ?>"
+                                                    class="flex-1 bg-orange text-white rounded-lg px-3 py-3 text-xs text-center hover:bg-orange-600 transition">
                                                     Lihat Nilai
                                                 </a>
                                             </div>
                                         <?php elseif ($statusP === 'belum_dimulai'): ?>
-                                            <button disabled class="flex-1 bg-gray-400 text-white rounded-lg px-3 py-2 text-xs cursor-not-allowed">
-                                                Belum Dimulai
-                                            </button>
+                                            <div class="flex">
+                                                <button disabled
+                                                    class="flex-1 bg-gray-400 text-white rounded-lg px-3 py-2 text-xs cursor-not-allowed">
+                                                    Belum Dimulai
+                                                </button>
+                                            </div>
                                         <?php elseif ($statusP === 'terlambat' || $statusP === 'waktu_habis'): ?>
-                                            <button disabled class="flex-1 bg-red-400 text-white rounded-lg px-3 py-2 text-xs cursor-not-allowed">
-                                                Waktu Habis
-                                            </button>
+                                            <div class="flex">
+                                                <button disabled
+                                                    class="flex-1 bg-red-400 text-white rounded-lg px-3 py-2 text-xs cursor-not-allowed">
+                                                    Waktu Habis
+                                                </button>
+                                            </div>
                                         <?php endif; ?>
                                     </div>
                                 </div>
@@ -281,6 +359,46 @@ function statusText($status)
 
     <script src="../script/menu-bar-script.js"></script>
     <script src="../script/notification-highlight.js?v=<?php echo time(); ?>"></script>
+    
+    <!-- Search System -->
+    <style>
+        /* Ensure search system doesn't break header layout */
+        .search-container {
+            display: inline-flex !important;
+            vertical-align: middle !important;
+            align-items: center !important;
+        }
+        
+        .search-container:not(.searching) {
+            width: auto !important;
+            height: auto !important;
+        }
+        
+        /* Maintain header button alignment */
+        .flex.items-center.space-x-2,
+        .flex.items-center.space-x-4 {
+            align-items: center !important;
+        }
+        
+        .search-other-buttons {
+            display: flex !important;
+            align-items: center !important;
+        }
+    </style>
+    <script>
+        // Configure search system for this page
+        window.searchSystemConfig = {
+            searchButtonSelector: '.search-btn',
+            otherButtonsSelector: '.search-other-buttons',
+            resultsContainerSelector: '.search-results-container',
+            cardSelector: '.search-card',
+            apiEndpoint: '../logic/search-ujian-siswa-api.php',
+            searchFields: ['namaUjian', 'deskripsi', 'mataPelajaran', 'namaKelas', 'topik'],
+            debounceDelay: 800,
+            minSearchLength: 1
+        };
+    </script>
+    <script src="../script/search-system.js"></script>
 
     <script>
         // Toast notification system
@@ -293,7 +411,7 @@ function statusText($status)
             };
             const container = document.getElementById('toast-container');
             if (!container) return alert(message);
-            
+
             const el = document.createElement('div');
             el.className = `toast flex items-start text-sm text-white px-4 py-3 rounded-lg shadow-lg backdrop-blur-md bg-opacity-90 ${colors[type] || colors.info} animate-fade-in`;
             el.innerHTML = `
@@ -305,9 +423,9 @@ function statusText($status)
                     <i class="ti ti-x"></i>
                 </button>
             `;
-            
+
             container.appendChild(el);
-            
+
             setTimeout(() => {
                 el.classList.add('opacity-0', 'translate-x-2');
                 setTimeout(() => el.remove(), 300);
@@ -315,9 +433,9 @@ function statusText($status)
         }
 
         // Show specific notifications based on URL parameters
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const urlParams = new URLSearchParams(window.location.search);
-            
+
             // Remove error parameter from URL to clean it up
             if (urlParams.has('error')) {
                 const url = new URL(window.location);
@@ -330,7 +448,7 @@ function statusText($status)
     <?php if ($showModalError): ?>
         <script>
             // Tampilkan modal error ketika halaman dimuat
-            document.addEventListener('DOMContentLoaded', function() {
+            document.addEventListener('DOMContentLoaded', function () {
                 showModalUjianSelesai();
             });
         </script>
@@ -339,7 +457,7 @@ function statusText($status)
     <?php if ($showReviewNotAllowed): ?>
         <script>
             // Show toast for review not allowed
-            document.addEventListener('DOMContentLoaded', function() {
+            document.addEventListener('DOMContentLoaded', function () {
                 showToast('Guru tidak mengizinkan siswa melihat hasil ujian ini.', 'warning');
             });
         </script>
@@ -351,6 +469,7 @@ function statusText($status)
                 opacity: 0;
                 transform: translateX(8px);
             }
+
             to {
                 opacity: 1;
                 transform: translateX(0);
@@ -365,6 +484,9 @@ function statusText($status)
             transition: all .3s ease;
         }
     </style>
+    
+    <!-- Dynamic Modal Component -->
+    <?php require '../component/modal-dynamic.php'; ?>
 
 </body>
 

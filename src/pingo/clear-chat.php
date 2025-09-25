@@ -5,7 +5,7 @@ header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST');
 header('Access-Control-Allow-Headers: Content-Type');
 
-require_once 'chat-handler.php';
+require_once 'pingo-api-helper.php';
 
 // Check if user is logged in
 if (!isset($_SESSION['user'])) {
@@ -21,10 +21,10 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 try {
-    $chatHandler = new ChatHandler();
+    $apiHelper = new PingoApiHelper();
     $userId = $_SESSION['user']['id'];
     
-    $response = $chatHandler->clearChatHistory($userId);
+    $response = $apiHelper->clearChatHistory($userId);
     echo json_encode($response);
     
 } catch (Exception $e) {

@@ -1,7 +1,7 @@
 <?php
 session_start();
 if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'guru') {
-    header('Location: ../../index.php');
+    header('Location: ../../login.php');
     exit();
 }
 $ujian_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;

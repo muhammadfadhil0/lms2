@@ -58,7 +58,7 @@ if ($tipe === 'multiple_choice') {
     echo json_encode($result);
     exit();
 } else if (in_array($tipe, ['short_answer','long_answer'])) {
-    $result = $soalLogic->buatSoalJawaban($ujian_id, $nomor, $pertanyaan, $tipe === 'short_answer' ? 'jawaban_singkat' : 'jawaban_panjang', $kunci, $poin);
+    $result = $soalLogic->buatSoalJawaban($ujian_id, $nomor, $pertanyaan, $tipe === 'short_answer' ? 'isian_singkat' : 'essay', $kunci, $poin);
     echo json_encode($result);
     exit();
 } else {

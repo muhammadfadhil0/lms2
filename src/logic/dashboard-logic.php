@@ -233,11 +233,32 @@ class DashboardLogic {
     }
     
     // Dashboard Admin
-    public function getDashboardAdmin() {
+    public function getDashboardAdmin($admin_id = null) {
         try {
             $stats = [];
             
-            // Total users
+            // Total Appointments (menggunakan total ujian sebagai contoh)
+            $sql = "SELECT COUNT(*) as total FROM ujian";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute();
+            $stats['totalAppointments'] = $stmt->get_result()->fetch_assoc()['total'];
+            
+            // New Patients (user baru dalam 30 hari terakhir)
+            $sql = "SELECT COUNT(*) as total FROM users WHERE DATE(dibuat) >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute();
+            $stats['newPatients'] = $stmt->get_result()->fetch_assoc()['total'];
+            
+            // Operations (total kelas aktif)
+            $sql = "SELECT COUNT(*) as total FROM kelas WHERE status = 'aktif'";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute();
+            $stats['operations'] = $stmt->get_result()->fetch_assoc()['total'];
+            
+            // Earning (dummy data - bisa disesuaikan dengan kebutuhan)
+            $stats['earning'] = '10,525';
+            
+            // Total users untuk statistik tambahan
             $sql = "SELECT 
                         COUNT(*) as totalUser,
                         COUNT(CASE WHEN role = 'guru' THEN 1 END) as totalGuru,
@@ -279,9 +300,44 @@ class DashboardLogic {
             $stmt->execute();
             $stats['aktivitasTerbaru'] = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
             
+            // Data untuk registration chart (default by month)
+            $stats['registrationChart'] = $this->getRegistrationChartData('month', 12);
+            
+            // Data untuk stats cards baru
+            $stats['penggunaGratis'] = $this->getPenggunaGratis();
+            $stats['penggunaPremium'] = $this->getPenggunaPremium();
+            $stats['totalKelasAktif'] = $this->getTotalKelasAktif();
+            $stats['totalUjianAktif'] = $this->getTotalUjianAktif();
+            
+            // Update totalGuru dan totalSiswa untuk konsistensi
+            $stats['totalGuru'] = $this->getTotalGuru();
+            $stats['totalSiswa'] = $this->getTotalSiswa();
+            
+            // Data untuk heatmap calendar
+            $stats['registrationHeatmap'] = $this->getRegistrationHeatmap(3);
+            
             return $stats;
         } catch (Exception $e) {
-            return [];
+            error_log("Dashboard getDashboardAdmin error: " . $e->getMessage());
+            return [
+                'totalAppointments' => 0,
+                'newPatients' => 0,
+                'operations' => 0,
+                'earning' => '0',
+                'totalUser' => 0,
+                'totalGuru' => 0,
+                'totalSiswa' => 0,
+                'userAktif' => 0,
+                'totalKelas' => 0,
+                'totalUjian' => 0,
+                'aktivitasTerbaru' => [],
+                'registrationChart' => [],
+                'penggunaGratis' => 0,
+                'penggunaPremium' => 0,
+                'totalKelasAktif' => 0,
+                'totalUjianAktif' => 0,
+                'registrationHeatmap' => []
+            ];
         }
     }
     
@@ -360,7 +416,6 @@ class DashboardLogic {
                            t.deskripsi as assignment_description,
                            t.deadline as assignment_deadline,
                            t.nilai_maksimal as assignment_max_score,
-                           t.file_path as assignment_file_path,
                            pt.status as student_status,
                            pt.nilai as student_score
                     FROM postingan_kelas p
@@ -387,11 +442,11 @@ class DashboardLogic {
                 $post['gambar'] = $this->getGambarPostingan($post['id']);
                 $post['files'] = $this->getFilePostingan($post['id']); // Add file attachments
                 
-                // Convert assignment file path to URL if exists
-                if ($post['assignment_file_path']) {
-                    // Convert absolute path to relative URL for web access
-                    $webRoot = '/opt/lampp/htdocs';
-                    $post['assignment_file_path'] = str_replace($webRoot, '', $post['assignment_file_path']);
+                // Get assignment files if this is an assignment post
+                if ($post['assignment_id']) {
+                    $post['assignment_files'] = $this->getAssignmentFiles($post['assignment_id']);
+                } else {
+                    $post['assignment_files'] = [];
                 }
             }
             
@@ -426,6 +481,478 @@ class DashboardLogic {
             return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
         } catch (Exception $e) {
             return [];
+        }
+    }
+    
+    // Helper function to get assignment files (multiple files support)
+    private function getAssignmentFiles($assignment_id) {
+        try {
+            if (!$assignment_id) return [];
+            
+            $sql = "SELECT file_name as nama_file, file_path as path_file, file_size as ukuran_file, 
+                           file_type as tipe_file, file_type as ekstensi_file 
+                    FROM tugas_files 
+                    WHERE tugas_id = ? 
+                    ORDER BY upload_order, id";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bind_param("i", $assignment_id);
+            $stmt->execute();
+            
+            $files = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+            
+            // Convert absolute paths to relative URLs for web access
+            $webRoot = '/opt/lampp/htdocs';
+            foreach ($files as &$file) {
+                // Ensure we have relative path for web access
+                if ($file['path_file']) {
+                    // If it starts with uploads/, it's already relative
+                    if (strpos($file['path_file'], 'uploads/') === 0) {
+                        // Keep as is
+                    } else if (strpos($file['path_file'], $webRoot) === 0) {
+                        $file['path_file'] = str_replace($webRoot, '', $file['path_file']);
+                    }
+                }
+                
+                // Get file extension from filename if not available
+                if (empty($file['ekstensi_file']) && !empty($file['nama_file'])) {
+                    $file['ekstensi_file'] = strtolower(pathinfo($file['nama_file'], PATHINFO_EXTENSION));
+                }
+            }
+            
+            return $files;
+        } catch (Exception $e) {
+            return [];
+        }
+    }
+    
+    // Ambil data pendaftaran untuk chart di admin dashboard dari tabel users
+    public function getRegistrationChartData($period = 'month', $value = null) {
+        try {
+            $chartData = [];
+            
+            switch ($period) {
+                case 'day':
+                    return $this->getRegistrationByDay($value);
+                case 'week':
+                    return $this->getRegistrationByWeek($value);
+                case 'month':
+                    return $this->getRegistrationByMonth($value);
+                case 'year':
+                    return $this->getRegistrationByYear($value);
+                case '2year':
+                    return $this->getRegistrationBy2Years($value);
+                default:
+                    return $this->getRegistrationByMonth($value);
+            }
+        } catch (Exception $e) {
+            error_log("Error getting registration chart data: " . $e->getMessage());
+            return [
+                'labels' => [],
+                'guru' => [],
+                'siswa' => []
+            ];
+        }
+    }
+    
+    // Data pendaftaran per hari (30 hari terakhir)
+    private function getRegistrationByDay($days = 30) {
+        $days = $days ?: 30;
+        $chartData = [
+            'labels' => [],
+            'guru' => [],
+            'siswa' => []
+        ];
+        
+        for ($i = $days - 1; $i >= 0; $i--) {
+            $date = date('Y-m-d', strtotime("-{$i} days"));
+            $chartData['labels'][] = date('d/m', strtotime($date));
+            
+            // Hitung guru yang daftar pada hari ini
+            $sql = "SELECT COUNT(*) as total FROM users WHERE DATE(dibuat) = ? AND role = 'guru'";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bind_param("s", $date);
+            $stmt->execute();
+            $chartData['guru'][] = intval($stmt->get_result()->fetch_assoc()['total']);
+            
+            // Hitung siswa yang daftar pada hari ini
+            $sql = "SELECT COUNT(*) as total FROM users WHERE DATE(dibuat) = ? AND role = 'siswa'";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bind_param("s", $date);
+            $stmt->execute();
+            $chartData['siswa'][] = intval($stmt->get_result()->fetch_assoc()['total']);
+        }
+        
+        return $chartData;
+    }
+    
+    // Data pendaftaran per minggu (12 minggu terakhir)
+    private function getRegistrationByWeek($weeks = 12) {
+        $weeks = $weeks ?: 12;
+        $chartData = [
+            'labels' => [],
+            'guru' => [],
+            'siswa' => []
+        ];
+        
+        for ($i = $weeks - 1; $i >= 0; $i--) {
+            $dayOffset = $i * 7;
+            $startDate = date('Y-m-d', strtotime("-{$dayOffset} days"));
+            $endDayOffset = (($i - 1) * 7 - 1);
+            $endDate = date('Y-m-d', strtotime("-{$endDayOffset} days"));
+            
+            $chartData['labels'][] = 'W' . date('W', strtotime($startDate));
+            
+            // Hitung guru yang daftar pada minggu ini
+            $sql = "SELECT COUNT(*) as total FROM users WHERE DATE(dibuat) BETWEEN ? AND ? AND role = 'guru'";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bind_param("ss", $startDate, $endDate);
+            $stmt->execute();
+            $chartData['guru'][] = intval($stmt->get_result()->fetch_assoc()['total']);
+            
+            // Hitung siswa yang daftar pada minggu ini
+            $sql = "SELECT COUNT(*) as total FROM users WHERE DATE(dibuat) BETWEEN ? AND ? AND role = 'siswa'";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bind_param("ss", $startDate, $endDate);
+            $stmt->execute();
+            $chartData['siswa'][] = intval($stmt->get_result()->fetch_assoc()['total']);
+        }
+        
+        return $chartData;
+    }
+    
+    // Data pendaftaran per bulan (12 bulan terakhir)
+    private function getRegistrationByMonth($months = 12) {
+        $months = $months ?: 12;
+        $chartData = [
+            'labels' => [],
+            'guru' => [],
+            'siswa' => []
+        ];
+        
+        for ($i = $months - 1; $i >= 0; $i--) {
+            $date = date('Y-m', strtotime("-{$i} months"));
+            $chartData['labels'][] = date('M Y', strtotime($date . '-01'));
+            
+            // Hitung guru yang daftar pada bulan ini
+            $sql = "SELECT COUNT(*) as total FROM users WHERE DATE_FORMAT(dibuat, '%Y-%m') = ? AND role = 'guru'";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bind_param("s", $date);
+            $stmt->execute();
+            $chartData['guru'][] = intval($stmt->get_result()->fetch_assoc()['total']);
+            
+            // Hitung siswa yang daftar pada bulan ini
+            $sql = "SELECT COUNT(*) as total FROM users WHERE DATE_FORMAT(dibuat, '%Y-%m') = ? AND role = 'siswa'";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bind_param("s", $date);
+            $stmt->execute();
+            $chartData['siswa'][] = intval($stmt->get_result()->fetch_assoc()['total']);
+        }
+        
+        return $chartData;
+    }
+    
+    // Data pendaftaran per tahun (5 tahun terakhir)
+    private function getRegistrationByYear($years = 5) {
+        $years = $years ?: 5;
+        $chartData = [
+            'labels' => [],
+            'guru' => [],
+            'siswa' => []
+        ];
+        
+        for ($i = $years - 1; $i >= 0; $i--) {
+            $year = date('Y', strtotime("-{$i} years"));
+            $chartData['labels'][] = $year;
+            
+            // Hitung guru yang daftar pada tahun ini
+            $sql = "SELECT COUNT(*) as total FROM users WHERE YEAR(dibuat) = ? AND role = 'guru'";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bind_param("s", $year);
+            $stmt->execute();
+            $chartData['guru'][] = intval($stmt->get_result()->fetch_assoc()['total']);
+            
+            // Hitung siswa yang daftar pada tahun ini
+            $sql = "SELECT COUNT(*) as total FROM users WHERE YEAR(dibuat) = ? AND role = 'siswa'";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bind_param("s", $year);
+            $stmt->execute();
+            $chartData['siswa'][] = intval($stmt->get_result()->fetch_assoc()['total']);
+        }
+        
+        return $chartData;
+    }
+    
+    // Data pendaftaran 2 tahun dengan breakdown per bulan
+    private function getRegistrationBy2Years($startYear = null) {
+        if (!$startYear) {
+            $startYear = date('Y', strtotime('-1 year'));
+        }
+        
+        $chartData = [
+            'labels' => [],
+            'guru' => [],
+            'siswa' => []
+        ];
+        
+        // 24 bulan terakhir (2 tahun)
+        for ($i = 23; $i >= 0; $i--) {
+            $date = date('Y-m', strtotime("-{$i} months"));
+            $chartData['labels'][] = date('M Y', strtotime($date . '-01'));
+            
+            // Hitung guru yang daftar pada bulan ini
+            $sql = "SELECT COUNT(*) as total FROM users WHERE DATE_FORMAT(dibuat, '%Y-%m') = ? AND role = 'guru'";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bind_param("s", $date);
+            $stmt->execute();
+            $chartData['guru'][] = intval($stmt->get_result()->fetch_assoc()['total']);
+            
+            // Hitung siswa yang daftar pada bulan ini
+            $sql = "SELECT COUNT(*) as total FROM users WHERE DATE_FORMAT(dibuat, '%Y-%m') = ? AND role = 'siswa'";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bind_param("s", $date);
+            $stmt->execute();
+            $chartData['siswa'][] = intval($stmt->get_result()->fetch_assoc()['total']);
+        }
+        
+        return $chartData;
+    }
+
+        // Fungsi untuk mendapatkan jumlah pengguna gratis (semua pengguna kecuali yang premium)
+    private function getPenggunaGratis() {
+        try {
+            // Anggap semua users yang bukan premium sebagai gratis
+            $stmt = $this->conn->prepare("SELECT COUNT(*) as total FROM users WHERE role IN ('guru', 'siswa')");
+            $stmt->execute();
+            $result = $stmt->get_result()->fetch_assoc();
+            return $result['total'];
+        } catch (Exception $e) {
+            error_log("Error in getPenggunaGratis: " . $e->getMessage());
+            return 0;
+        }
+    }
+
+    // Fungsi untuk mendapatkan jumlah pengguna premium
+    private function getPenggunaPremium() {
+        try {
+            // Untuk sementara return 0 karena belum ada sistem premium di database
+            // Nanti bisa dikembangkan ketika sistem premium sudah diimplementasi
+            return 0;
+        } catch (Exception $e) {
+            error_log("Error in getPenggunaPremium: " . $e->getMessage());
+            return 0;
+        }
+    }
+
+    // Fungsi untuk mendapatkan total kelas aktif (yang sedang berjalan)
+    private function getTotalKelasAktif() {
+        try {
+            // Kelas aktif = status 'aktif' (semua kelas yang tersedia untuk pembelajaran)
+            $stmt = $this->conn->prepare("
+                SELECT COUNT(*) as total 
+                FROM kelas k 
+                WHERE k.status = 'aktif'
+            ");
+            $stmt->execute();
+            $result = $stmt->get_result()->fetch_assoc();
+            return $result['total'] ?? 0;
+        } catch (Exception $e) {
+            error_log("Error in getTotalKelasAktif: " . $e->getMessage());
+            // Fallback - hitung semua kelas dengan status aktif
+            try {
+                $stmt = $this->conn->prepare("SELECT COUNT(*) as total FROM kelas WHERE status = 'aktif'");
+                $stmt->execute();
+                $result = $stmt->get_result()->fetch_assoc();
+                return $result['total'];
+            } catch (Exception $e2) {
+                return 0;
+            }
+        }
+    }
+
+    // Fungsi untuk mendapatkan total ujian aktif (yang bisa dikerjakan)
+    private function getTotalUjianAktif() {
+        try {
+            // Ujian aktif = status 'aktif' dan tanggal ujian >= hari ini (belum kadaluarsa)
+            $stmt = $this->conn->prepare("
+                SELECT COUNT(*) as total 
+                FROM ujian u
+                JOIN kelas k ON u.kelas_id = k.id 
+                WHERE u.status = 'aktif' 
+                AND k.status = 'aktif'
+                AND u.tanggalUjian >= CURDATE()
+            ");
+            $stmt->execute();
+            $result = $stmt->get_result()->fetch_assoc();
+            return $result['total'];
+        } catch (Exception $e) {
+            error_log("Error in getTotalUjianAktif: " . $e->getMessage());
+            // Fallback - hitung semua ujian dengan status aktif
+            try {
+                $stmt = $this->conn->prepare("SELECT COUNT(*) as total FROM ujian WHERE status = 'aktif'");
+                $stmt->execute();
+                $result = $stmt->get_result()->fetch_assoc();
+                return $result['total'];
+            } catch (Exception $e2) {
+                return 0;
+            }
+        }
+    }
+
+    // Fungsi untuk mendapatkan total guru aktif
+    private function getTotalGuru() {
+        try {
+            $stmt = $this->conn->prepare("SELECT COUNT(*) as total FROM users WHERE role = 'guru' AND status = 'aktif'");
+            $stmt->execute();
+            $result = $stmt->get_result()->fetch_assoc();
+            return $result['total'];
+        } catch (Exception $e) {
+            error_log("Error in getTotalGuru: " . $e->getMessage());
+            return 0;
+        }
+    }
+
+    // Fungsi untuk mendapatkan total siswa aktif
+    private function getTotalSiswa() {
+        try {
+            $stmt = $this->conn->prepare("SELECT COUNT(*) as total FROM users WHERE role = 'siswa' AND status = 'aktif'");
+            $stmt->execute();
+            $result = $stmt->get_result()->fetch_assoc();
+            return $result['total'];
+        } catch (Exception $e) {
+            error_log("Error in getTotalSiswa: " . $e->getMessage());
+            return 0;
+        }
+    }
+
+    // Fungsi untuk mendapatkan data aktivitas pendaftaran untuk heatmap calendar
+    public function getRegistrationHeatmap($months = 3) {
+        try {
+            $heatmapData = [];
+            
+            // Ambil data pendaftaran per hari untuk periode yang ditentukan
+            $sql = "SELECT 
+                        DATE(dibuat) as tanggal,
+                        COUNT(*) as total_pendaftar,
+                        COUNT(CASE WHEN role = 'guru' THEN 1 END) as guru,
+                        COUNT(CASE WHEN role = 'siswa' THEN 1 END) as siswa
+                    FROM users 
+                    WHERE DATE(dibuat) >= DATE_SUB(CURDATE(), INTERVAL ? MONTH)
+                    GROUP BY DATE(dibuat)
+                    ORDER BY tanggal DESC";
+            
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bind_param("i", $months);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            
+            while ($row = $result->fetch_assoc()) {
+                $heatmapData[$row['tanggal']] = [
+                    'total' => (int)$row['total_pendaftar'],
+                    'guru' => (int)$row['guru'],
+                    'siswa' => (int)$row['siswa']
+                ];
+            }
+            
+            return $heatmapData;
+        } catch (Exception $e) {
+            error_log("Error in getRegistrationHeatmap: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    // Get recent users with pagination
+    public function getRecentUsers($page = 1, $limit = 3) {
+        try {
+            $offset = ($page - 1) * $limit;
+            
+            // Get users with pagination
+            $sql = "SELECT 
+                        u.id, 
+                        u.namaLengkap,
+                        u.email,
+                        u.role,
+                        u.dibuat,
+                        u.status as user_status,
+                        CASE 
+                            WHEN u.status = 'premium' THEN 'Premium'
+                            ELSE 'Gratis'
+                        END as subscription_status
+                    FROM users u
+                    WHERE u.role IN ('guru', 'siswa')
+                    ORDER BY u.dibuat DESC 
+                    LIMIT ? OFFSET ?";
+                    
+            $stmt = $this->conn->prepare($sql);
+            if (!$stmt) {
+                throw new Exception("Prepare statement failed: " . $this->conn->error);
+            }
+            
+            $stmt->bind_param("ii", $limit, $offset);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            
+            $users = [];
+            while ($row = $result->fetch_assoc()) {
+                // Format the registration date
+                $dibuat = new DateTime($row['dibuat']);
+                $now = new DateTime();
+                $interval = $now->diff($dibuat);
+                
+                // Create relative time string
+                if ($interval->days == 0) {
+                    if ($interval->h == 0) {
+                        $timeAgo = $interval->i . ' menit yang lalu';
+                    } else {
+                        $timeAgo = $interval->h . ' jam yang lalu';
+                    }
+                } elseif ($interval->days == 1) {
+                    $timeAgo = '1 hari yang lalu';
+                } elseif ($interval->days < 7) {
+                    $timeAgo = $interval->days . ' hari yang lalu';
+                } else {
+                    $timeAgo = $dibuat->format('d M Y');
+                }
+                
+                $users[] = [
+                    'id' => (int)$row['id'],
+                    'namaLengkap' => $row['namaLengkap'],
+                    'email' => $row['email'],
+                    'role' => $row['role'],
+                    'dibuat' => $row['dibuat'],
+                    'timeAgo' => $timeAgo,
+                    'subscription_status' => $row['subscription_status']
+                ];
+            }
+            
+            // Get total count for pagination
+            $countSql = "SELECT COUNT(*) as total FROM users WHERE role IN ('guru', 'siswa')";
+            $countResult = $this->conn->query($countSql);
+            $totalUsers = $countResult->fetch_assoc()['total'];
+            $totalPages = ceil($totalUsers / $limit);
+            
+            return [
+                'users' => $users,
+                'pagination' => [
+                    'currentPage' => $page,
+                    'totalPages' => $totalPages,
+                    'totalUsers' => (int)$totalUsers,
+                    'hasNext' => $page < $totalPages,
+                    'hasPrev' => $page > 1
+                ]
+            ];
+            
+        } catch (Exception $e) {
+            error_log("Error in getRecentUsers: " . $e->getMessage());
+            return [
+                'users' => [],
+                'pagination' => [
+                    'currentPage' => 1,
+                    'totalPages' => 0,
+                    'totalUsers' => 0,
+                    'hasNext' => false,
+                    'hasPrev' => false
+                ]
+            ];
         }
     }
 }

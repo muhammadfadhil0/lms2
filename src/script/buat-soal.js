@@ -74,6 +74,8 @@
                     
                     optionsContainer.appendChild(newOption);
                     setupRemoveOptionHandler(newOption);
+                    // Mark card as unsaved when options change
+                    markCardSaved(questionCard, false);
                 });
             }
 
@@ -92,7 +94,39 @@
                         option.querySelector('input[type="radio"]').value = letter;
                         option.querySelector('input[type="text"]').placeholder = `Pilihan ${letter}`;
                     });
+                    // Mark parent question unsaved
+                    const q = optionElement.closest('.question-card');
+                    if (q) markCardSaved(q, false);
                 });
+            }
+
+            // Create or update save-status badge in question header
+            function ensureSaveBadge(questionCard) {
+                const header = questionCard.querySelector('.flex.items-center.justify-between.mb-4');
+                if (!header) return null;
+                let badge = header.querySelector('.save-status-badge');
+                if (!badge) {
+                    badge = document.createElement('span');
+                    badge.className = 'save-status-badge ml-3 text-sm px-2 py-0.5 rounded-full font-medium';
+                    header.querySelector('.flex.items-center.space-x-3')?.appendChild(badge);
+                }
+                return badge;
+            }
+
+            function markCardSaved(questionCard, saved) {
+                if (!questionCard) return;
+                questionCard.dataset.saved = saved ? '1' : '0';
+                const badge = ensureSaveBadge(questionCard);
+                if (!badge) return;
+                if (saved) {
+                    badge.textContent = 'Tersimpan';
+                    badge.classList.remove('bg-amber-100','text-amber-700');
+                    badge.classList.add('bg-green-100','text-green-700');
+                } else {
+                    badge.textContent = 'Belum disimpan';
+                    badge.classList.remove('bg-green-100','text-green-700');
+                    badge.classList.add('bg-amber-100','text-amber-700');
+                }
             }
 
             // Question Card Click Handler
@@ -293,6 +327,9 @@
                 
                 // Setup all handlers for the new question
                 setupQuestionHandlers(newQuestion);
+
+                // New question is unsaved by default
+                markCardSaved(newQuestion, false);
                 
                 // Check if auto score is active and hide points section if needed
                 const autoScoreFlag = document.getElementById('ujian_id')?.dataset.autoscore === '1';
@@ -319,36 +356,118 @@
 
             // Duplicate Question
             function duplicateQuestion(originalCard) {
+                // Gather original data to copy (values/properties, not attributes)
+                const origTypeSelect = originalCard.querySelector('.question-type-select');
+                const origType = origTypeSelect ? origTypeSelect.value : 'multiple_choice';
+                const origQuestionText = originalCard.querySelector('.question-text')?.value || '';
+                const origOptions = Array.from(originalCard.querySelectorAll('.answer-options .flex.items-center.space-x-3')).map(opt => {
+                    return {
+                        letter: opt.querySelector('input[type=radio]')?.value || '',
+                        text: opt.querySelector('input[type=text]')?.value || '',
+                        checked: !!opt.querySelector('input[type=radio]')?.checked
+                    };
+                });
+                const origAnswerKey = originalCard.querySelector('.answer-key-text')?.value || '';
+                const origPoints = originalCard.querySelector('.question-points')?.value || '';
+
+                // Clone node and then apply copied values to avoid losing runtime state
                 const newCard = originalCard.cloneNode(true);
                 questionCounter++;
                 newCard.dataset.questionId = questionCounter;
-                
-                // Update question number
-                newCard.querySelector('h3').textContent = `Soal ${questionCounter}`;
-                
-                // Update radio button names for multiple choice
-                const radioButtons = newCard.querySelectorAll('input[type="radio"]');
-                radioButtons.forEach(radio => {
-                    radio.name = `correct_answer_${questionCounter}`;
-                    radio.checked = false;
+                // Ensure cloned card does not keep the original server ID
+                if (newCard.hasAttribute('data-soal-id')) {
+                    newCard.removeAttribute('data-soal-id');
+                }
+
+                // Update question number/title
+                const h3 = newCard.querySelector('h3');
+                if (h3) h3.textContent = `Soal ${questionCounter}`;
+
+                // Update question type select
+                const newTypeSelect = newCard.querySelector('.question-type-select');
+                if (newTypeSelect) {
+                    newTypeSelect.value = origType;
+                    // Show/hide sections according to type
+                    const newAnswerOptions = newCard.querySelector('.answer-options');
+                    const newAnswerKey = newCard.querySelector('.answer-key');
+                    if (origType === 'multiple_choice') {
+                        newAnswerOptions?.classList.remove('hidden');
+                        newAnswerKey?.classList.add('hidden');
+                    } else {
+                        newAnswerOptions?.classList.add('hidden');
+                        newAnswerKey?.classList.remove('hidden');
+                    }
+                }
+
+                // Set question text
+                const newQuestionText = newCard.querySelector('.question-text');
+                if (newQuestionText) newQuestionText.value = origQuestionText;
+
+                // Copy options and checked state
+                const newOptions = newCard.querySelectorAll('.answer-options .flex.items-center.space-x-3');
+                newOptions.forEach((optElem, idx) => {
+                    const radio = optElem.querySelector('input[type=radio]');
+                    const textInput = optElem.querySelector('input[type=text]');
+                    const span = optElem.querySelector('span');
+                    const orig = origOptions[idx] || { letter: String.fromCharCode(65 + idx), text: '', checked: false };
+                    // Update letter label
+                    if (span) span.textContent = orig.letter ? `${orig.letter}.` : `${String.fromCharCode(65 + idx)}.`;
+                    // Update radio name and value
+                    if (radio) {
+                        radio.name = `correct_answer_${questionCounter}`;
+                        radio.value = orig.letter || String.fromCharCode(65 + idx);
+                        radio.checked = !!orig.checked;
+                    }
+                    // Update option text
+                    if (textInput) {
+                        textInput.value = orig.text || '';
+                        textInput.placeholder = `Pilihan ${orig.letter || String.fromCharCode(65 + idx)}`;
+                    }
                 });
-                
-                // Clear text inputs except for options
-                const questionText = newCard.querySelector('.question-text');
-                questionText.value = '';
-                
-                // Hide image preview if exists
+
+                // If there are more origOptions than cloned nodes, append them
+                if (origOptions.length > newOptions.length) {
+                    const optionsContainer = newCard.querySelector('.answer-options .space-y-2');
+                    for (let i = newOptions.length; i < origOptions.length; i++) {
+                        const o = origOptions[i];
+                        const letter = o.letter || String.fromCharCode(65 + i);
+                        const newOption = document.createElement('div');
+                        newOption.className = 'flex items-center space-x-3';
+                        newOption.innerHTML = `
+                            <input type="radio" name="correct_answer_${questionCounter}" value="${letter}" class="text-orange-500 focus:ring-orange-500" ${o.checked? 'checked':''}>
+                            <span class="w-6 text-sm font-medium text-gray-600">${letter}.</span>
+                            <input type="text" class="option-input flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500" placeholder="Pilihan ${letter}" value="${o.text}">
+                            <button class="remove-option text-gray-400 hover:text-red-500 p-1">
+                                <i class="ti ti-x"></i>
+                            </button>
+                        `;
+                        optionsContainer.appendChild(newOption);
+                        setupRemoveOptionHandler(newOption);
+                    }
+                }
+
+                // Copy answer key for short/long answers
+                const newAnswerKeyText = newCard.querySelector('.answer-key-text');
+                if (newAnswerKeyText) newAnswerKeyText.value = origAnswerKey;
+
+                // Copy points
+                const newPointsInput = newCard.querySelector('.question-points');
+                if (newPointsInput) newPointsInput.value = origPoints;
+
+                // Hide image preview and reset image input UI
                 const imagePreview = newCard.querySelector('.image-preview');
                 const addImageBtn = newCard.querySelector('.add-image-btn');
-                imagePreview.classList.add('hidden');
-                addImageBtn.style.display = 'flex';
-                
+                if (imagePreview) imagePreview.classList.add('hidden');
+                if (addImageBtn) addImageBtn.style.display = 'flex';
+
+                // Ensure cloned card is marked unsaved
+                markCardSaved(newCard, false);
                 // Insert after original card
                 originalCard.parentNode.insertBefore(newCard, originalCard.nextSibling);
-                
+
                 // Setup handlers
                 setupQuestionHandlers(newCard);
-                
+
                 // Check if auto score is active and hide points section if needed
                 const autoScoreFlag = document.getElementById('ujian_id')?.dataset.autoscore === '1';
                 if (autoScoreFlag) {
@@ -357,16 +476,16 @@
                         pointsSection.classList.add('hidden');
                     }
                 }
-                
+
                 // Make new card active
                 document.querySelectorAll('.question-card').forEach(card => {
                     card.classList.remove('active');
                 });
                 newCard.classList.add('active');
-                
+
                 // Scroll to new question
                 newCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                
+
                 updateQuestionNavigation();
                 updateStats();
             }
@@ -385,6 +504,20 @@
                 questionCard.querySelectorAll('.remove-option').forEach(btn => {
                     setupRemoveOptionHandler(btn.closest('.flex.items-center.space-x-3'));
                 });
+
+                // Ensure save badge exists and set initial saved state
+                const hasServerId = !!questionCard.getAttribute('data-soal-id');
+                markCardSaved(questionCard, hasServerId);
+
+                // Mark as unsaved when user edits fields
+                const inputs = questionCard.querySelectorAll('input[type="text"], textarea, select, input[type="number"]');
+                inputs.forEach(inp => {
+                    const ev = inp.tagName.toLowerCase() === 'select' ? 'change' : 'input';
+                    inp.addEventListener(ev, () => markCardSaved(questionCard, false));
+                });
+
+                // Radio changes (correct answer) should mark unsaved
+                questionCard.querySelectorAll('input[type="radio"]').forEach(r => r.addEventListener('change', () => markCardSaved(questionCard, false)));
             }
 
             // Update question numbers
@@ -511,6 +644,8 @@
                 
                 // Setup handlers for initial question
                 document.querySelectorAll('.question-card').forEach(card=>setupQuestionHandlers(card));
+                // Build navigation buttons (attach click handlers)
+                updateQuestionNavigation();
                 
                 // Add question button
                 document.getElementById('add-question-btn').addEventListener('click', addNewQuestion);
@@ -743,18 +878,32 @@
                             if(existingId){ formData.append('soal_id', existingId); }
                             const resp = await fetch(endpoint,{method:'POST', body:formData});
                             const json = await resp.json();
-                            if(json.success){
-                                successCount++;
-                                if(!existingId && json.soal_id){ card.setAttribute('data-soal-id', json.soal_id); }
-                            } else {failCount++;}
+                                if(json.success){
+                                    successCount++;
+                                    // If server returned a new soal_id for created question, set it
+                                    if(!existingId && json.soal_id){ card.setAttribute('data-soal-id', json.soal_id); }
+                                    // Mark this card saved
+                                    markCardSaved(card, true);
+                                } else {
+                                    failCount++;
+                                    // keep as unsaved
+                                    markCardSaved(card, false);
+                                }
                         } catch(e){failCount++;}
                     }
                     
                     // Show success message
                     if (failCount === 0 && successCount > 0) {
                         showToast(`Berhasil menyimpan ${successCount} soal!`, 'success');
+                        const ts = new Date();
+                        const fmt = ts.toLocaleString();
+                        setHeaderSaveStatus(true, fmt);
                     } else if (failCount > 0) {
                         showToast(`Simpan selesai. Berhasil: ${successCount}, Gagal: ${failCount}`, 'warning');
+                        // Partial save: update header with time but keep unsaved indicator
+                        const ts = new Date();
+                        const fmt = ts.toLocaleString();
+                        setHeaderSaveStatus(false, fmt);
                     }
                     
                     if(publish && failCount===0){
@@ -789,6 +938,24 @@
                 
                 // Update initial stats
                 updateStats();
+
+                // Global save UI helpers
+                function setHeaderSaveStatus(saved, timestamp) {
+                    const lastSavedEl = document.getElementById('last-saved');
+                    const dot = document.getElementById('save-dot');
+                    if (!lastSavedEl) return;
+                    if (saved) {
+                        lastSavedEl.textContent = timestamp ? `Terakhir disimpan: ${timestamp}` : 'Tersimpan';
+                        if (dot) { dot.classList.remove('bg-amber-300'); dot.classList.add('bg-green-500'); }
+                    } else {
+                        lastSavedEl.textContent = 'Belum disimpan';
+                        if (dot) { dot.classList.remove('bg-green-500'); dot.classList.add('bg-amber-300'); }
+                    }
+                }
+
+                // Update header when any card becomes unsaved
+                document.addEventListener('input', () => setHeaderSaveStatus(false));
+                document.addEventListener('change', () => setHeaderSaveStatus(false));
 
                 // Handle auto score mode
                 if(autoScoreFlag){

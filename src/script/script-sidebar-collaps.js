@@ -26,13 +26,13 @@ function applySidebarCollapseImmediate() {
         
         if (sidebar) {
             sidebar.classList.remove('w-64');
-            sidebar.classList.add('w-16');
+            sidebar.classList.add('w-28');
             document.documentElement.classList.add('sidebar-collapsed');
         }
-        
+
         if (mainContent) {
             mainContent.classList.remove('md:ml-64');
-            mainContent.classList.add('md:ml-25');
+            mainContent.classList.add('md:ml-28');
         }
         
         // Apply other styles after a short delay to ensure elements exist
@@ -57,7 +57,7 @@ function applySidebarCollapse(withAnimation = true) {
         // Collapse sidebar
         if (sidebar) {
             sidebar.classList.remove('w-64');
-            sidebar.classList.add('w-16');
+            sidebar.classList.add('w-28');
             document.documentElement.classList.add('sidebar-collapsed');
         }
 
@@ -91,12 +91,12 @@ function applySidebarCollapse(withAnimation = true) {
         // Adjust main content margin
         if (mainContent) {
             mainContent.classList.remove('md:ml-64');
-            mainContent.classList.add('md:ml-16');
+            mainContent.classList.add('md:ml-28');
         }
     } else {
         // Expand sidebar
         if (sidebar) {
-            sidebar.classList.remove('w-16');
+            sidebar.classList.remove('w-28');
             sidebar.classList.add('w-64');
             document.documentElement.classList.remove('sidebar-collapsed');
         }
@@ -144,7 +144,7 @@ function applySidebarCollapse(withAnimation = true) {
 
         // Adjust main content margin
         if (mainContent) {
-            mainContent.classList.remove('md:ml-16');
+            mainContent.classList.remove('md:ml-28');
             mainContent.classList.add('md:ml-64');
         }
     }
@@ -160,18 +160,68 @@ function toggleSidebar() {
     applySidebarCollapse(true);
 }
 
+// Force-expand the sidebar immediately and update state, then call callback after animation
+function expandSidebarNow(callback) {
+    const sidebar = document.getElementById('sidebar');
+    const mainContent = document.querySelector('[data-main-content]');
+    const logoTextContainer = document.getElementById('logoTextContainer');
+    const profileTextContainer = document.getElementById('profileTextContainer');
+    const navTexts = document.querySelectorAll('.nav-text');
+    const icons = document.querySelectorAll('.iconSidebar');
+    const btns = document.querySelectorAll('.buttonSidebar');
+    const toggleIcon = document.getElementById('toggleIcon');
+
+    // Update state
+    sidebarCollapsed = false;
+    localStorage.setItem('sidebarCollapsed', JSON.stringify(sidebarCollapsed));
+
+    // Direct DOM changes to ensure immediate expand
+    if (sidebar) {
+        sidebar.classList.remove('w-28');
+        sidebar.classList.add('w-64');
+    }
+
+    if (mainContent) {
+        mainContent.classList.remove('md:ml-28');
+        mainContent.classList.add('md:ml-64');
+    }
+
+    btns.forEach(btn => btn.classList.remove('justify-center'));
+    icons.forEach(icon => icon.classList.remove('m-0'));
+
+    if (logoTextContainer) logoTextContainer.classList.remove('w-0', 'opacity-0');
+    if (profileTextContainer) profileTextContainer.classList.remove('w-0', 'opacity-0');
+    navTexts.forEach(text => text.classList.remove('w-0', 'opacity-0'));
+
+    document.documentElement.classList.remove('sidebar-collapsed');
+
+    if (toggleIcon) {
+        toggleIcon.classList.remove('ti-menu');
+        toggleIcon.classList.add('ti-menu-2');
+    }
+
+    // Apply final adjustments via existing function (no animation)
+    setTimeout(() => {
+        applySidebarCollapse(false);
+        if (typeof callback === 'function') callback();
+    }, 300);
+}
+
 function toggleProfileDropdown() {
-    // If sidebar is collapsed, expand it first
-    if (sidebarCollapsed) {
-        toggleSidebar();
-        // Add a small delay before opening dropdown to allow sidebar animation to complete
-        setTimeout(() => {
-            const dropdown = document.getElementById('profileDropdown');
-            dropdown.classList.toggle('hidden');
-        }, 200);
-    } else {
-        const dropdown = document.getElementById('profileDropdown');
+    const dropdown = document.getElementById('profileDropdown');
+
+    function toggleDropdown() {
+        if (!dropdown) return;
         dropdown.classList.toggle('hidden');
+    }
+
+    if (sidebarCollapsed) {
+        // Force expand, then toggle dropdown when done
+        expandSidebarNow(() => {
+            toggleDropdown();
+        });
+    } else {
+        toggleDropdown();
     }
 }
 
@@ -190,43 +240,5 @@ applySidebarCollapseImmediate();
 
 // Initialize sidebar state when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
-    loadSidebarState();
-});
-    // Apply the collapse state with animation
-    applySidebarCollapse(true);
-
-
-function toggleProfileDropdown() {
-    // If sidebar is collapsed, expand it first
-    if (sidebarCollapsed) {
-        toggleSidebar();
-        // Add a small delay before opening dropdown to allow sidebar animation to complete
-        setTimeout(() => {
-            const dropdown = document.getElementById('profileDropdown');
-            dropdown.classList.toggle('hidden');
-        }, 200);
-    } else {
-        const dropdown = document.getElementById('profileDropdown');
-        dropdown.classList.toggle('hidden');
-    }
-}
-
-// Close dropdown when clicking outside
-document.addEventListener('click', function(event) {
-    const button = event.target.closest('button[onclick="toggleProfileDropdown()"]');
-    const dropdown = document.getElementById('profileDropdown');
-
-    if (!button && dropdown && !dropdown.contains(event.target)) {
-        dropdown.classList.add('hidden');
-    }
-});
-
-// Initialize immediately when script loads
-debugLog('Script loaded, checking localStorage immediately');
-applySidebarCollapseImmediate();
-
-// Initialize sidebar state when DOM is loaded
-document.addEventListener('DOMContentLoaded', function() {
-    debugLog('DOM Content Loaded');
     loadSidebarState();
 });

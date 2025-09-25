@@ -120,6 +120,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (essayOption) {
                     essayOption.disabled = true;
                     essayOption.style.display = 'none';
+                    // Add explanation text
+                    essayOption.textContent = 'Essay (Tidak tersedia dalam mode penilaian otomatis)';
                 }
                 questionTypeSelect.disabled = true;
                 questionTypeSelect.classList.add('opacity-50', 'cursor-not-allowed');
@@ -136,6 +138,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (essayOption) {
                     essayOption.disabled = false;
                     essayOption.style.display = 'block';
+                    essayOption.textContent = 'Essay'; // Reset text
                 }
                 questionTypeSelect.disabled = false;
                 questionTypeSelect.classList.remove('opacity-50', 'cursor-not-allowed');
@@ -300,10 +303,21 @@ KONTEKS UJIAN:
 INSTRUKSI PEMBUATAN SOAL:
 1. Buat ${data.jumlah_soal} soal ${data.tipe_soal === 'multiple_choice' ? 'PILIHAN GANDA' : 'ESSAY'}
 2. Tingkat kesulitan: ${data.tingkat_kesulitan.toUpperCase()}
-${data.tipe_soal === 'multiple_choice' ? `3. Setiap soal memiliki ${data.pilihan_jawaban} pilihan jawaban (A-${String.fromCharCode(64 + parseInt(data.pilihan_jawaban))})` : ''}
+${data.tipe_soal === 'multiple_choice' ? `3. Setiap soal memiliki ${data.pilihan_jawaban} pilihan jawaban (A-${String.fromCharCode(64 + parseInt(data.pilihan_jawaban))})` : '3. KHUSUS SOAL ESSAY: Jawaban harus dalam format poin-poin yang ringkas dan mudah dipahami'}
 4. Soal harus sesuai dengan mata pelajaran dan materi yang disebutkan
 5. Gunakan bahasa Indonesia yang baik dan benar
 6. Pastikan soal sesuai dengan tingkat pendidikan siswa
+${data.tipe_soal === 'essay' ? `
+PANDUAN KHUSUS UNTUK SOAL ESSAY:
+- Jawaban harus dibuat dalam format poin-poin (a, b, c, d, dst)
+- Setiap poin maksimal 1-2 kalimat yang ringkas dan jelas
+- Hindari penjelasan yang terlalu panjang
+- Fokus pada poin-poin utama yang mudah dipahami
+- Contoh format jawaban:
+  a. Poin utama pertama yang singkat
+  b. Poin kedua yang relevan
+  c. Poin ketiga sebagai kesimpulan
+- Maksimal 5-6 poin per jawaban essay` : ''}
 
 PANDUAN KESULITAN:
 - MUDAH: Konsep dasar, mengingat, pemahaman sederhana
@@ -348,8 +362,8 @@ Berikan respons dalam format JSON yang valid sesuai dengan struktur yang diminta
     {
       "pertanyaan": "Teks soal pertama...",
       "tipe": "essay",
-      "kunci_jawaban": "Contoh jawaban yang diharapkan...",
-      "penjelasan": "Kriteria penilaian...",
+      "kunci_jawaban": "a. Poin utama pertama yang singkat\\nb. Poin kedua yang relevan\\nc. Poin ketiga sebagai kesimpulan",
+      "penjelasan": "Kriteria penilaian berdasarkan kelengkapan poin-poin jawaban...",
       "poin": 20
     }
   ]
@@ -525,6 +539,14 @@ Berikan respons dalam format JSON yang valid sesuai dengan struktur yang diminta
                 return;
             }
             
+            // Validate question type for auto score mode
+            const questionType = questionTypeSelect.value;
+            
+            if (isAutoScore && questionType === 'essay') {
+                showToast('Soal essay tidak dapat dibuat dalam mode penilaian otomatis. Pilih soal pilihan ganda.', 'error');
+                return;
+            }
+            
             // Show loading state
             generateBtn.innerHTML = '<svg class="w-4 h-4 mr-2 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>Generating...';
             generateBtn.disabled = true;
@@ -536,7 +558,7 @@ Berikan respons dalam format JSON yang valid sesuai dengan struktur yang diminta
                 ujian_id: parseInt(ujianIdValue),
                 question_count: count,
                 question_type: questionTypeSelect.value,
-                answer_options: parseInt(answerOptionsSelect.value),
+                answer_options: questionType === 'essay' ? 4 : parseInt(answerOptionsSelect.value), // Default to 4 for essays
                 difficulty: difficultySelect.value
             };
             
@@ -550,26 +572,35 @@ Berikan respons dalam format JSON yang valid sesuai dengan struktur yang diminta
                 },
                 body: JSON.stringify(requestData)
             });
-            
-            const result = await response.json();
-            
+
+            const text = await response.text();
+            let result;
+            try {
+                result = JSON.parse(text);
+            } catch (e) {
+                hideLoadingBackdrop();
+                showToast('Gagal parsing JSON dari server. Cek koneksi atau server error.', 'error');
+                return;
+            }
+
             hideLoadingBackdrop();
-            
+
             if (result.success) {
                 showToast(`Berhasil generate ${result.total} soal menggunakan PingoAI!`, 'success');
                 closeModal();
-                
+
                 // Refresh page to show new questions
                 setTimeout(() => {
                     window.location.reload();
                 }, 1500);
-                
+
                 // Update statistics if function exists
                 if (typeof updateStatistics === 'function') {
                     updateStatistics();
                 }
             } else {
-                throw new Error(result.error || 'Failed to generate questions');
+                showToast(result.error || 'Failed to generate questions', 'error');
+                return;
             }
             
         } catch (error) {

@@ -5,7 +5,7 @@ $currentPage = 'beranda';
 
 // Check if user is logged in and is a siswa
 if (!isset($_SESSION['user']) || $_SESSION['user']['role'] != 'siswa') {
-    header("Location: ../../index.php");
+    header("Location: ../../login.php");
     exit();
 }
 
@@ -13,20 +13,43 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['role'] != 'siswa') {
 require_once '../logic/dashboard-logic.php';
 require_once '../logic/kelas-logic.php';
 require_once '../logic/notification-logic.php';
+require_once '../logic/advertisement-logic.php';
 
 // Get dashboard data
 $dashboardLogic = new DashboardLogic();
 $kelasLogic = new KelasLogic();
 $notificationLogic = new NotificationLogic();
+$advertisementLogic = new AdvertisementLogic();
 $siswa_id = $_SESSION['user']['id'];
 $dashboardData = $dashboardLogic->getDashboardSiswa($siswa_id);
+
+// Get active advertisements
+$advertisements = $advertisementLogic->getActiveAdvertisements();
 
 // Get recent posts from all classes
 $recentPosts = $dashboardLogic->getPostinganTerbaruSiswa($siswa_id, 5); // Reduced from 15 to 5
 
-// Get recent notifications (2 latest)
-$recentNotifications = $notificationLogic->getUserNotifications($siswa_id, 2);
-$unreadNotificationsCount = $notificationLogic->getUnreadCount($siswa_id);
+// Get recent notifications (2 latest) - will be loaded via AJAX for better integration
+$recentNotifications = [];
+$unreadNotificationsCount = 0;
+
+// Get latest 2 assignments from classes the student follows
+$recentAssignments = [];
+try {
+    require_once '../logic/koneksi.php';
+    $sql = "SELECT t.id, t.judul as title, t.deadline, t.kelas_id, k.namaKelas, t.created_at
+            FROM tugas t
+            JOIN kelas k ON t.kelas_id = k.id
+            JOIN kelas_siswa ks ON k.id = ks.kelas_id AND ks.siswa_id = ? AND ks.status = 'aktif'
+            WHERE k.status = 'aktif'
+            ORDER BY t.created_at DESC
+            LIMIT 2";
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute([$siswa_id]);
+    $recentAssignments = $stmt->fetchAll();
+} catch (Exception $e) {
+    $recentAssignments = [];
+}
 
 // Ensure default values if data is null
 if (!$dashboardData) {
@@ -44,12 +67,27 @@ if (!$dashboardData) {
 <?php require '../component/menu-bar-mobile.php'; ?>
 <?php require '../component/modal-join-class.php'; ?>
 <?php require '../component/modal-notifications.php'; ?>
+<?php require '../component/modal-assignment-list.php'; ?>
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- CRITICAL: Prevent FOUC for font-size only -->
+    <script>
+        (function () {
+            const savedFontSize = localStorage.getItem('userFontSize') || '100';
+            try {
+                const fontSizePercentage = savedFontSize / 100;
+                document.documentElement.style.fontSize = `${fontSizePercentage}rem`;
+            } catch (e) {
+                document.documentElement.style.fontSize = '1rem';
+            }
+        })();
+    </script>
+
     <meta name="user-id" content="<?php echo $_SESSION['user']['id']; ?>">
     <?php require '../../assets/head.php'; ?>
     <link rel="stylesheet" href="../css/kelas-posting.css?v=<?php echo time(); ?>">
@@ -100,28 +138,73 @@ if (!$dashboardData) {
         .post-image-error {
             display: none !important;
         }
+
+        /* Advertisement Slider Styles */
+        .advertisement-slider {
+            position: relative;
+            min-height: 200px;
+        }
+
+        .advertisement-item {
+            display: none;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        .advertisement-item.active {
+            display: block;
+        }
+
+        .ad-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            border: none;
+            background-color: #d1d5db;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .ad-indicator.active {
+            background-color: #f97316;
+        }
+
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
     </style>
 </head>
 
 <body class="bg-gray-50">
 
     <!-- Header (fixed, shifted right on desktop and below left sidebar) -->
-    <header class="site-header md:hidden bg-white px-3 py-1 header-compact border-b border-gray-200 fixed top-0 z-30" style="height:3.5rem; left:0; right:0;">
+    <header class="site-header md:hidden bg-white px-3 py-1 header-compact border-b border-gray-200 fixed top-0 z-30"
+        style="height:3.5rem; left:0; right:0;">
         <style>
             /* Header transition and collapsed state support */
             .site-header {
-                transition: left 220ms cubic-bezier(0.4,0,0.2,1), width 220ms cubic-bezier(0.4,0,0.2,1);
+                transition: left 220ms cubic-bezier(0.4, 0, 0.2, 1), width 220ms cubic-bezier(0.4, 0, 0.2, 1);
             }
 
             /* When sidebar is collapsed, shift header left to align next to collapsed sidebar */
             .sidebar-collapsed .site-header {
-                left: 4rem; /* collapsed sidebar width approximation (w-16 = 4rem) */
+                left: 4rem;
+                /* collapsed sidebar width approximation (w-16 = 4rem) */
             }
+
             /* Shift header to the right on md+ so it sits beside the left sidebar
                and keep header z-index lower than the sidebar (sidebar z-40) */
             @media (min-width: 768px) {
                 .site-header {
-                    left: 16rem; /* equal to sidebar width (w-64) */
+                    left: 16rem;
+                    /* equal to sidebar width (w-64) */
                     right: 0;
                 }
             }
@@ -157,21 +240,27 @@ if (!$dashboardData) {
         <div class="flex items-center justify-between">
             <div class="hidden md:block">
                 <h1 class="text-xl md:text-2xl font-bold text-gray-800 m-0">Beranda</h1>
-                <p class="text-gray-600 m-0">Selamat datang, <?php echo htmlspecialchars($_SESSION['user']['namaLengkap']); ?>!</p>
+                <p class="text-gray-600 m-0">Selamat datang,
+                    <?php echo htmlspecialchars($_SESSION['user']['namaLengkap']); ?>!
+                </p>
             </div>
             <div class="flex md:hidden items-center gap-2 mobile-logo-wrap">
                 <img src="../../assets/img/logo.png" alt="Logo" class="h-7 w-7 flex-shrink-0">
-                <div id="logoTextContainer" class="transition-all duration-300 ease-in-out overflow-hidden whitespace-nowrap">
+                <div id="logoTextContainer"
+                    class="transition-all duration-300 ease-in-out overflow-hidden whitespace-nowrap">
                     <h1 id="logoText" class="mobile-logo-text font-bold text-gray-800">Point</h1>
                 </div>
             </div>
             <div class="flex items-center action-buttons gap-1 md:space-x-4">
-                <button command="show-modal" commandfor="join-class-modal" class="p-1 md:p-2 border rounded-full text-gray-400 hover:text-orange-600 transition-colors flex items-center">
+                <button command="show-modal" commandfor="join-class-modal"
+                    class="p-1 md:p-2 border rounded-full text-gray-400 hover:text-orange-600 transition-colors flex items-center">
                     <i class="ti ti-user-plus text-base md:text-xl"></i>
                     <span class="inline md:hidden ml-1 text-sm">Gabung</span>
                     <span class="hidden md:inline ml-1 text-sm">Gabung Kelas</span>
                 </button>
-                <button class="p-1 md:p-2 text-gray-400 hover:text-gray-600 transition-colors">
+                <!-- Dark mode toggle removed -->
+                <button class="p-1 md:p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                    data-notification-trigger="true">
                     <i class="ti ti-bell text-base md:text-xl"></i>
                 </button>
                 <button class="p-1 md:p-2 text-gray-400 hover:text-gray-600 transition-colors">
@@ -181,7 +270,8 @@ if (!$dashboardData) {
         </div>
     </header>
 
-    <div data-main-content class="pt-[3.5rem] md:pt-0 md:ml-64 md:mr-96 min-h-screen pb-20 md:pb-0 transition-all duration-300 ease-in-out">
+    <div data-main-content
+        class="pt-[3.5rem] md:pt-0 md:ml-64 md:mr-96 min-h-screen pb-20 md:pb-0 transition-all duration-300 ease-in-out">
 
         <!-- Main Content Area -->
         <main class="p-4 md:p-6">
@@ -203,33 +293,42 @@ if (!$dashboardData) {
                 <div class="stats-scroll flex overflow-x-auto gap-3 -mx-1 px-1 
                                 md:grid md:overflow-visible md:gap-6 md:mx-0 md:px-0 md:grid-cols-3">
                     <!-- Card: Total Kelas -->
-                    <div class="min-w-[150px] md:min-w-0 flex-1 bg-white rounded-lg shadow-sm border border-gray-200 p-3 md:p-6 flex items-center">
+                    <div
+                        class="min-w-[150px] md:min-w-0 flex-1 bg-white rounded-lg shadow-sm border border-gray-200 p-3 md:p-6 flex items-center">
                         <div class="p-2 md:p-3 md:me-4 bg-orange-tipis rounded-lg flex-shrink-0 md:mb-3">
                             <i class="ti ti-book text-orange-600 text-base md:text-xl"></i>
                         </div>
                         <div class="ml-3 md:ml-0">
                             <p class="text-[11px] md:text-sm text-gray-600 tracking-wide">Total Kelas</p>
-                            <p class="text-lg md:text-2xl font-bold text-gray-800 leading-tight"><?php echo $dashboardData['totalKelas'] ?? 0; ?></p>
+                            <p class="text-lg md:text-2xl font-bold text-gray-800 leading-tight">
+                                <?php echo $dashboardData['totalKelas'] ?? 0; ?>
+                            </p>
                         </div>
                     </div>
                     <!-- Card: Ujian Selesai -->
-                    <div class="min-w-[150px] md:min-w-0 flex-1 bg-white rounded-lg shadow-sm border border-gray-200 p-3 md:p-6 flex items-center">
+                    <div
+                        class="min-w-[150px] md:min-w-0 flex-1 bg-white rounded-lg shadow-sm border border-gray-200 p-3 md:p-6 flex items-center">
                         <div class="p-2 md:p-3 md:me-4 bg-orange-tipis rounded-lg flex-shrink-0 md:mb-3">
                             <i class="ti ti-clipboard-check text-orange-600 text-base md:text-xl"></i>
                         </div>
                         <div class="ml-3 md:ml-0">
                             <p class="text-[11px] md:text-sm text-gray-600 tracking-wide">Ujian Selesai</p>
-                            <p class="text-lg md:text-2xl font-bold text-gray-800 leading-tight"><?php echo $dashboardData['ujianSelesai'] ?? 0; ?></p>
+                            <p class="text-lg md:text-2xl font-bold text-gray-800 leading-tight">
+                                <?php echo $dashboardData['ujianSelesai'] ?? 0; ?>
+                            </p>
                         </div>
                     </div>
                     <!-- Card: Rata-rata Nilai -->
-                    <div class="hidden md:flex min-w-[150px] md:min-w-0 flex-1 bg-white rounded-lg shadow-sm border border-gray-200 p-3 md:p-6 flex items-center">
+                    <div
+                        class="hidden md:flex min-w-[150px] md:min-w-0 flex-1 bg-white rounded-lg shadow-sm border border-gray-200 p-3 md:p-6 flex items-center">
                         <div class="p-2 md:p-3 md:me-4 bg-orange-tipis rounded-lg flex-shrink-0 md:mb-3">
                             <i class="ti ti-star text-orange-600 text-base md:text-xl"></i>
                         </div>
                         <div class="ml-3 md:ml-0">
                             <p class="text-[11px] md:text-sm text-gray-600 tracking-wide">Rata-rata Nilai</p>
-                            <p class="text-lg md:text-2xl font-bold text-gray-800 leading-tight"><?php echo $dashboardData['rataNilai'] ?? 0; ?></p>
+                            <p class="text-lg md:text-2xl font-bold text-gray-800 leading-tight">
+                                <?php echo $dashboardData['rataNilai'] ?? 0; ?>
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -242,8 +341,10 @@ if (!$dashboardData) {
                     .beranda-right-sidebar {
                         width: 360px;
                         position: fixed;
-                        right: 1.5rem; /* align with padding */
-                        top: 0; /* pin to top because header hidden on desktop */
+                        right: 1.5rem;
+                        /* align with padding */
+                        top: 0;
+                        /* pin to top because header hidden on desktop */
                         height: 100vh;
                         overflow: hidden;
                         z-index: 40;
@@ -254,7 +355,8 @@ if (!$dashboardData) {
                         overflow-y: auto;
                         -ms-overflow-style: none;
                         scrollbar-width: thin;
-                        overscroll-behavior: contain; /* prevent scroll chaining to page */
+                        overscroll-behavior: contain;
+                        /* prevent scroll chaining to page */
                     }
 
                     .beranda-right-sidebar .sidebar-scroll::-webkit-scrollbar {
@@ -262,7 +364,7 @@ if (!$dashboardData) {
                     }
 
                     .beranda-right-sidebar .sidebar-scroll::-webkit-scrollbar-thumb {
-                        background: rgba(0,0,0,0.08);
+                        background: rgba(0, 0, 0, 0.08);
                         border-radius: 999px;
                     }
                 }
@@ -270,24 +372,71 @@ if (!$dashboardData) {
 
             <aside class="hidden md:block beranda-right-sidebar">
                 <div class="bg-transparent h-full rounded-lg shadow-none">
-                    <div class="sidebar-scroll bg-transparent p-2 mt-4 ps-5 overflow-y-auto">
-                        <!-- Card: Rekomendasi (image above text) -->
+                    <div class="sidebar-scroll bg-transparent p-2 mt-4 pb-4 ps-5 overflow-y-auto">
+                        <!-- Card: Papan Iklan -->
+                        <?php if (!empty($advertisements)): ?>
                         <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-4 overflow-hidden">
                             <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
                                 <h3 class="text-base font-semibold text-gray-800">Rekomendasi</h3>
-                                <button class="text-sm text-gray-500 hover:text-gray-700">Lihat Semua</button>
-                            </div>
-                            <div class="p-3 space-y-4">
-                                <!-- Recommended card item with image above -->
-                                <div class="rounded-lg overflow-hidden bg-gray-50 border border-gray-100 hover:shadow-md transition-shadow">
-                                    <div class="w-full h-40 bg-cover bg-center" style="background-image: url('../../assets/img/rekomendasi-sample-1.jpg');"></div>
-                                    <div class="p-3">
-                                        <div class="text-sm font-semibold text-gray-900">Kelas: Matematika Dasar</div>
-                                        <div class="text-xs text-gray-500 mt-1">Ringkasan & latihan soal tersedia</div>
-                                    </div>
+                                <?php if (count($advertisements) > 1): ?>
+                                <div class="flex items-center space-x-2">
+                                    <button id="prev-ad-btn" class="text-sm text-gray-500 hover:text-gray-700 transition-colors">
+                                        <i class="ti ti-chevron-left"></i>
+                                    </button>
+                                    <button id="next-ad-btn" class="text-sm text-gray-500 hover:text-gray-700 transition-colors">
+                                        <i class="ti ti-chevron-right"></i>
+                                    </button>
                                 </div>
+                                <?php endif; ?>
+                            </div>
+                            <div class="p-3 relative">
+                                <!-- Advertisement slider -->
+                                <div class="advertisement-slider relative">
+                                    <?php foreach ($advertisements as $index => $ad): ?>
+                                    <div class="advertisement-item <?php echo $index === 0 ? 'active' : ''; ?>"
+                                         data-ad-id="<?php echo $ad['id']; ?>">
+                                        <div class="rounded-lg overflow-hidden bg-gray-50 border border-gray-100 hover:shadow-md transition-shadow">
+                                            <?php if ($ad['link_url'] && $ad['link_url'] !== '#'): ?>
+                                            <a href="<?php echo htmlspecialchars($ad['link_url']); ?>" target="_blank" class="block">
+                                            <?php endif; ?>
+                                                <?php if ($ad['image_path']): ?>
+                                                <div class="w-full h-40 bg-cover bg-center bg-gray-200 <?php echo ($ad['link_url'] && $ad['link_url'] !== '#') ? 'cursor-pointer' : ''; ?>"
+                                                     style="background-image: url('<?php echo htmlspecialchars($ad['image_path']); ?>');"
+                                                     onerror="this.style.backgroundImage='url(../../assets/img/placeholder-ad.jpg)';">
+                                                </div>
+                                                <?php else: ?>
+                                                <div class="w-full h-40 bg-gradient-to-br from-orange-100 to-orange-200 flex items-center justify-center <?php echo ($ad['link_url'] && $ad['link_url'] !== '#') ? 'cursor-pointer' : ''; ?>">
+                                                    <i class="ti ti-photo text-4xl text-orange-400"></i>
+                                                </div>
+                                                <?php endif; ?>
+                                            <?php if ($ad['link_url'] && $ad['link_url'] !== '#'): ?>
+                                            </a>
+                                            <?php endif; ?>
+                                            <div class="p-3">
+                                                <div class="text-sm font-semibold text-gray-900">
+                                                    <?php echo htmlspecialchars($ad['title']); ?>
+                                                </div>
+                                                <div class="text-xs text-gray-500 mt-1 line-clamp-2">
+                                                    <?php echo htmlspecialchars($ad['description']); ?>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <?php endforeach; ?>
+                                </div>
+                                
+                                <?php if (count($advertisements) > 1): ?>
+                                <!-- Advertisement indicators -->
+                                <div class="flex justify-center mt-3 space-x-2">
+                                    <?php foreach ($advertisements as $index => $ad): ?>
+                                    <button class="ad-indicator <?php echo $index === 0 ? 'active' : ''; ?>"
+                                            data-index="<?php echo $index; ?>"></button>
+                                    <?php endforeach; ?>
+                                </div>
+                                <?php endif; ?>
                             </div>
                         </div>
+                        <?php endif; ?>
 
                         <!-- Minimal Info Card (Desktop-only moved from top stats) -->
                         <div class="hidden md:block bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-4">
@@ -295,15 +444,18 @@ if (!$dashboardData) {
                             <div class="space-y-3 text-sm text-gray-700">
                                 <div class="flex items-center justify-between">
                                     <span class="text-gray-500">Total Kelas</span>
-                                    <span class="font-semibold text-gray-800"><?php echo $dashboardData['totalKelas'] ?? 0; ?></span>
+                                    <span
+                                        class="font-semibold text-gray-800"><?php echo $dashboardData['totalKelas'] ?? 0; ?></span>
                                 </div>
                                 <div class="flex items-center justify-between">
                                     <span class="text-gray-500">Ujian Selesai</span>
-                                    <span class="font-semibold text-gray-800"><?php echo $dashboardData['ujianSelesai'] ?? 0; ?></span>
+                                    <span
+                                        class="font-semibold text-gray-800"><?php echo $dashboardData['ujianSelesai'] ?? 0; ?></span>
                                 </div>
                                 <div class="flex items-center justify-between">
                                     <span class="text-gray-500">Rata-rata Nilai</span>
-                                    <span class="font-semibold text-gray-800"><?php echo $dashboardData['rataNilai'] ?? 0; ?></span>
+                                    <span
+                                        class="font-semibold text-gray-800"><?php echo $dashboardData['rataNilai'] ?? 0; ?></span>
                                 </div>
                             </div>
                         </div>
@@ -314,12 +466,14 @@ if (!$dashboardData) {
                                 <h3 class="text-sm font-semibold text-gray-800">
                                     Pemberitahuan
                                     <?php if ($unreadNotificationsCount > 0): ?>
-                                        <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                                        <span
+                                            class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
                                             <?php echo $unreadNotificationsCount; ?>
                                         </span>
                                     <?php endif; ?>
                                 </h3>
-                                <button onclick="openNotificationsModal()" class="text-xs text-gray-500 hover:text-gray-700">
+                                <button onclick="openNotificationsModal()"
+                                    class="text-xs text-gray-500 hover:text-gray-700">
                                     Lihat Semua
                                 </button>
                             </div>
@@ -327,24 +481,29 @@ if (!$dashboardData) {
                                 <?php if (!empty($recentNotifications)): ?>
                                     <ul class="divide-y divide-gray-100">
                                         <?php foreach ($recentNotifications as $notification): ?>
-                                            <?php 
-                                                $redirectUrl = $notificationLogic->getNotificationRedirectUrl($notification);
-                                                $hasValidRedirect = $notificationLogic->hasValidRedirect($notification);
+                                            <?php
+                                            $redirectUrl = $notificationLogic->getNotificationRedirectUrl($notification);
+                                            $hasValidRedirect = $notificationLogic->hasValidRedirect($notification);
                                             ?>
-                                            <li class="px-3 py-2 flex items-start space-x-3 hover:bg-gray-50 cursor-pointer <?php echo $notification['is_read'] ? 'opacity-75' : ''; ?>" 
+                                            <li class="px-3 py-2 flex items-start space-x-3 hover:bg-gray-50 cursor-pointer <?php echo $notification['is_read'] ? 'opacity-75' : ''; ?>"
                                                 onclick="handleNotificationClick(<?php echo $notification['id']; ?>, '<?php echo $redirectUrl; ?>', <?php echo $hasValidRedirect ? 'true' : 'false'; ?>, this)">
                                                 <div class="flex-shrink-0 mt-1">
-                                                    <i class="ti <?php echo $notificationLogic->getNotificationIcon($notification['type']); ?> <?php echo $notificationLogic->getNotificationColor($notification['type']); ?>"></i>
+                                                    <i
+                                                        class="ti <?php echo $notificationLogic->getNotificationIcon($notification['type']); ?> <?php echo $notificationLogic->getNotificationColor($notification['type']); ?>"></i>
                                                     <?php if (!$notification['is_read']): ?>
                                                         <div class="w-2 h-2 bg-orange-500 rounded-full -mt-1 -ml-1"></div>
                                                     <?php endif; ?>
                                                 </div>
                                                 <div class="flex-1 min-w-0">
-                                                    <div class="text-sm text-gray-900 font-medium"><?php echo htmlspecialchars($notification['title']); ?></div>
-                                                    <div class="text-xs text-gray-600 mb-1"><?php echo htmlspecialchars($notification['message']); ?></div>
+                                                    <div class="text-sm text-gray-900 font-medium">
+                                                        <?php echo htmlspecialchars($notification['title']); ?>
+                                                    </div>
+                                                    <div class="text-xs text-gray-600 mb-1">
+                                                        <?php echo htmlspecialchars($notification['message']); ?>
+                                                    </div>
                                                     <div class="text-xs text-gray-500">
                                                         <?php if ($notification['nama_kelas']): ?>
-                                                            Kelas: <?php echo htmlspecialchars($notification['nama_kelas']); ?> • 
+                                                            Kelas: <?php echo htmlspecialchars($notification['nama_kelas']); ?> •
                                                         <?php endif; ?>
                                                         <?php echo $notificationLogic->getTimeAgo($notification['created_at']); ?>
                                                     </div>
@@ -361,72 +520,55 @@ if (!$dashboardData) {
                             </div>
                         </div>
 
-                        <!-- Card: Tugas Terbaru -->
+                        <!-- Card: Tugas Terbaru (dynamic) -->
                         <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-4 overflow-hidden">
                             <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
                                 <h3 class="text-sm font-semibold text-gray-800">Tugas Terbaru</h3>
-                                <button class="text-xs text-gray-500 hover:text-gray-700">Lihat Semua</button>
+                                <button onclick="openAssignmentsModal()"
+                                    class="text-xs text-gray-500 hover:text-gray-700">Lihat Semua</button>
                             </div>
-                            <div class="p-2 space-y-2">
-                                <div class="px-3 py-2 bg-gray-50 rounded hover:bg-gray-100">
-                                    <div class="flex items-center justify-between">
-                                        <div class="min-w-0">
-                                            <div class="text-sm font-medium text-gray-900 truncate">Tugas: Laporan Kimia</div>
-                                            <div class="text-xs text-gray-500">Deadline: 18 Sep 2025</div>
+                            <div class="p-2 space-y-2" id="beranda-recent-assignments">
+                                <?php if (!empty($recentAssignments)): ?>
+                                    <?php foreach ($recentAssignments as $assign): ?>
+                                        <?php
+                                        $deadlineText = $assign['deadline'] ? date('d M Y, H:i', strtotime($assign['deadline'])) : 'Tidak ada deadline';
+                                        ?>
+                                        <div class="px-3 py-2 bg-gray-50 rounded hover:bg-gray-100">
+                                            <div class="flex items-center justify-between">
+                                                <div class="min-w-0">
+                                                    <div class="text-sm font-medium text-gray-900 truncate">
+                                                        <?php echo htmlspecialchars($assign['title']); ?>
+                                                    </div>
+                                                    <div class="text-xs text-gray-500">Kelas:
+                                                        <?php echo htmlspecialchars($assign['namaKelas']); ?> • Deadline:
+                                                        <?php echo $deadlineText; ?>
+                                                    </div>
+                                                </div>
+                                                <a href="../front/kelas-user.php?id=<?php echo (int) $assign['kelas_id']; ?>#post-assignment-<?php echo (int) $assign['id']; ?>"
+                                                    class="ml-3 px-2 py-1 bg-white border border-gray-200 text-sm rounded">Lihat</a>
+                                            </div>
                                         </div>
-                                        <button class="ml-3 px-2 py-1 bg-blue-600 text-white text-xs rounded">Kumpulkan</button>
+                                    <?php endforeach; ?>
+                                <?php else: ?>
+                                    <div class="px-3 py-4 text-center text-gray-500 text-sm">
+                                        <i class="ti ti-clipboard-off text-2xl mb-2 block"></i>
+                                        Tidak ada tugas terbaru
                                     </div>
-                                </div>
-
-                                <div class="px-3 py-2 bg-gray-50 rounded hover:bg-gray-100">
-                                    <div class="flex items-center justify-between">
-                                        <div class="min-w-0">
-                                            <div class="text-sm font-medium text-gray-900 truncate">Tugas: Soal Matematika</div>
-                                            <div class="text-xs text-gray-500">Deadline: 20 Sep 2025</div>
-                                        </div>
-                                        <button class="ml-3 px-2 py-1 bg-white border border-gray-200 text-sm rounded">Lihat</button>
-                                    </div>
-                                </div>
+                                <?php endif; ?>
                             </div>
                         </div>
 
-                        <!-- Card: Teman Sekelas -->
-                        <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-4 overflow-hidden">
-                            <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-                                <h3 class="text-sm font-semibold text-gray-800">Teman Sekelas</h3>
-                                <button class="text-xs text-gray-500 hover:text-gray-700">Lihat Semua</button>
-                            </div>
-                            <div class="p-2 space-y-2">
-                                <div class="flex items-center space-x-3 px-2 py-2 hover:bg-gray-50 rounded">
-                                    <div class="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-sm text-gray-700">A</div>
-                                    <div class="flex-1 min-w-0">
-                                        <div class="text-sm font-medium text-gray-900">Aisyah Putri</div>
-                                        <div class="text-xs text-gray-500">Guru: Matematika</div>
-                                    </div>
-                                    <button class="ml-2 px-2 py-1 bg-white border border-gray-200 text-sm rounded">Chat</button>
-                                </div>
-
-                                <div class="flex items-center space-x-3 px-2 py-2 hover:bg-gray-50 rounded">
-                                    <div class="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-sm text-gray-700">R</div>
-                                    <div class="flex-1 min-w-0">
-                                        <div class="text-sm font-medium text-gray-900">Rizky Pratama</div>
-                                        <div class="text-xs text-gray-500">Siswa • Kelas A</div>
-                                    </div>
-                                    <button class="ml-2 px-2 py-1 bg-white border border-gray-200 text-sm rounded">Chat</button>
-                                </div>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </aside>
             <script>
-                (function() {
+                (function () {
                     // Enable sidebar-only scrolling when pointer is over the right sidebar
                     var sidebarScroll = document.querySelector('.beranda-right-sidebar .sidebar-scroll');
                     if (!sidebarScroll) return;
 
                     // Ensure the element can receive wheel events and prevent page scroll
-                    sidebarScroll.addEventListener('wheel', function(e) {
+                    sidebarScroll.addEventListener('wheel', function (e) {
                         // Only intercept vertical scrolling
                         if (Math.abs(e.deltaY) < 1) return;
                         // Scroll the sidebar container
@@ -448,11 +590,13 @@ if (!$dashboardData) {
                     <!-- Initial posts loaded via PHP for faster first paint -->
                     <?php if (!empty($recentPosts)): ?>
                         <?php foreach ($recentPosts as $post): ?>
-                            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6" data-user-id="<?php echo $post['user_id']; ?>" data-post-id="<?php echo $post['id']; ?>">
+                            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6"
+                                data-user-id="<?php echo $post['user_id']; ?>" data-post-id="<?php echo $post['id']; ?>">
                                 <!-- Post Header -->
                                 <div class="flex items-start justify-between mb-3">
                                     <div class="flex items-center space-x-3">
-                                        <div class="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0 bg-gray-100">
+                                        <div
+                                            class="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0 bg-gray-100">
                                             <?php if (isset($post['fotoProfil']) && !empty($post['fotoProfil'])): ?>
                                                 <?php
                                                 $fotoProfil = $post['fotoProfil'];
@@ -463,27 +607,26 @@ if (!$dashboardData) {
                                                     $photoPath = '../../uploads/profile/' . $fotoProfil;
                                                 }
                                                 ?>
-                                                <img src="<?php echo htmlspecialchars($photoPath); ?>"
-                                                    alt="Profile Photo"
+                                                <img src="<?php echo htmlspecialchars($photoPath); ?>" alt="Profile Photo"
                                                     class="w-full h-full object-cover post-profile-photo"
                                                     onerror="this.parentElement.innerHTML='<div class=\'w-full h-full bg-orange-600 rounded-full flex items-center justify-center\'><span class=\'text-white font-medium text-sm\'><?php echo strtoupper(substr($post['namaPenulis'], 0, 1)); ?></span></div>'">
                                             <?php else: ?>
                                                 <!-- Fallback with role-based colors -->
                                                 <div class="w-full h-full rounded-full flex items-center justify-center <?php
-                                                                                                                        switch ($post['rolePenulis']) {
-                                                                                                                            case 'admin':
-                                                                                                                                echo 'bg-red-100 text-red-600';
-                                                                                                                                break;
-                                                                                                                            case 'guru':
-                                                                                                                                echo 'bg-blue-100 text-blue-600';
-                                                                                                                                break;
-                                                                                                                            case 'siswa':
-                                                                                                                                echo 'bg-green-100 text-green-600';
-                                                                                                                                break;
-                                                                                                                            default:
-                                                                                                                                echo 'bg-orange-600 text-white';
-                                                                                                                        }
-                                                                                                                        ?>">
+                                                switch ($post['rolePenulis']) {
+                                                    case 'admin':
+                                                        echo 'bg-red-100 text-red-600';
+                                                        break;
+                                                    case 'guru':
+                                                        echo 'bg-blue-100 text-blue-600';
+                                                        break;
+                                                    case 'siswa':
+                                                        echo 'bg-green-100 text-green-600';
+                                                        break;
+                                                    default:
+                                                        echo 'bg-orange-600 text-white';
+                                                }
+                                                ?>">
                                                     <span class="font-medium text-sm">
                                                         <?php echo strtoupper(substr($post['namaPenulis'], 0, 1)); ?>
                                                     </span>
@@ -492,9 +635,12 @@ if (!$dashboardData) {
                                         </div>
                                         <div>
                                             <div class="flex items-center space-x-2">
-                                                <h4 class="font-medium text-gray-900"><?php echo htmlspecialchars($post['namaPenulis']); ?></h4>
+                                                <h4 class="font-medium text-gray-900">
+                                                    <?php echo htmlspecialchars($post['namaPenulis']); ?>
+                                                </h4>
                                                 <span class="text-sm text-gray-500">•</span>
-                                                <span class="text-sm text-orange-600 font-medium"><?php echo htmlspecialchars($post['namaKelas']); ?></span>
+                                                <span
+                                                    class="text-sm text-orange-600 font-medium"><?php echo htmlspecialchars($post['namaKelas']); ?></span>
                                             </div>
                                             <p class="text-xs text-gray-500">
                                                 <?php echo date('d M Y, H:i', strtotime($post['dibuat'])); ?>
@@ -506,23 +652,25 @@ if (!$dashboardData) {
                                 <!-- Post Content -->
                                 <div class="mb-4">
                                     <div class="post-content text-gray-800 whitespace-pre-wrap"><?php
-                                                                                                // Convert markdown-style formatting to HTML
-                                                                                                // First do the markdown replacements before htmlspecialchars
-                                                                                                $formattedContent = $post['konten'];
-                                                                                                // Bold text: **text** -> <strong>text</strong>
-                                                                                                $formattedContent = preg_replace('/\*\*(.*?)\*\*/', '<strong>$1</strong>', $formattedContent);
-                                                                                                // Italic text: *text* -> <em>text</em> (only single asterisks not already converted)
-                                                                                                $formattedContent = preg_replace('/(?<!\*)\*([^*]+?)\*(?!\*)/', '<em>$1</em>', $formattedContent);
-                                                                                                // Now escape HTML but preserve our formatting tags
-                                                                                                $formattedContent = htmlspecialchars($formattedContent, ENT_QUOTES, 'UTF-8', false);
-                                                                                                // Unescape our formatting tags
-                                                                                                $formattedContent = str_replace(['&lt;strong&gt;', '&lt;/strong&gt;', '&lt;em&gt;', '&lt;/em&gt;'], ['<strong>', '</strong>', '<em>', '</em>'], $formattedContent);
-                                                                                                echo $formattedContent;
-                                                                                                ?></div>
+                                    // Convert markdown-style formatting to HTML
+                                    // First do the markdown replacements before htmlspecialchars
+                                    $formattedContent = $post['konten'];
+                                    // Bold text: **text** -> <strong>text</strong>
+                                    $formattedContent = preg_replace('/\*\*(.*?)\*\*/', '<strong>$1</strong>', $formattedContent);
+                                    // Italic text: *text* -> <em>text</em> (only single asterisks not already converted)
+                                    $formattedContent = preg_replace('/(?<!\*)\*([^*]+?)\*(?!\*)/', '<em>$1</em>', $formattedContent);
+                                    // Now escape HTML but preserve our formatting tags
+                                    $formattedContent = htmlspecialchars($formattedContent, ENT_QUOTES, 'UTF-8', false);
+                                    // Unescape our formatting tags
+                                    $formattedContent = str_replace(['&lt;strong&gt;', '&lt;/strong&gt;', '&lt;em&gt;', '&lt;/em&gt;'], ['<strong>', '</strong>', '<em>', '</em>'], $formattedContent);
+                                    echo $formattedContent;
+                                    ?></div>
 
                                     <!-- Assignment Content (if it's an assignment post) -->
                                     <?php if ($post['tipePost'] === 'tugas' || $post['tipe_postingan'] === 'assignment'): ?>
-                                        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 mt-3" data-assignment-id="<?php echo $post['assignment_id'] ?? 0; ?>">
+                                        <div id="post-assignment-<?php echo $post['assignment_id'] ?? 0; ?>"></div>
+                                        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 mt-3"
+                                            data-assignment-id="<?php echo $post['assignment_id'] ?? 0; ?>">
                                             <div class="flex items-start space-x-3">
                                                 <div class="flex-shrink-0">
                                                     <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
@@ -531,7 +679,8 @@ if (!$dashboardData) {
                                                 </div>
                                                 <div class="flex-1 min-w-0">
                                                     <div class="flex items-start justify-between mb-3">
-                                                        <h3 class="text-xl font-bold text-gray-900 flex items-center assignment-title">
+                                                        <h3
+                                                            class="text-xl font-bold text-gray-900 flex items-center assignment-title">
                                                             <i class="ti ti-assignment text-blue-600 mr-2"></i>
                                                             <?php echo isset($post['assignment_title']) ? htmlspecialchars($post['assignment_title']) : 'Tugas'; ?>
                                                         </h3>
@@ -543,49 +692,88 @@ if (!$dashboardData) {
                                                             <?php
                                                             $isExpired = strtotime($post['assignment_deadline']) < time();
                                                             ?>
-                                                            <div class="flex items-center space-x-2 p-3 bg-white rounded-lg border <?php echo $isExpired ? 'border-red-200 bg-red-50' : 'border-gray-200'; ?>">
+                                                            <div
+                                                                class="flex items-center space-x-2 p-3 bg-white rounded-lg border <?php echo $isExpired ? 'border-red-200 bg-red-50' : 'border-gray-200'; ?>">
                                                                 <div class="flex-shrink-0">
-                                                                    <i class="ti ti-calendar-due text-lg <?php echo $isExpired ? 'text-red-500' : 'text-orange-500'; ?>"></i>
+                                                                    <i
+                                                                        class="ti ti-calendar-due text-lg <?php echo $isExpired ? 'text-red-500' : 'text-orange-500'; ?>"></i>
                                                                 </div>
                                                                 <div class="flex-1 min-w-0">
-                                                                    <div class="text-xs font-medium text-gray-500 uppercase tracking-wide">Deadline</div>
-                                                                    <div class="text-sm font-semibold <?php echo $isExpired ? 'text-red-700' : 'text-gray-900'; ?> truncate">
-                                                                        <span class="hidden sm:inline"><?php echo date('l, d M Y H:i', strtotime($post['assignment_deadline'])); ?></span>
-                                                                        <span class="sm:hidden"><?php echo date('d M, H:i', strtotime($post['assignment_deadline'])); ?></span>
+                                                                    <div
+                                                                        class="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                                                                        Deadline</div>
+                                                                    <div
+                                                                        class="text-sm font-semibold <?php echo $isExpired ? 'text-red-700' : 'text-gray-900'; ?> truncate">
+                                                                        <span
+                                                                            class="hidden sm:inline"><?php echo date('l, d M Y H:i', strtotime($post['assignment_deadline'])); ?></span>
+                                                                        <span
+                                                                            class="sm:hidden"><?php echo date('d M, H:i', strtotime($post['assignment_deadline'])); ?></span>
                                                                     </div>
                                                                 </div>
                                                             </div>
                                                         <?php endif; ?>
 
                                                         <?php if (isset($post['assignment_max_score']) && $post['assignment_max_score']): ?>
-                                                            <div class="flex items-center space-x-2 p-3 bg-white rounded-lg border border-gray-200">
+                                                            <div
+                                                                class="flex items-center space-x-2 p-3 bg-white rounded-lg border border-gray-200">
                                                                 <div class="flex-shrink-0">
                                                                     <i class="ti ti-trophy text-lg text-yellow-500"></i>
                                                                 </div>
                                                                 <div class="flex-1">
-                                                                    <div class="text-xs font-medium text-gray-500 uppercase tracking-wide">Nilai Maksimal</div>
-                                                                    <div class="text-sm font-semibold text-gray-900"><?php echo $post['assignment_max_score']; ?> Poin</div>
+                                                                    <div
+                                                                        class="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                                                                        Nilai Maksimal</div>
+                                                                    <div class="text-sm font-semibold text-gray-900">
+                                                                        <?php echo $post['assignment_max_score']; ?> Poin
+                                                                    </div>
                                                                 </div>
                                                             </div>
                                                         <?php endif; ?>
                                                     </div>
 
-                                                    <?php if (isset($post['assignment_file_path']) && $post['assignment_file_path']): ?>
-                                                        <div class="p-3 bg-white rounded-lg border border-gray-200">
-                                                            <div class="flex items-center space-x-3">
-                                                                <div class="flex-shrink-0">
-                                                                    <i class="ti ti-file text-blue-600 text-xl"></i>
+                                                    <?php if (!empty($post['assignment_files'])): ?>
+                                                        <div class="space-y-2">
+                                                            <?php foreach ($post['assignment_files'] as $index => $file): ?>
+                                                                <div class="p-3 bg-white rounded-lg border border-gray-200">
+                                                                    <div class="flex items-center space-x-3">
+                                                                        <div class="flex-shrink-0">
+                                                                            <?php
+                                                                            $ext = strtolower($file['ekstensi_file'] ?? pathinfo($file['nama_file'], PATHINFO_EXTENSION));
+                                                                            $iconClass = 'ti-file';
+                                                                            $iconColor = 'text-blue-600';
+                                                                            
+                                                                            switch ($ext) {
+                                                                                case 'pdf': $iconClass = 'ti-file-type-pdf'; $iconColor = 'text-red-600'; break;
+                                                                                case 'doc': case 'docx': $iconClass = 'ti-file-type-doc'; $iconColor = 'text-blue-600'; break;
+                                                                                case 'xls': case 'xlsx': $iconClass = 'ti-file-spreadsheet'; $iconColor = 'text-green-600'; break;
+                                                                                case 'ppt': case 'pptx': $iconClass = 'ti-presentation'; $iconColor = 'text-orange-600'; break;
+                                                                                case 'zip': case 'rar': $iconClass = 'ti-file-zip'; $iconColor = 'text-yellow-600'; break;
+                                                                            }
+                                                                            ?>
+                                                                            <i class="ti <?php echo $iconClass . ' ' . $iconColor; ?> text-xl"></i>
+                                                                        </div>
+                                                                        <div class="flex-1 min-w-0">
+                                                                            <div class="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                                                                                File Tugas <?php echo ($index + 1); ?>
+                                                                            </div>
+                                                                            <div class="text-sm font-semibold text-gray-900 truncate">
+                                                                                <?php echo htmlspecialchars($file['nama_file']); ?>
+                                                                            </div>
+                                                                            <?php if (!empty($file['ukuran_file'])): ?>
+                                                                                <div class="text-xs text-gray-500">
+                                                                                    <?php echo number_format($file['ukuran_file'] / 1024, 1); ?> KB
+                                                                                </div>
+                                                                            <?php endif; ?>
+                                                                        </div>
+                                                                        <a href="../../<?php echo htmlspecialchars($file['path_file']); ?>"
+                                                                            target="_blank"
+                                                                            class="flex items-center space-x-1 bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex-shrink-0">
+                                                                            <i class="ti ti-download"></i>
+                                                                            <span class="hidden sm:inline">Download</span>
+                                                                        </a>
+                                                                    </div>
                                                                 </div>
-                                                                <div class="flex-1 min-w-0">
-                                                                    <div class="text-xs font-medium text-gray-500 uppercase tracking-wide">File Tugas</div>
-                                                                    <div class="text-sm font-semibold text-gray-900 truncate"><?php echo basename($post['assignment_file_path']); ?></div>
-                                                                </div>
-                                                                <a href="../../<?php echo htmlspecialchars($post['assignment_file_path']); ?>" target="_blank"
-                                                                    class="flex items-center space-x-1 bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex-shrink-0">
-                                                                    <i class="ti ti-download"></i>
-                                                                    <span class="hidden sm:inline">Download</span>
-                                                                </a>
-                                                            </div>
+                                                            <?php endforeach; ?>
                                                         </div>
                                                     <?php endif; ?>
                                                 </div>
@@ -614,10 +802,12 @@ if (!$dashboardData) {
                                                 }
                                                 ?>
 
-                                                <div class="flex items-center justify-between" id="assignment-status-row-<?php echo $post['assignment_id'] ?? 0; ?>">
+                                                <div class="flex items-center justify-between"
+                                                    id="assignment-status-row-<?php echo $post['assignment_id'] ?? 0; ?>">
                                                     <div class="flex items-center">
                                                         <?php if ($submissionStatus === 'graded'): ?>
-                                                            <span id="assignment-status-badge-<?php echo $post['assignment_id']; ?>" class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-100 text-green-800">
+                                                            <span id="assignment-status-badge-<?php echo $post['assignment_id']; ?>"
+                                                                class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-100 text-green-800">
                                                                 <i class="ti ti-check-circle mr-1"></i>
                                                                 Sudah dinilai
                                                                 <?php if ($studentScore !== null): ?>
@@ -625,17 +815,20 @@ if (!$dashboardData) {
                                                                 <?php endif; ?>
                                                             </span>
                                                         <?php elseif ($submissionStatus === 'submitted'): ?>
-                                                            <span id="assignment-status-badge-<?php echo $post['assignment_id']; ?>" class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800">
+                                                            <span id="assignment-status-badge-<?php echo $post['assignment_id']; ?>"
+                                                                class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800">
                                                                 <i class="ti ti-upload mr-1"></i>
                                                                 Sudah dikumpulkan
                                                             </span>
                                                         <?php elseif ($isExpired): ?>
-                                                            <span id="assignment-status-badge-<?php echo $post['assignment_id']; ?>" class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-red-100 text-red-800">
+                                                            <span id="assignment-status-badge-<?php echo $post['assignment_id']; ?>"
+                                                                class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-red-100 text-red-800">
                                                                 <i class="ti ti-clock-x mr-1"></i>
                                                                 Terlambat
                                                             </span>
                                                         <?php else: ?>
-                                                            <span id="assignment-status-badge-<?php echo $post['assignment_id']; ?>" class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-yellow-100 text-yellow-800">
+                                                            <span id="assignment-status-badge-<?php echo $post['assignment_id']; ?>"
+                                                                class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-yellow-100 text-yellow-800">
                                                                 <i class="ti ti-clock mr-1"></i>
                                                                 Belum dikumpulkan
                                                             </span>
@@ -643,7 +836,8 @@ if (!$dashboardData) {
                                                     </div>
 
                                                     <?php if ($submissionStatus !== 'graded' && !$isExpired && isset($post['assignment_id'])): ?>
-                                                        <button id="open-inline-form-btn-<?php echo $post['assignment_id']; ?>" onclick="showSubmissionForm(<?php echo $post['assignment_id']; ?>)"
+                                                        <button id="open-inline-form-btn-<?php echo $post['assignment_id']; ?>"
+                                                            onclick="showSubmissionForm(<?php echo $post['assignment_id']; ?>)"
                                                             class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors">
                                                             <?php echo $submissionStatus === 'submitted' ? 'Update Tugas' : 'Kumpulkan Tugas'; ?>
                                                         </button>
@@ -665,8 +859,10 @@ if (!$dashboardData) {
                                                         $rightState = 'text-green-600';
                                                     }
                                                     ?>
-                                                    <div class="mt-3" id="assignment-progress-wrapper-<?php echo $post['assignment_id']; ?>">
-                                                        <div class="flex justify-between text-[10px] md:text-xs font-medium mb-1 text-gray-500">
+                                                    <div class="mt-3"
+                                                        id="assignment-progress-wrapper-<?php echo $post['assignment_id']; ?>">
+                                                        <div
+                                                            class="flex justify-between text-[10px] md:text-xs font-medium mb-1 text-gray-500">
                                                             <span class="flex items-center gap-1 <?php echo $leftState; ?>">
                                                                 <i class="ti ti-check"></i>
                                                                 Terkumpul
@@ -676,12 +872,17 @@ if (!$dashboardData) {
                                                                 Dinilai
                                                             </span>
                                                         </div>
-                                                        <div class="relative h-2 bg-gray-200 rounded-full" id="assignment-progress-bar-<?php echo $post['assignment_id']; ?>">
-                                                            <div class="absolute inset-y-0 left-0 <?php echo $barColor; ?> rounded-full transition-all duration-500" id="assignment-progress-fill-<?php echo $post['assignment_id']; ?>" style="width: <?php echo $progressWidth; ?>%"></div>
-                                                            <div class="absolute -top-1 w-4 h-4 rounded-full border-2 border-white shadow left-0 translate-x-[-2px] flex items-center justify-center <?php echo ($progressWidth > 0) ? 'bg-green-500' : 'bg-gray-300'; ?>">
+                                                        <div class="relative h-2 bg-gray-200 rounded-full"
+                                                            id="assignment-progress-bar-<?php echo $post['assignment_id']; ?>">
+                                                            <div class="absolute inset-y-0 left-0 <?php echo $barColor; ?> rounded-full transition-all duration-500"
+                                                                id="assignment-progress-fill-<?php echo $post['assignment_id']; ?>"
+                                                                style="width: <?php echo $progressWidth; ?>%"></div>
+                                                            <div
+                                                                class="absolute -top-1 w-4 h-4 rounded-full border-2 border-white shadow left-0 translate-x-[-2px] flex items-center justify-center <?php echo ($progressWidth > 0) ? 'bg-green-500' : 'bg-gray-300'; ?>">
                                                                 <i class="ti ti-check text-white text-[10px]"></i>
                                                             </div>
-                                                            <div class="absolute -top-1 w-4 h-4 rounded-full border-2 border-white shadow right-0 translate-x-[2px] flex items-center justify-center <?php echo ($progressWidth == 100) ? 'bg-green-500' : 'bg-gray-300'; ?>">
+                                                            <div
+                                                                class="absolute -top-1 w-4 h-4 rounded-full border-2 border-white shadow right-0 translate-x-[2px] flex items-center justify-center <?php echo ($progressWidth == 100) ? 'bg-green-500' : 'bg-gray-300'; ?>">
                                                                 <i class="ti ti-star text-white text-[10px]"></i>
                                                             </div>
                                                         </div>
@@ -692,47 +893,83 @@ if (!$dashboardData) {
                                                         <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
                                                             <div class="flex items-start justify-between mb-4">
                                                                 <div>
-                                                                    <h4 class="font-semibold text-gray-900 mb-1">Kumpulkan Tugas: <?php echo htmlspecialchars($post['assignment_title'] ?? 'Tugas'); ?></h4>
+                                                                    <h4 class="font-semibold text-gray-900 mb-1">Kumpulkan Tugas:
+                                                                        <?php echo htmlspecialchars($post['assignment_title'] ?? 'Tugas'); ?>
+                                                                    </h4>
                                                                     <?php if (!empty($post['assignment_deadline'])): ?>
-                                                                        <p class="text-xs text-gray-600 flex items-center"><i class="ti ti-clock mr-1"></i>Deadline: <?php echo date('d M Y, H:i', strtotime($post['assignment_deadline'])); ?></p>
+                                                                        <p class="text-xs text-gray-600 flex items-center"><i
+                                                                                class="ti ti-clock mr-1"></i>Deadline:
+                                                                            <?php echo date('d M Y, H:i', strtotime($post['assignment_deadline'])); ?>
+                                                                        </p>
                                                                     <?php endif; ?>
                                                                 </div>
-                                                                <button onclick="hideSubmissionForm(<?php echo $post['assignment_id']; ?>)" type="button" class="text-gray-500 hover:text-gray-700"><i class="ti ti-x"></i></button>
+                                                                <button
+                                                                    onclick="hideSubmissionForm(<?php echo $post['assignment_id']; ?>)"
+                                                                    type="button" class="text-gray-500 hover:text-gray-700"><i
+                                                                        class="ti ti-x"></i></button>
                                                             </div>
                                                             <div class="mb-4">
-                                                                <label class="block text-sm font-medium text-gray-700 mb-2">Pilih File</label>
+                                                                <label class="block text-sm font-medium text-gray-700 mb-2">Pilih
+                                                                    File</label>
                                                                 <div class="flex items-center flex-wrap gap-3">
-                                                                    <input type="file" id="submission-file-<?php echo $post['assignment_id']; ?>" class="hidden" accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.jpg,.jpeg,.png,.gif" onchange="handleSubmissionFileSelect(<?php echo $post['assignment_id']; ?>, this)">
-                                                                    <button type="button" onclick="document.getElementById('submission-file-<?php echo $post['assignment_id']; ?>').click()" class="bg-white border border-gray-300 hover:bg-gray-100 px-4 py-2 rounded-lg text-sm font-medium">
+                                                                    <input type="file"
+                                                                        id="submission-file-<?php echo $post['assignment_id']; ?>"
+                                                                        class="hidden"
+                                                                        accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.jpg,.jpeg,.png,.gif"
+                                                                        onchange="handleSubmissionFileSelect(<?php echo $post['assignment_id']; ?>, this)">
+                                                                    <button type="button"
+                                                                        onclick="document.getElementById('submission-file-<?php echo $post['assignment_id']; ?>').click()"
+                                                                        class="bg-white border border-gray-300 hover:bg-gray-100 px-4 py-2 rounded-lg text-sm font-medium">
                                                                         <i class="ti ti-paperclip mr-2"></i>Pilih File
                                                                     </button>
-                                                                    <span class="text-xs text-gray-500">PDF, DOC, PPT, Gambar (Maks 10MB)</span>
+                                                                    <span class="text-xs text-gray-500">PDF, DOC, PPT, Gambar (Maks
+                                                                        10MB)</span>
                                                                 </div>
                                                             </div>
-                                                            <div id="submission-preview-<?php echo $post['assignment_id']; ?>" class="hidden mb-4">
+                                                            <div id="submission-preview-<?php echo $post['assignment_id']; ?>"
+                                                                class="hidden mb-4">
                                                                 <div class="bg-white border border-gray-200 rounded-lg p-3">
                                                                     <div class="flex items-center justify-between">
                                                                         <div class="flex items-center space-x-3">
-                                                                            <div id="file-icon-<?php echo $post['assignment_id']; ?>" class="text-blue-600 text-lg"><i class="ti ti-file"></i></div>
+                                                                            <div id="file-icon-<?php echo $post['assignment_id']; ?>"
+                                                                                class="text-blue-600 text-lg"><i class="ti ti-file"></i>
+                                                                            </div>
                                                                             <div>
-                                                                                <div id="file-name-<?php echo $post['assignment_id']; ?>" class="text-sm font-medium text-gray-900"></div>
-                                                                                <div id="file-size-<?php echo $post['assignment_id']; ?>" class="text-xs text-gray-500"></div>
+                                                                                <div id="file-name-<?php echo $post['assignment_id']; ?>"
+                                                                                    class="text-sm font-medium text-gray-900"></div>
+                                                                                <div id="file-size-<?php echo $post['assignment_id']; ?>"
+                                                                                    class="text-xs text-gray-500"></div>
                                                                             </div>
                                                                         </div>
-                                                                        <button type="button" onclick="removeSubmissionFile(<?php echo $post['assignment_id']; ?>)" class="text-red-600 hover:text-red-800 p-1 rounded"><i class="ti ti-x"></i></button>
+                                                                        <button type="button"
+                                                                            onclick="removeSubmissionFile(<?php echo $post['assignment_id']; ?>)"
+                                                                            class="text-red-600 hover:text-red-800 p-1 rounded"><i
+                                                                                class="ti ti-x"></i></button>
                                                                     </div>
-                                                                    <div id="image-preview-<?php echo $post['assignment_id']; ?>" class="hidden mt-3">
+                                                                    <div id="image-preview-<?php echo $post['assignment_id']; ?>"
+                                                                        class="hidden mt-3">
                                                                         <img class="max-w-full h-48 object-cover rounded-lg" />
                                                                     </div>
                                                                 </div>
                                                             </div>
                                                             <div class="mb-4">
-                                                                <label class="block text-sm font-medium text-gray-700 mb-2" for="submission-notes-<?php echo $post['assignment_id']; ?>">Catatan (Opsional)</label>
-                                                                <textarea id="submission-notes-<?php echo $post['assignment_id']; ?>" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm" placeholder="Tambahkan catatan untuk guru..."></textarea>
+                                                                <label class="block text-sm font-medium text-gray-700 mb-2"
+                                                                    for="submission-notes-<?php echo $post['assignment_id']; ?>">Catatan
+                                                                    (Opsional)</label>
+                                                                <textarea id="submission-notes-<?php echo $post['assignment_id']; ?>"
+                                                                    rows="3"
+                                                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                                                                    placeholder="Tambahkan catatan untuk guru..."></textarea>
                                                             </div>
                                                             <div class="flex justify-end items-center gap-3">
-                                                                <button type="button" onclick="hideSubmissionForm(<?php echo $post['assignment_id']; ?>)" class="text-gray-600 hover:text-gray-800 text-sm font-medium">Batal</button>
-                                                                <button type="button" id="submit-btn-<?php echo $post['assignment_id']; ?>" onclick="submitAssignment(<?php echo $post['assignment_id']; ?>)" disabled class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                                                                <button type="button"
+                                                                    onclick="hideSubmissionForm(<?php echo $post['assignment_id']; ?>)"
+                                                                    class="text-gray-600 hover:text-gray-800 text-sm font-medium">Batal</button>
+                                                                <button type="button"
+                                                                    id="submit-btn-<?php echo $post['assignment_id']; ?>"
+                                                                    onclick="submitAssignment(<?php echo $post['assignment_id']; ?>)"
+                                                                    disabled
+                                                                    class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                                                                     <i class="ti ti-send mr-2"></i>Kumpulkan
                                                                 </button>
                                                             </div>
@@ -746,7 +983,7 @@ if (!$dashboardData) {
                                     <!-- Post Images -->
                                     <?php if (!empty($post['gambar'])): ?>
 
-                                        
+
                                         <div class="mt-3 post-media-container">
                                             <div class="post-media-grid grid-<?php echo count($post['gambar']); ?>">
                                                 <?php foreach ($post['gambar'] as $index => $media): ?>
@@ -760,30 +997,28 @@ if (!$dashboardData) {
                                                         // Old format with just filename
                                                         $mediaPath = '../../uploads/postingan/' . $media['nama_file'];
                                                     }
-                                                    
+
                                                     // Check if this is a video
                                                     $isVideo = (isset($media['media_type']) && $media['media_type'] === 'video') ||
-                                                               (isset($media['tipe_file']) && strpos($media['tipe_file'], 'video/') === 0);
+                                                        (isset($media['tipe_file']) && strpos($media['tipe_file'], 'video/') === 0);
                                                     $mediaClass = count($post['gambar']) === 1 ? 'single' : 'multiple';
                                                     ?>
-                                                    
+
                                                     <?php if ($isVideo): ?>
                                                         <!-- Video Media -->
                                                         <div class="post-media-item <?php echo $mediaClass; ?>">
-                                                            <video controls 
-                                                                   class="post-media" 
-                                                                   data-media-index="<?php echo $index; ?>"
-                                                                   preload="metadata">
-                                                                <source src="<?php echo htmlspecialchars($mediaPath); ?>" 
-                                                                        type="<?php echo htmlspecialchars($media['tipe_file'] ?? 'video/mp4'); ?>">
+                                                            <video controls class="post-media" data-media-index="<?php echo $index; ?>"
+                                                                preload="metadata">
+                                                                <source src="<?php echo htmlspecialchars($mediaPath); ?>"
+                                                                    type="<?php echo htmlspecialchars($media['tipe_file'] ?? 'video/mp4'); ?>">
                                                                 Your browser does not support the video tag.
                                                             </video>
                                                             <div class="post-media-type-badge video">
                                                                 <i class="ti ti-video"></i> Video
                                                             </div>
-                                                            <button class="media-download-btn" 
-                                                                    onclick="downloadMedia('<?php echo htmlspecialchars($mediaPath); ?>', '<?php echo htmlspecialchars($media['nama_file']); ?>')" 
-                                                                    title="Download Video">
+                                                            <button class="media-download-btn"
+                                                                onclick="downloadMedia('<?php echo htmlspecialchars($mediaPath); ?>', '<?php echo htmlspecialchars($media['nama_file']); ?>')"
+                                                                title="Download Video">
                                                                 <i class="ti ti-download"></i>
                                                             </button>
                                                         </div>
@@ -792,37 +1027,38 @@ if (!$dashboardData) {
                                                         <div class="post-media-item <?php echo $mediaClass; ?>">
                                                             <img src="<?php echo htmlspecialchars($mediaPath); ?>"
                                                                 alt="<?php echo htmlspecialchars($media['nama_file'] ?? 'Media postingan'); ?>"
-                                                                class="post-media"
-                                                                data-media-index="<?php echo $index; ?>"
+                                                                class="post-media" data-media-index="<?php echo $index; ?>"
                                                                 data-pswp-src="<?php echo htmlspecialchars($mediaPath); ?>"
-                                                                data-pswp-width="800"
-                                                                data-pswp-height="600"
-                                                                style="cursor: pointer;"
+                                                                data-pswp-width="800" data-pswp-height="600" style="cursor: pointer;"
                                                                 onerror="this.style.display='none';">
                                                             <div class="post-media-type-badge image">
                                                                 <i class="ti ti-photo"></i> Gambar
                                                             </div>
-                                                            <button class="media-download-btn" 
-                                                                    onclick="downloadMedia('<?php echo htmlspecialchars($mediaPath); ?>', '<?php echo htmlspecialchars($media['nama_file']); ?>')" 
-                                                                    title="Download Gambar">
+                                                            <button class="media-download-btn"
+                                                                onclick="downloadMedia('<?php echo htmlspecialchars($mediaPath); ?>', '<?php echo htmlspecialchars($media['nama_file']); ?>')"
+                                                                title="Download Gambar">
                                                                 <i class="ti ti-download"></i>
                                                             </button>
                                                         </div>
                                                     <?php endif; ?>
-                                                    
+
                                                     <?php
                                                     // If there are more than 4 images, after rendering the 4th (index 3)
                                                     // show an overlay on the 4th image indicating how many more images exist.
                                                     $totalGambar = count($post['gambar']);
-                                                    if ($totalGambar > 4 && $index == 3): ?>
-                                                        <!-- Show overflow indicator on the 4th image only when >4 images -->
+                                                    if ($totalGambar > 4 && $index == 3) {
+                                                        ?>
                                                         <div class="post-media-item multiple relative">
-                                                            <div class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-lg">
-                                                                <span class="text-white font-bold text-lg">+<?php echo $totalGambar - 4; ?></span>
+                                                            <div
+                                                                class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-lg">
+                                                                <span
+                                                                    class="text-white font-bold text-lg">+<?php echo $totalGambar - 4; ?></span>
                                                             </div>
                                                         </div>
-                                                        <?php break; ?>
-                                                    <?php endif; ?>
+                                                        <?php
+                                                        break;
+                                                    }
+                                                    ?>
                                                 <?php endforeach; ?>
                                             </div>
                                         </div>
@@ -835,7 +1071,8 @@ if (!$dashboardData) {
                                         if (!function_exists('formatFileSize')) {
                                             function formatFileSize($bytes)
                                             {
-                                                if ($bytes == 0) return '0 Bytes';
+                                                if ($bytes == 0)
+                                                    return '0 Bytes';
                                                 $k = 1024;
                                                 $sizes = ['Bytes', 'KB', 'MB', 'GB'];
                                                 $i = floor(log($bytes) / log($k));
@@ -869,11 +1106,13 @@ if (!$dashboardData) {
                                                 <a href="../../<?php echo htmlspecialchars($file['path_file']); ?>"
                                                     class="flex items-center p-3 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 hover:border-gray-300 transition-all hover:shadow-sm"
                                                     target="_blank" rel="noopener noreferrer">
-                                                    <div class="w-12 h-12 <?php echo $iconInfo['bg']; ?> text-white rounded-lg flex items-center justify-center mr-3 flex-shrink-0 shadow-sm">
+                                                    <div
+                                                        class="w-12 h-12 <?php echo $iconInfo['bg']; ?> text-white rounded-lg flex items-center justify-center mr-3 flex-shrink-0 shadow-sm">
                                                         <i class="ti <?php echo $iconInfo['icon']; ?> text-lg"></i>
                                                     </div>
                                                     <div class="flex-1 min-w-0">
-                                                        <div class="font-medium text-gray-900 truncate text-sm" title="<?php echo htmlspecialchars($file['nama_file']); ?>">
+                                                        <div class="font-medium text-gray-900 truncate text-sm"
+                                                            title="<?php echo htmlspecialchars($file['nama_file']); ?>">
                                                             <?php echo htmlspecialchars($file['nama_file']); ?>
                                                         </div>
                                                         <div class="text-xs text-gray-500 mt-1">
@@ -893,16 +1132,19 @@ if (!$dashboardData) {
                                 <div class="flex items-center justify-between pt-3 border-t border-gray-100">
                                     <div class="flex items-center space-x-4">
                                         <!-- Like Button -->
-                                        <button class="like-btn flex items-center space-x-2 <?php echo $post['userLiked'] ? 'text-red-600' : 'text-gray-600'; ?> hover:text-red-600 transition-colors"
+                                        <button
+                                            class="like-btn flex items-center space-x-2 <?php echo $post['userLiked'] ? 'text-red-600' : 'text-gray-600'; ?> hover:text-red-600 transition-colors"
                                             data-post-id="<?php echo $post['id']; ?>"
                                             data-liked="<?php echo $post['userLiked'] ? 'true' : 'false'; ?>">
-                                            <i class="ti ti-heart<?php echo $post['userLiked'] ? '-filled text-red-600' : ''; ?>"></i>
+                                            <i
+                                                class="ti ti-heart<?php echo $post['userLiked'] ? '-filled text-red-600' : ''; ?>"></i>
                                             <span class="like-count text-sm"><?php echo $post['jumlahLike']; ?></span>
                                         </button>
 
                                         <!-- Comment Button -->
                                         <?php if (!$post['restrict_comments']): ?>
-                                            <button class="comment-btn flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors"
+                                            <button
+                                                class="comment-btn flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors"
                                                 data-post-id="<?php echo $post['id']; ?>">
                                                 <i class="ti ti-message-circle"></i>
                                                 <span class="comment-count text-sm"><?php echo $post['jumlahKomentar']; ?></span>
@@ -925,30 +1167,35 @@ if (!$dashboardData) {
                                 <!-- Comments Section for KelasPosting compatibility -->
                                 <?php if (!$post['restrict_comments']): ?>
                                     <!-- View All Comments Button -->
-                                    <button class="view-all-comments text-orange text-sm hover:text-orange-600 transition-colors" data-post-id="<?php echo $post['id']; ?>" style="display: none;">
+                                    <button class="view-all-comments text-orange text-sm hover:text-orange-600 transition-colors"
+                                        data-post-id="<?php echo $post['id']; ?>" style="display: none;">
                                         Lihat komentar lainnya
                                     </button>
 
                                     <!-- Comments Preview - Always visible if there are comments -->
-                                    <div id="comments-preview-<?php echo $post['id']; ?>" class="mt-4 pt-4 border-t border-gray-100" style="display: none;">
+                                    <div id="comments-preview-<?php echo $post['id']; ?>" class="mt-4 pt-4 border-t border-gray-100"
+                                        style="display: none;">
                                         <!-- Preview comments (max 3) will be loaded here -->
                                     </div>
 
                                     <!-- Quick Comment Input -->
-                                    <div id="quick-comment-<?php echo $post['id']; ?>" class="hidden mt-4 pt-4 border-t border-gray-100">
+                                    <div id="quick-comment-<?php echo $post['id']; ?>"
+                                        class="hidden mt-4 pt-4 border-t border-gray-100">
                                         <form class="flex space-x-3" onsubmit="addQuickComment(event, <?php echo $post['id']; ?>)">
-                                            <div class="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center flex-shrink-0">
+                                            <div
+                                                class="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center flex-shrink-0">
                                                 <i class="ti ti-user text-white text-sm"></i>
                                             </div>
                                             <div class="flex-1">
-                                                <textarea placeholder="Tulis komentar... (tekan Enter untuk mengirim)"
-                                                    rows="2"
+                                                <textarea placeholder="Tulis komentar... (tekan Enter untuk mengirim)" rows="2"
                                                     class="w-full px-3 py-2 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-sm"
                                                     onkeydown="handleCommentKeydown(event, <?php echo $post['id']; ?>)"
                                                     required></textarea>
                                                 <div class="flex justify-end mt-2">
-                                                    <button type="button" class="text-gray-500 text-sm mr-3" onclick="hideQuickComment(<?php echo $post['id']; ?>)">Batal</button>
-                                                    <button type="submit" class="bg-orange-600 text-white px-4 py-1.5 rounded-lg hover:bg-orange-700 text-sm">Kirim</button>
+                                                    <button type="button" class="text-gray-500 text-sm mr-3"
+                                                        onclick="hideQuickComment(<?php echo $post['id']; ?>)">Batal</button>
+                                                    <button type="submit"
+                                                        class="bg-orange-600 text-white px-4 py-1.5 rounded-lg hover:bg-orange-700 text-sm">Kirim</button>
                                                 </div>
                                             </div>
                                         </form>
@@ -957,18 +1204,16 @@ if (!$dashboardData) {
                             </div>
                         <?php endforeach; ?>
                     <?php else: ?>
-                        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
-                            <i class="ti ti-message-off text-4xl text-gray-300 mb-3"></i>
-                            <h3 class="text-lg font-medium text-gray-900 mb-2">Belum ada postingan</h3>
-                            <p class="text-gray-500 mb-4">Postingan dari kelas yang Anda ikuti akan muncul di sini</p>
-                            <div class="text-sm text-gray-400">
-                                <p>Tips:</p>
-                                <ul class="list-disc list-inside mt-2 space-y-1">
-                                    <li>Pastikan Anda sudah bergabung dengan kelas</li>
-                                    <li>Minta guru untuk membuat postingan di kelas</li>
-                                    <li>Periksa koneksi internet Anda</li>
-                                </ul>
-                            </div>
+                        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center opacity-75 space-y-3">
+                            <i class="ti ti-message-off text-6xl text-gray-400 mb-2"></i>
+                            <h3 class="text-xl font-medium text-gray-700">Belum ada postingan</h3>
+                            <p class="text-gray-500">Postingan dari kelas yang Anda ikuti akan muncul di sini</p>
+                            <button command="show-modal" commandfor="join-class-modal"
+                                class="inline-flex items-center mx-auto p-2 border border-transparent rounded-full bg-orange-600 text-white hover:bg-orange-700 transition-colors">
+                                <i class="ti ti-user-plus text-lg md:text-xl"></i>
+                                <span class="inline md:hidden ml-1 text-sm">Gabung</span>
+                                <span class="hidden md:inline ml-1 text-sm">Gabung Kelas</span>
+                            </button>
                         </div>
                     <?php endif; ?>
                 </div>
@@ -976,7 +1221,8 @@ if (!$dashboardData) {
                 <!-- Load More Button for Beranda -->
                 <?php if (!empty($recentPosts) && count($recentPosts) >= 5): ?>
                     <div class="text-center mt-6">
-                        <button id="loadMoreBerandaPosts" class="inline-flex items-center px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors">
+                        <button id="loadMoreBerandaPosts"
+                            class="inline-flex items-center px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors">
                             <i class="ti ti-plus mr-2"></i>
                             Muat Postingan Lainnya
                         </button>
@@ -996,6 +1242,7 @@ if (!$dashboardData) {
     <script src="../script/media-upload-manager.js"></script>
     <script src="../script/photoswipe-simple.js"></script>
     <script src="../script/assignment-manager.js"></script>
+    <script src="../script/assignment-file-manager.js?v=<?php echo time(); ?>"></script>
     <script src="../script/kelas-posting-stable.js?v=<?php echo time(); ?>"></script>
     <script>
         // BERANDA DEBUG & MEDIA FUNCTIONS
@@ -1005,15 +1252,15 @@ if (!$dashboardData) {
         console.log('📊 Recent Posts Count:', <?php echo count($recentPosts); ?>);
         console.log('🔔 Notifications Count:', <?php echo count($recentNotifications); ?>);
         console.log('🔴 Unread Notifications:', <?php echo $unreadNotificationsCount; ?>);
-        
+
         // Notification functions
-        window.markNotificationAsRead = async function(notificationId, element) {
+        window.markNotificationAsRead = async function (notificationId, element) {
             if (element.classList.contains('opacity-75')) {
                 // Already read, just open modal
                 openNotificationsModal();
                 return;
             }
-            
+
             try {
                 const response = await fetch('../logic/mark-notification-read.php', {
                     method: 'POST',
@@ -1022,18 +1269,18 @@ if (!$dashboardData) {
                     },
                     body: JSON.stringify({ notification_id: notificationId })
                 });
-                
+
                 const data = await response.json();
-                
+
                 if (data.success) {
                     // Update UI
                     element.classList.add('opacity-75');
                     const unreadDot = element.querySelector('.bg-orange-500');
                     if (unreadDot) unreadDot.remove();
-                    
+
                     // Update unread count badge
                     updateUnreadBadge();
-                    
+
                     // Open full notifications modal
                     openNotificationsModal();
                 }
@@ -1043,11 +1290,11 @@ if (!$dashboardData) {
                 openNotificationsModal();
             }
         };
-        
+
         // Handle notification click with redirect
-        window.handleNotificationClick = async function(notificationId, redirectUrl, hasValidRedirect, element) {
-            console.log('🔔 Notification clicked:', {notificationId, redirectUrl, hasValidRedirect});
-            
+        window.handleNotificationClick = async function (notificationId, redirectUrl, hasValidRedirect, element) {
+            console.log('🔔 Notification clicked:', { notificationId, redirectUrl, hasValidRedirect });
+
             // First, mark as read if not already read
             if (!element.classList.contains('opacity-75')) {
                 try {
@@ -1058,15 +1305,15 @@ if (!$dashboardData) {
                         },
                         body: JSON.stringify({ notification_id: notificationId })
                     });
-                    
+
                     const data = await response.json();
-                    
+
                     if (data.success) {
                         // Update UI
                         element.classList.add('opacity-75');
                         const unreadDot = element.querySelector('.bg-orange-500');
                         if (unreadDot) unreadDot.remove();
-                        
+
                         // Update unread count badge
                         updateUnreadBadge();
                     }
@@ -1074,7 +1321,7 @@ if (!$dashboardData) {
                     console.error('Error marking notification as read:', error);
                 }
             }
-            
+
             // Then redirect if valid target exists
             if (hasValidRedirect && redirectUrl && redirectUrl !== 'beranda-user.php') {
                 console.log('🔗 Redirecting to:', redirectUrl);
@@ -1088,25 +1335,30 @@ if (!$dashboardData) {
                 showToast('Notifikasi ditandai sebagai dibaca');
             }
         };
-        
-        window.loadBerandaNotifications = async function() {
+
+        window.loadBerandaNotifications = async function () {
             try {
                 const response = await fetch('../logic/get-notifications.php?limit=2');
                 const data = await response.json();
-                
+
                 if (data.success) {
+                    // Cache notifications for modal fallback
+                    window.berandaNotificationsCache = data.notifications;
+                    
                     updateBerandaNotificationsUI(data.notifications);
                     updateUnreadBadge();
+                } else {
+                    console.error('Beranda notifications API error:', data.message);
                 }
             } catch (error) {
                 console.error('Error loading beranda notifications:', error);
             }
         };
-        
+
         function updateBerandaNotificationsUI(notifications) {
             const container = document.getElementById('beranda-notifications-container');
             if (!container) return;
-            
+
             if (notifications.length === 0) {
                 container.innerHTML = `
                     <div class="px-3 py-4 text-center text-gray-500 text-sm">
@@ -1116,25 +1368,56 @@ if (!$dashboardData) {
                 `;
                 return;
             }
-            
+
+            // Cache notifications for modal use
+            window.berandaNotificationsCache = notifications;
+
             let html = '<ul class="divide-y divide-gray-100">';
             notifications.forEach(notification => {
+                console.log('🔍 Beranda processing notification:', notification);
                 const isRead = notification.is_read == '1';
-                const iconClass = getNotificationIcon(notification.type);
-                const colorClass = getNotificationColor(notification.type);
                 
+                // Handle both global and personal notifications - use same logic as modal
+                let iconClass, colorClass;
+                if (notification.source === 'global') {
+                    console.log('🌍 Global notification icon data:', notification.icon);
+                    // For global notifications, use the icon from database with proper formatting
+                    if (notification.icon) {
+                        // Ensure icon doesn't have ti- prefix already to avoid duplication
+                        const cleanIcon = notification.icon.replace(/^ti-/, '');
+                        iconClass = `ti-${cleanIcon}`;
+                    } else {
+                        iconClass = 'ti-info-circle';
+                    }
+                    // Use priority-based colors if available
+                    if (notification.priority) {
+                        colorClass = getPriorityColor(notification.priority);
+                    } else {
+                        colorClass = 'text-blue-500';
+                    }
+                    console.log('🎨 Global notification styling:', {iconClass, colorClass});
+                } else {
+                    // For personal notifications, use type-based icons
+                    iconClass = getNotificationIcon(notification.type);
+                    colorClass = getNotificationColor(notification.type);
+                }
+
+                // Safely quote the notification ID for onclick
+                const notificationIdQuoted = typeof notification.id === 'string' ? `'${notification.id}'` : notification.id;
+
                 html += `
                     <li class="px-3 py-2 flex items-start space-x-3 hover:bg-gray-50 cursor-pointer ${isRead ? 'opacity-75' : ''}" 
-                        onclick="markNotificationAsRead(${notification.id}, this)">
+                        onclick="markNotificationAsRead(${notificationIdQuoted}, this)">
                         <div class="flex-shrink-0 mt-1 relative">
                             <i class="ti ${iconClass} ${colorClass}"></i>
                             ${!isRead ? '<div class="w-2 h-2 bg-orange-500 rounded-full absolute -mt-1 -ml-1"></div>' : ''}
                         </div>
                         <div class="flex-1 min-w-0">
                             <div class="text-sm text-gray-900 font-medium">${escapeHtml(notification.title)}</div>
-                            <div class="text-xs text-gray-600 mb-1">${escapeHtml(notification.message)}</div>
+                            <div class="text-xs text-gray-600 mb-1">${escapeHtml(notification.message || notification.description || '')}</div>
                             <div class="text-xs text-gray-500">
                                 ${notification.nama_kelas ? 'Kelas: ' + escapeHtml(notification.nama_kelas) + ' • ' : ''}
+                                ${notification.source === 'global' ? 'Pemberitahuan Global • ' : ''}
                                 ${notification.time_ago || formatTimeAgo(notification.created_at)}
                             </div>
                         </div>
@@ -1142,20 +1425,20 @@ if (!$dashboardData) {
                 `;
             });
             html += '</ul>';
-            
+
             container.innerHTML = html;
         }
-        
+
         async function updateUnreadBadge() {
             try {
                 const response = await fetch('../logic/get-notifications.php?unread_only=1');
                 const data = await response.json();
-                
+
                 if (data.success) {
                     const unreadCount = data.notifications.length;
                     const badge = document.querySelector('.bg-orange-100.text-orange-800');
                     const headerText = document.querySelector('#beranda-notifications-container').closest('.bg-white').querySelector('h3');
-                    
+
                     if (unreadCount > 0) {
                         if (!badge) {
                             const newBadge = document.createElement('span');
@@ -1173,9 +1456,9 @@ if (!$dashboardData) {
                 console.error('Error updating unread badge:', error);
             }
         }
-        
+
         // Global download function for media
-        window.downloadMedia = function(url, filename) {
+        window.downloadMedia = function (url, filename) {
             console.log('📥 Downloading media:', filename, 'from:', url);
             const link = document.createElement('a');
             link.href = url;
@@ -1185,25 +1468,25 @@ if (!$dashboardData) {
             link.click();
             document.body.removeChild(link);
         };
-        
+
         // Initialize global variables
         window.currentUserId = <?php echo $_SESSION['user']['id']; ?>;
         window.currentUserRole = '<?php echo $_SESSION['user']['role']; ?>';
 
         // Initialize like functionality
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             console.log('🚀 DOM Content Loaded - Initializing Beranda...');
-            
+
             // Media debugging - check if we have media elements
             const mediaContainers = document.querySelectorAll('.post-media-container');
             const videoElements = document.querySelectorAll('video.post-media');
             const imageElements = document.querySelectorAll('img.post-media');
-            
+
             console.log('🎬 Media Debug:');
             console.log('  - Media containers found:', mediaContainers.length);
             console.log('  - Video elements found:', videoElements.length);
             console.log('  - Image elements found:', imageElements.length);
-            
+
             if (videoElements.length > 0) {
                 console.log('🎥 Video elements details:');
                 videoElements.forEach((video, index) => {
@@ -1215,7 +1498,7 @@ if (!$dashboardData) {
                     });
                 });
             }
-            
+
             if (imageElements.length > 0) {
                 console.log('🖼️ Image elements details:');
                 imageElements.forEach((img, index) => {
@@ -1226,7 +1509,7 @@ if (!$dashboardData) {
                     });
                 });
             }
-            
+
             // Initialize KelasPosting for comments functionality (beranda context)
             window.kelasPosting = new KelasPosting(null, {
                 canPost: false, // No posting in beranda
@@ -1252,7 +1535,7 @@ if (!$dashboardData) {
 
             // Comment button functionality - use KelasPosting method
             document.querySelectorAll('.comment-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
+                btn.addEventListener('click', function () {
                     const postId = this.dataset.postId;
                     if (window.kelasPosting) {
                         window.kelasPosting.openCommentsModal(postId);
@@ -1260,15 +1543,18 @@ if (!$dashboardData) {
                 });
             });
 
-            // Like button functionality
+            // Like button functionality - Standalone implementation for beranda
             document.querySelectorAll('.like-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
+                btn.addEventListener('click', function () {
                     const postId = this.dataset.postId;
-                    if (window.kelasPosting) {
-                        window.kelasPosting.toggleLike(postId);
-                    }
+                    console.log('🔴 BERANDA Like button clicked:', { postId });
+                    handleBerandaLike(postId, this);
                 });
             });
+
+            // Load beranda notifications
+            console.log('📬 Loading beranda notifications...');
+            loadBerandaNotifications();
 
             // Load comments preview for all posts
             setTimeout(() => {
@@ -1289,8 +1575,133 @@ if (!$dashboardData) {
             window.assignmentManager = new AssignmentManager(null, 'siswa'); // null for beranda context
         }
 
+        // Advertisement Slider Functionality
+        let currentAdIndex = 0;
+        let adInterval = null;
+        const advertisementItems = document.querySelectorAll('.advertisement-item');
+        const adIndicators = document.querySelectorAll('.ad-indicator');
+
+        function showAdvertisement(index) {
+            // Hide all advertisements
+            advertisementItems.forEach(item => item.classList.remove('active'));
+            adIndicators.forEach(indicator => indicator.classList.remove('active'));
+            
+            // Show selected advertisement
+            if (advertisementItems[index]) {
+                advertisementItems[index].classList.add('active');
+            }
+            if (adIndicators[index]) {
+                adIndicators[index].classList.add('active');
+            }
+            
+            currentAdIndex = index;
+        }
+
+        function nextAdvertisement() {
+            const nextIndex = (currentAdIndex + 1) % advertisementItems.length;
+            showAdvertisement(nextIndex);
+        }
+
+        function previousAdvertisement() {
+            const prevIndex = (currentAdIndex - 1 + advertisementItems.length) % advertisementItems.length;
+            showAdvertisement(prevIndex);
+        }
+
+        // Initialize advertisement slider
+        if (advertisementItems.length > 1) {
+            // Auto-rotate advertisements every 5 seconds
+            adInterval = setInterval(nextAdvertisement, 5000);
+            
+            // Add click handlers for indicators
+            adIndicators.forEach((indicator, index) => {
+                indicator.addEventListener('click', () => {
+                    clearInterval(adInterval);
+                    showAdvertisement(index);
+                    // Restart auto-rotation
+                    adInterval = setInterval(nextAdvertisement, 5000);
+                });
+            });
+            
+            // Add click handler for next button
+            const nextBtn = document.getElementById('next-ad-btn');
+            if (nextBtn) {
+                nextBtn.addEventListener('click', () => {
+                    clearInterval(adInterval);
+                    nextAdvertisement();
+                    // Restart auto-rotation
+                    adInterval = setInterval(nextAdvertisement, 5000);
+                });
+            }
+
+            // Add click handler for previous button
+            const prevBtn = document.getElementById('prev-ad-btn');
+            if (prevBtn) {
+                prevBtn.addEventListener('click', () => {
+                    clearInterval(adInterval);
+                    previousAdvertisement();
+                    // Restart auto-rotation
+                    adInterval = setInterval(nextAdvertisement, 5000);
+                });
+            }
+        }
+
+        // Standalone like handler for beranda
+        async function handleBerandaLike(postId, buttonElement) {
+            try {
+                console.log('🔴 BERANDA handleBerandaLike called:', { postId });
+                
+                const formData = new FormData();
+                formData.append('post_id', postId);
+                formData.append('action', 'toggle_like');
+                
+                const response = await fetch('../logic/handle-like.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                console.log('🔴 BERANDA Like response:', result);
+                
+                if (result.success) {
+                    // Update like count in UI
+                    const likeCount = buttonElement.querySelector('.like-count');
+                    const heartIcon = buttonElement.querySelector('i');
+                    
+                    if (result.action === 'liked') {
+                        // User melakukan like
+                        if (likeCount) {
+                            likeCount.textContent = result.like_count || ((parseInt(likeCount.textContent) || 0) + 1);
+                        }
+                        buttonElement.classList.remove('text-gray-600');
+                        buttonElement.classList.add('text-red-600');
+                        buttonElement.setAttribute('data-liked', 'true');
+                        if (heartIcon) {
+                            heartIcon.className = 'ti ti-heart-filled text-red-600';
+                        }
+                        console.log('✅ BERANDA Post liked successfully');
+                    } else if (result.action === 'unliked') {
+                        // User melakukan unlike
+                        if (likeCount) {
+                            likeCount.textContent = result.like_count || Math.max(0, (parseInt(likeCount.textContent) || 0) - 1);
+                        }
+                        buttonElement.classList.remove('text-red-600');
+                        buttonElement.classList.add('text-gray-600');
+                        buttonElement.setAttribute('data-liked', 'false');
+                        if (heartIcon) {
+                            heartIcon.className = 'ti ti-heart';
+                        }
+                        console.log('✅ BERANDA Post unliked successfully');
+                    }
+                } else {
+                    console.error('🔴 BERANDA Like error:', result.message);
+                }
+            } catch (error) {
+                console.error('🔴 BERANDA Like exception:', error);
+            }
+        }
+
         // Make assignment functions globally available
-        window.showSubmissionModal = function(assignmentId) {
+        window.showSubmissionModal = function (assignmentId) {
             console.log('🎯 showSubmissionModal called with ID:', assignmentId);
 
             // Get assignment details from the post
@@ -1329,8 +1740,7 @@ if (!$dashboardData) {
         // showSubmissionModal defined
 
         // File handling functions (same as kelas-posting-stable.js)
-        window.handleSubmissionFileSelect = function(assignmentId, input) {
-            const file = input.files[0];
+        window.handleSubmissionFileSelect = function (assignmentId, input) {
             if (!file) return;
 
             // Validate file size (10MB)
@@ -1358,7 +1768,7 @@ if (!$dashboardData) {
             // Show image preview if it's an image
             if (file.type.startsWith('image/') && imagePreview) {
                 const reader = new FileReader();
-                reader.onload = function(e) {
+                reader.onload = function (e) {
                     imagePreview.src = e.target.result;
                     imagePreview.classList.remove('hidden');
                 };
@@ -1495,6 +1905,43 @@ if (!$dashboardData) {
             return iconMap[extension] || '<i class="ti ti-file text-gray-600"></i>';
         }
 
+        // Get notification icon based on type (same as modal)
+        function getNotificationIcon(type) {
+            switch (type) {
+                case 'tugas_baru': return 'ti-clipboard-plus';
+                case 'postingan_baru': return 'ti-message-circle';
+                case 'ujian_baru': return 'ti-file-text';
+                case 'pengingat_ujian': return 'ti-bell';
+                case 'like_postingan': return 'ti-heart';
+                case 'komentar_postingan': return 'ti-message-2';
+                default: return 'ti-info-circle';
+            }
+        }
+
+        // Get notification color based on type (same as modal)
+        function getNotificationColor(type) {
+            switch (type) {
+                case 'tugas_baru': return 'text-blue-500';
+                case 'postingan_baru': return 'text-green-500';
+                case 'ujian_baru': return 'text-purple-500';
+                case 'pengingat_ujian': return 'text-orange-500';
+                case 'like_postingan': return 'text-red-500';
+                case 'komentar_postingan': return 'text-indigo-500';
+                default: return 'text-gray-500';
+            }
+        }
+
+        // Get priority color (same as modal)
+        function getPriorityColor(priority) {
+            switch (priority) {
+                case 'urgent': return 'text-red-600';
+                case 'high': return 'text-orange-500';
+                case 'medium': return 'text-blue-500';
+                case 'low': return 'text-gray-500';
+                default: return 'text-blue-500';
+            }
+        }
+
         // Beranda lazy loading functionality
         let berandaOffset = 5; // We already loaded 5 posts
         let berandaHasMore = true;
@@ -1545,7 +1992,7 @@ if (!$dashboardData) {
 
                 console.log('Beranda API Response:', result); // Debug
 
-                    if (result.success && result.posts && result.posts.length > 0) {
+                if (result.success && result.posts && result.posts.length > 0) {
                     // Add new posts to container
                     result.posts.forEach(post => {
                         const postElement = createBerandaPostElement(post);
@@ -1750,7 +2197,7 @@ if (!$dashboardData) {
             formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
             // Italic text: *text* -> <em>text</em> (only single asterisks not preceded by *)
             // Use a different approach to avoid lookbehind
-            formatted = formatted.replace(/(?:^|[^*])\*([^*]+?)\*(?![*])/g, function(match, p1, offset, string) {
+            formatted = formatted.replace(/(?:^|[^*])\*([^*]+?)\*(?![*])/g, function (match, p1, offset, string) {
                 // Keep the character before * if it exists
                 const beforeChar = match.charAt(0) !== '*' ? match.charAt(0) : '';
                 return beforeChar + '<em>' + p1 + '</em>';
@@ -1769,18 +2216,19 @@ if (!$dashboardData) {
 
         // Add event listeners to dynamically loaded posts
         function addPostEventListeners(postElement, postId) {
-            // Like button
+            // Like button - use standalone beranda handler
             const likeBtn = postElement.querySelector('.like-btn');
-            if (likeBtn && window.kelasPosting) {
-                likeBtn.addEventListener('click', function() {
-                    window.kelasPosting.toggleLike(postId);
+            if (likeBtn) {
+                likeBtn.addEventListener('click', function () {
+                    console.log('🔴 BERANDA Dynamic Like button clicked:', { postId });
+                    handleBerandaLike(postId, this);
                 });
             }
 
             // Comment button
             const commentBtn = postElement.querySelector('.comment-btn');
             if (commentBtn && window.kelasPosting) {
-                commentBtn.addEventListener('click', function() {
+                commentBtn.addEventListener('click', function () {
                     window.kelasPosting.openCommentsModal(postId);
                 });
             }
@@ -1794,7 +2242,7 @@ if (!$dashboardData) {
         }
 
         // Inline assignment submission handlers (beranda)
-        window.showSubmissionForm = function(assignmentId) {
+        window.showSubmissionForm = function (assignmentId) {
             const formWrapper = document.getElementById(`submission-form-${assignmentId}`);
             const openBtn = document.getElementById(`open-inline-form-btn-${assignmentId}`);
             if (formWrapper && openBtn) {
@@ -1802,7 +2250,7 @@ if (!$dashboardData) {
                 openBtn.classList.add('hidden');
             }
         };
-        window.hideSubmissionForm = function(assignmentId) {
+        window.hideSubmissionForm = function (assignmentId) {
             const formWrapper = document.getElementById(`submission-form-${assignmentId}`);
             const openBtn = document.getElementById(`open-inline-form-btn-${assignmentId}`);
             if (formWrapper && openBtn) {
@@ -1812,6 +2260,9 @@ if (!$dashboardData) {
         };
     </script>
     <script src="../script/profile-sync.js"></script>
+    
+    <!-- Dynamic Modal Component -->
+    <?php require '../component/modal-dynamic.php'; ?>
 </body>
 
 </html>

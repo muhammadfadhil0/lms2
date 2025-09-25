@@ -1,0 +1,295 @@
+/* 
+ * Search System Styles
+ * Reusable CSS for search functionality across all pages
+ */
+
+/* Search Container Transitions */
+.search-container {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    transition: all 0.3s ease-in-out;
+    height: fit-content;
+    vertical-align: top;
+    margin: 0;
+}
+
+.search-container.searching {
+    flex: 1;
+    max-width: 300px;
+}
+
+/* Search Input Styles */
+.search-input {
+    width: 0;
+    padding: 0;
+    border: none;
+    background: transparent;
+    opacity: 0;
+    transform: scale(0.8);
+    transition: all 0.3s ease-in-out;
+    font-size: 14px;
+    outline: none;
+}
+
+.search-input.active {
+    width: 100%;
+    padding: 8px 40px 8px 12px;
+    border: 2px solid #f97316;
+    background: white;
+    border-radius: 8px;
+    opacity: 1;
+    transform: scale(1);
+}
+
+.search-input::placeholder {
+    color: #9ca3af;
+    font-size: 14px;
+}
+
+/* Search Button States */
+.search-btn {
+    position: relative;
+    padding: 8px;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease-in-out;
+    /* color: #9ca3af; */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.search-btn:hover {
+    color: #6b7280;
+}
+
+.search-btn.searching {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    padding: 4px;
+    z-index: 10;
+}
+
+/* Search Icons */
+.search-icon {
+    transition: all 0.3s ease-in-out;
+    font-size: 18px;
+}
+
+.search-icon.hidden {
+    opacity: 0;
+    transform: scale(0);
+}
+
+/* Loader Animation */
+.search-loader {
+    opacity: 0;
+    transform: scale(0);
+    transition: all 0.3s ease-in-out;
+}
+
+.search-loader.active {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.search-loader .spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid #f3f4f6;
+    border-top: 2px solid #f97316;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Close Button */
+.search-close {
+    opacity: 0;
+    transform: scale(0);
+    transition: all 0.3s ease-in-out;
+    color: #6b7280;
+}
+
+.search-close.active {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.search-close:hover {
+    color: #ef4444;
+}
+
+/* Other Buttons Hide Animation */
+.search-other-buttons {
+    opacity: 1;
+    transform: scale(1);
+    transition: all 0.3s ease-in-out;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.search-other-buttons.hidden {
+    opacity: 0;
+    transform: scale(0.8);
+    pointer-events: none;
+}
+
+/* Search Results Highlighting */
+.search-highlight {
+    background-color: #fef3c7;
+    color: #92400e;
+    padding: 1px 2px;
+    border-radius: 2px;
+    font-weight: 500;
+}
+
+/* Cards Fade Animation */
+.search-card {
+    opacity: 1;
+    transform: translateY(0);
+    transition: all 0.3s ease-in-out;
+    display: block;
+}
+
+.search-card.fade-out {
+    opacity: 0;
+    transform: translateY(-10px);
+    pointer-events: none;
+}
+
+.search-card.fade-in {
+    opacity: 1;
+    transform: translateY(0);
+    display: block;
+}
+
+.search-card.search-hidden {
+    display: none !important;
+}
+
+/* Search Results Container */
+.search-results-container {
+    transition: all 0.3s ease-in-out;
+}
+
+.search-results-container.searching .search-card:not(.search-match) {
+    display: none;
+}
+
+.search-results-container.searching .search-card.search-match {
+    display: block;
+    opacity: 1;
+    transform: translateY(0);
+    animation: slideInUp 0.4s ease-out;
+}
+
+/* Animation for cards appearing */
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* No Results State */
+.search-no-results {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.4s ease-in-out;
+    text-align: center;
+    padding: 40px 20px;
+    color: #6b7280;
+}
+
+.search-no-results.active {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.search-no-results .icon {
+    font-size: 48px;
+    color: #d1d5db;
+    margin-bottom: 16px;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .search-container.searching {
+        max-width: 200px;
+    }
+    
+    .search-input.active {
+        padding: 6px 35px 6px 10px;
+        font-size: 13px;
+    }
+    
+    .search-btn {
+        padding: 6px;
+    }
+    
+    .search-icon {
+        font-size: 16px;
+    }
+    
+    .search-loader .spinner {
+        width: 14px;
+        height: 14px;
+        border-width: 1.5px;
+    }
+}
+
+/* Ensure container doesn't break parent layout */
+.search-container:not(.searching) {
+    width: auto;
+    height: auto;
+}
+
+/* Prevent container from affecting sibling alignment */
+.search-container + * {
+    vertical-align: top;
+}
+
+/* Smooth height transitions for results */
+.search-results-wrapper {
+    transition: height 0.3s ease-in-out;
+    overflow: hidden;
+}
+
+/* Enhanced hover effects during search */
+.search-results-container.searching .search-card.search-match:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+/* Search state indicator */
+.search-state-indicator {
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    border: 2px solid #f97316;
+    border-radius: 10px;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+    pointer-events: none;
+}
+
+.search-container.searching .search-state-indicator {
+    opacity: 1;
+}

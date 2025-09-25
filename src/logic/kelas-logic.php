@@ -36,7 +36,15 @@ class KelasLogic {
     
     // Generate kode kelas unik
     private function generateKodeKelas($mataPelajaran) {
-        $prefix = strtoupper(substr($mataPelajaran, 0, 3));
+        // Clean mata pelajaran untuk prefix yang aman
+        $cleanMapel = preg_replace('/[^A-Za-z0-9]/', '', $mataPelajaran);
+        
+        // Jika setelah dibersihkan terlalu pendek, gunakan default
+        if (strlen($cleanMapel) < 3) {
+            $cleanMapel = 'KLS'; // Default prefix
+        }
+        
+        $prefix = strtoupper(substr($cleanMapel, 0, 3));
         $number = str_pad(rand(1, 999), 3, '0', STR_PAD_LEFT);
         return $prefix . $number;
     }

@@ -4,7 +4,7 @@ $currentPage = 'kelas';
 
 // Check if user is logged in and is a guru
 if (!isset($_SESSION['user']) || $_SESSION['user']['role'] != 'guru') {
-    header("Location: ../../index.php");
+    header("Location: ../../login.php");
     exit();
 }
 

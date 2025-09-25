@@ -5,7 +5,7 @@ $currentPage = 'settings';
 
 // Check if user is logged in
 if (!isset($_SESSION['user'])) {
-    header("Location: ../../index.php");
+    header("Location: ../../login.php");
     exit();
 }
 ?>
@@ -25,6 +25,9 @@ $freshProfilePhotoUrl = getUserProfilePhotoUrl($_SESSION['user']['id']);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Dark mode removed: kept only font-size handling in scripts -->
+    
     <meta name="user-id" content="<?php echo $_SESSION['user']['id']; ?>">
     <?php require '../../assets/head.php'; ?>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
@@ -46,7 +49,8 @@ $freshProfilePhotoUrl = getUserProfilePhotoUrl($_SESSION['user']['id']);
                     <p class="text-sm md:text-base text-gray-600 mt-1">Kelola informasi profil dan keamanan akun Anda</p>
                 </div>
                 <div class="flex items-center space-x-2 md:space-x-4">
-                    <button class="p-2 text-gray-400 hover:text-gray-600 transition-colors">
+                    <!-- Dark mode toggle removed -->
+                    <button class="p-2 text-gray-400 hover:text-gray-600 transition-colors" data-notification-trigger="true">
                         <i class="ti ti-bell text-lg md:text-xl"></i>
                     </button>
                     <button class="p-2 text-gray-400 hover:text-gray-600 transition-colors">
@@ -237,62 +241,6 @@ $freshProfilePhotoUrl = getUserProfilePhotoUrl($_SESSION['user']['id']);
 
                 <!-- Appearance Tab -->
                 <div id="appearance-tab" class="tab-content hidden">
-                    <!-- Dark Mode Section -->
-                    <div class="bg-white rounded-lg shadow-sm p-4 md:p-6 mb-4 md:mb-6">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-4 md:mb-6">
-                            <i class="ti ti-moon mr-2 text-orange"></i>Mode Gelap
-                        </h3>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <!-- Light Mode -->
-                            <div class="theme-option bg-white border-2 border-gray-200 rounded-lg p-4 cursor-pointer hover:border-orange-300 transition-all" data-theme="light">
-                                <div class="flex flex-col items-center space-y-3">
-                                    <div class="w-16 h-16 rounded-lg bg-gradient-to-br fropm-yellow-200 to-orange-200 flex items-center justify-center relative">
-                                        <i class="ti ti-sun text-2xl text-orange-600"></i>
-                                        <div class="absolute -top-2 -right-2 w-6 h-6 bg-orange text-white rounded-full flex items-center justify-center opacity-0 checkmark transition-opacity">
-                                            <i class="ti ti-check text-xs"></i>
-                                        </div>
-                                    </div>
-                                    <div class="text-center">
-                                        <h4 class="font-medium text-gray-900">Mode Terang</h4>
-                                        <p class="text-sm text-gray-600">Tampilan terang klasik</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Dark Mode -->
-                            <div class="theme-option bg-white border-2 border-gray-200 rounded-lg p-4 cursor-pointer hover:border-orange-300 transition-all" data-theme="dark">
-                                <div class="flex flex-col items-center space-y-3">
-                                    <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-gray-700 to-gray-900 flex items-center justify-center relative">
-                                        <i class="ti ti-moon text-2xl text-blue-300"></i>
-                                        <div class="absolute -top-2 -right-2 w-6 h-6 bg-orange text-white rounded-full flex items-center justify-center opacity-0 checkmark transition-opacity">
-                                            <i class="ti ti-check text-xs"></i>
-                                        </div>
-                                    </div>
-                                    <div class="text-center">
-                                        <h4 class="font-medium text-gray-900">Mode Gelap</h4>
-                                        <p class="text-sm text-gray-600">Tampilan gelap untuk mata</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- System Mode -->
-                            <div class="theme-option bg-white border-2 border-gray-200 rounded-lg p-4 cursor-pointer hover:border-orange-300 transition-all" data-theme="system">
-                                <div class="flex flex-col items-center space-y-3">
-                                    <div class="w-16 h-16 rounded-lg bg-gradient-to-r from-yellow-200 via-gray-300 to-gray-700 flex items-center justify-center relative">
-                                        <i class="ti ti-device-desktop text-2xl text-gray-600"></i>
-                                        <div class="absolute -top-2 -right-2 w-6 h-6 bg-orange text-white rounded-full flex items-center justify-center opacity-0 checkmark transition-opacity">
-                                            <i class="ti ti-check text-xs"></i>
-                                        </div>
-                                    </div>
-                                    <div class="text-center">
-                                        <h4 class="font-medium text-gray-900">Mengikuti Sistem</h4>
-                                        <p class="text-sm text-gray-600">Sesuai pengaturan perangkat</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
                     <!-- Font Size Section -->
                     <div class="bg-white rounded-lg shadow-sm p-4 md:p-6">
                         <h3 class="text-lg font-semibold text-gray-900 mb-4 md:mb-6">
@@ -373,7 +321,6 @@ $freshProfilePhotoUrl = getUserProfilePhotoUrl($_SESSION['user']['id']);
     <script src="../script/settings.js"></script>
     <script src="../script/appearance-settings.js"></script>
     <script src="../script/profile-photo-handler.js"></script>
-    <script src="../script/profile-sync.js"></script>
 </body>
 
 </html>

@@ -25,23 +25,27 @@ function handleNotificationHighlight() {
         
         // Wait a bit for page to fully load
         setTimeout(() => {
-            const targetElement = document.querySelector(hash);
-            
+            let targetElement = document.querySelector(hash);
             if (targetElement) {
-                // Scroll to target element
-                scrollToElement(targetElement);
-                
-                // Highlight the element
-                highlightElement(targetElement);
-                
-                console.log('✨ Element highlighted:', hash);
+                // Find parent post container with class 'p-4 lg:p-6'
+                let postContainer = targetElement.closest('.p-4.lg\:p-6');
+                if (!postContainer) {
+                    // Fallback: find closest with class 'p-4' only
+                    postContainer = targetElement.closest('.p-4');
+                }
+                if (postContainer) {
+                    scrollToElement(postContainer);
+                    highlightElement(postContainer);
+                    console.log('✨ Post container highlighted:', hash);
+                } else {
+                    // If no parent found, fallback to original element
+                    scrollToElement(targetElement);
+                    highlightElement(targetElement);
+                    console.log('✨ Element highlighted (no parent):', hash);
+                }
             } else {
                 console.log('❌ Target element not found:', hash);
-                
-                // Try alternative selectors based on hash pattern
                 tryAlternativeSelectors(hash);
-                
-                // If still not found after alternatives, reset flag
                 if (!document.querySelector(hash)) {
                     highlightExecuted = false;
                 }
@@ -68,32 +72,32 @@ function highlightElement(element) {
     const originalTransition = element.style.transition;
     const originalBackground = element.style.backgroundColor;
     
-    // Add highlight styles
-    element.style.transition = 'all 0.3s ease';
-    element.style.border = '3px solid #f97316'; // Orange-500
-    element.style.boxShadow = '0 0 20px rgba(249, 115, 22, 0.3)';
-    element.style.backgroundColor = 'rgba(249, 115, 22, 0.1)';
-    
-    // Remove highlight after 2 seconds
+    // Add highlight styles (thinner border, shorter duration)
+    element.style.transition = 'all 0.2s ease';
+    element.style.border = '2px solid #f97316'; // Orange-500, thinner
+    element.style.boxShadow = '0 0 10px rgba(249, 115, 22, 0.2)';
+    element.style.backgroundColor = 'rgba(249, 115, 22, 0.08)';
+
+    // Remove highlight after 1 second
     setTimeout(() => {
-        element.style.transition = 'all 0.5s ease';
-        
+        element.style.transition = 'all 0.3s ease';
+
         // Force remove all highlight styles
         element.style.removeProperty('border');
         element.style.removeProperty('box-shadow');
         element.style.removeProperty('background-color');
-        
+
         // Also try setting to original values as backup
         element.style.border = originalBorder || '';
         element.style.boxShadow = originalBoxShadow || '';
         element.style.backgroundColor = originalBackground || '';
-        
+
         // Restore original transition after animation
         setTimeout(() => {
             element.style.removeProperty('transition');
             element.style.transition = originalTransition || '';
-        }, 500);
-    }, 2000); // Changed from 3000ms to 2000ms
+        }, 300);
+    }, 1000); // 1 second only
 }
 
 // Try alternative selectors if main hash fails

@@ -106,7 +106,7 @@ class SettingsLogic {
             // Buat nama file unik
             $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
             $fileName = 'profile_' . $user_id . '_' . time() . '.' . $extension;
-            $uploadDir = '/opt/lampp/htdocs/lms/uploads/profile/';
+            $uploadDir = dirname(dirname(dirname(__FILE__))) . '/uploads/profile/';
             $uploadPath = $uploadDir . $fileName;
             
             // Buat direktori jika belum ada
@@ -117,11 +117,15 @@ class SettingsLogic {
             // Hapus foto profil lama jika ada
             $oldPhoto = $this->getFotoProfil($user_id);
             if ($oldPhoto && strpos($oldPhoto, 'uploads/profile/') === 0) {
-                $oldPhotoPath = '/opt/lampp/htdocs/lms/' . $oldPhoto;
+                $oldPhotoPath = dirname(dirname(dirname(__FILE__))) . '/' . $oldPhoto;
                 if (file_exists($oldPhotoPath)) {
                     unlink($oldPhotoPath);
                 }
             }
+            
+            // Log path untuk debugging
+            error_log("Upload attempt - Target path: " . $uploadPath);
+            error_log("Upload attempt - Directory exists: " . (is_dir($uploadDir) ? 'YES' : 'NO'));
             
             // Upload file baru
             if (move_uploaded_file($file['tmp_name'], $uploadPath)) {
@@ -175,8 +179,11 @@ class SettingsLogic {
             if ($stmt->execute()) {
                 // Delete physical file if exists
                 if ($currentPhoto && !empty($currentPhoto)) {
-                    $uploadDir = '../../uploads/profile/';
-                    $filePath = $uploadDir . basename($currentPhoto);
+                    if (strpos($currentPhoto, 'uploads/profile/') === 0) {
+                        $filePath = dirname(dirname(dirname(__FILE__))) . '/' . $currentPhoto;
+                    } else {
+                        $filePath = dirname(dirname(dirname(__FILE__))) . '/uploads/profile/' . basename($currentPhoto);
+                    }
                     if (file_exists($filePath)) {
                         unlink($filePath);
                     }
@@ -254,7 +261,7 @@ class SettingsLogic {
     public function getProfilLengkap($user_id) {
         try {
             $sql = "SELECT id, username, email, namaLengkap, bio, nomorTelpon, tanggalLahir, 
-                           fotoProfil, role, status, terakhirLogin, dibuat, diperbarui
+                           fotoProfil, role, status, terakhirLogin, dibuat, updated_at
                     FROM users WHERE id = ?";
             $stmt = $this->conn->prepare($sql);
             $stmt->bind_param("i", $user_id);

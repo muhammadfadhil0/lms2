@@ -54,7 +54,7 @@
               </select>
               <div id="auto-score-notice" class="text-left hidden mt-1 text-xs text-amber-700">
                 <i class="ti ti-info-circle mr-1"></i>
-                Penilaian otomatis aktif
+                Mode penilaian otomatis aktif - hanya pilihan ganda tersedia
               </div>
             </div>
           </div>

@@ -54,21 +54,21 @@
             border-radius: 13px;
             cursor: pointer;
             border: 1px solid #ececec;
-            background: linear-gradient(145deg, #fdfdfd, #f6f7f8);
+            background: #f8f9fa;
             transition: .25s cubic-bezier(.4, .2, .2, 1);
             position: relative;
             box-shadow: 0 2px 4px rgba(0, 0, 0, .04);
         }
 
         .q-btn.current {
-            background: linear-gradient(160deg, #ff912f, #f97316);
+            background: #f97316;
             color: #fff;
             border-color: #f97316;
             box-shadow: 0 6px 16px -4px rgba(249, 115, 22, .55);
         }
 
         .q-btn.saved {
-            background: linear-gradient(155deg, #22c55e, #16a34a);
+            background: #16a34a;
             color: #fff;
             border-color: #16a34a;
             box-shadow: 0 6px 14px -4px rgba(22, 163, 74, .5);
@@ -95,7 +95,7 @@
         }
 
         .q-btn.answered {
-            background: linear-gradient(155deg, #3b82f6, #2563eb);
+            background: #2563eb;
             color: #fff;
             border-color: #2563eb;
             box-shadow: 0 6px 14px -4px rgba(37, 99, 235, .5);
@@ -103,11 +103,11 @@
 
         /* Tambahan untuk answered tapi belum saved */
         .q-btn.answered:not(.saved) {
-            background: linear-gradient(155deg, #3b82f6, #2563eb);
+            background: #2563eb;
         }
 
         .q-btn.saving {
-            background: linear-gradient(155deg, #f59e0b, #d97706);
+            background: #d97706;
             color: #fff;
             border-color: #d97706;
             box-shadow: 0 6px 14px -4px rgba(217, 119, 6, .5);
@@ -132,7 +132,7 @@
         }
 
         .q-btn.error {
-            background: linear-gradient(155deg, #ef4444, #dc2626);
+            background: #dc2626;
             color: #fff;
             border-color: #dc2626;
             box-shadow: 0 6px 14px -4px rgba(220, 38, 38, .5);
@@ -329,13 +329,9 @@
         }
 
         .question-card {
-            background: #ffffff;
-            border: 1px solid #f1f1f1;
-            border-radius: 20px;
-            padding: 40px 44px 46px;
+            /* padding: 40px 44px 46px; */
             margin: 0 0 34px;
             display: none;
-            box-shadow: 0 2px 6px -2px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.05);
         }
 
         .question-card.active {
@@ -434,13 +430,13 @@
         }
 
         .btn-primary {
-            background: linear-gradient(160deg, #ff973b, #f97316);
+            background: #f97316;
             color: #fff;
             box-shadow: 0 6px 18px -4px rgba(249, 115, 22, .6);
         }
 
         .btn-primary:hover {
-            background: linear-gradient(160deg, #ff8a22, #f57314);
+            background: #ea580c;
         }
 
         .btn-secondary {
@@ -454,23 +450,23 @@
         }
 
         .btn-danger {
-            background: linear-gradient(150deg, #ef4444, #dc2626);
+            background: #dc2626;
             color: #fff;
             box-shadow: 0 6px 16px -4px rgba(220, 38, 38, .55);
         }
 
         .btn-danger:hover {
-            background: linear-gradient(150deg, #f43f3f, #d61f1f);
+            background: #b91c1c;
         }
 
         .btn-warning {
-            background: linear-gradient(155deg, #f8b649, #f59e0b);
+            background: #f59e0b;
             color: #fff;
             box-shadow: 0 6px 16px -5px rgba(245, 158, 11, .55);
         }
 
         .btn-warning:hover {
-            background: linear-gradient(155deg, #f6aa2f, #ec9505);
+            background: #d97706;
         }
 
         .legend {
@@ -532,15 +528,212 @@
             text-align: center;
         }
 
+        /* Mobile Timer Toggle */
+        .mobile-timer-toggle {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: #ffffff;
+            border-bottom: 1px solid #ececec;
+            padding: 12px 20px;
+            text-align: center;
+            cursor: pointer;
+            z-index: 100;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        /* Mobile Save Indicator */
+        .mobile-save-indicator {
+            display: none;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.65rem;
+            font-weight: 600;
+            color: #059669;
+            background: rgba(5, 150, 105, 0.1);
+            border: 1px solid rgba(5, 150, 105, 0.2);
+            padding: 3px 8px;
+            border-radius: 12px;
+            animation: fadeInScale 0.3s ease-out;
+        }
+
+        .mobile-save-indicator i {
+            font-size: 0.8rem;
+        }
+
+        .mobile-save-indicator.show {
+            display: flex;
+        }
+
+        /* Loading state for mobile indicator */
+        .mobile-save-indicator.loading {
+            color: #f59e0b;
+            background: rgba(245, 158, 11, 0.1);
+            border-color: rgba(245, 158, 11, 0.2);
+        }
+
+        .mobile-save-indicator.loading i {
+            animation: spin 1s linear infinite;
+        }
+
+        /* Animation for save indicator */
+        @keyframes fadeInScale {
+            0% {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .mobile-timer-text {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #f97316;
+            margin-bottom: 2px;
+        }
+
+        .mobile-timer-label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: #9ca3af;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        /* Mobile Sidebar Animation */
+        .left-col.mobile-hidden {
+            transform: translateY(-100%);
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .left-col.mobile-visible {
+            transform: translateY(0);
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* Desktop view - ensure no mobile styles apply */
+        @media (min-width: 901px) {
+            .mobile-timer-toggle {
+                display: none !important;
+            }
+            
+            .layout {
+                padding-top: 0 !important;
+            }
+            
+            .left-col {
+                position: static !important;
+                transform: none !important;
+                opacity: 1 !important;
+                visibility: visible !important;
+                max-height: none !important;
+                width: 280px !important;
+            }
+
+            /* Hide mobile save indicator on desktop */
+            .mobile-save-indicator {
+                display: none !important;
+            }
+
+            /* Desktop Bottom Bar - keep original layout */
+            .bottom-bar {
+                flex-direction: row !important;
+                align-items: center !important;
+                gap: 16px !important;
+                padding: 16px clamp(16px, 4vw, 60px) !important;
+            }
+
+            .bar-left {
+                flex: 1 !important;
+                display: flex !important;
+                justify-content: flex-start !important;
+            }
+
+            .bar-center {
+                flex: 1 !important;
+                display: flex !important;
+                justify-content: center !important;
+                gap: 18px !important;
+            }
+
+            .bar-right {
+                flex: 1 !important;
+                display: flex !important;
+                justify-content: flex-end !important;
+            }
+
+            /* Desktop Button Styles - keep original */
+            .btn {
+                display: inline-flex !important;
+                flex-direction: row !important;
+                align-items: center !important;
+                gap: 9px !important;
+                font-size: .85rem !important;
+                font-weight: 600 !important;
+                padding: 14px 26px !important;
+                border-radius: 22px !important;
+                min-width: auto !important;
+                width: auto !important;
+                height: auto !important;
+            }
+
+            .btn .btn-text {
+                display: inline !important;
+            }
+
+            .btn i {
+                font-size: inherit !important;
+            }
+        }
+
         @media (max-width: 900px) {
+            .mobile-timer-toggle {
+                display: block;
+            }
+
+            /* Show mobile save indicator on mobile */
+            .mobile-save-indicator {
+                display: none; /* Still hidden by default, shown via JS */
+            }
+
             .layout {
                 flex-direction: column;
+                padding-top: 65px; /* Space for mobile timer */
             }
 
             .left-col {
                 width: 100%;
                 border-right: none;
                 border-bottom: 1px solid #ececec;
+                position: fixed;
+                top: 65px;
+                left: 0;
+                right: 0;
+                z-index: 99;
+                background: #ffffff;
+                max-height: calc(100vh - 65px);
+                overflow-y: auto;
+                transition: all 0.3s ease;
+                transform: translateY(-100%);
+                opacity: 0;
+                visibility: hidden;
+            }
+
+            .content-area {
+                margin-top: 0;
             }
 
             .questions-wrapper {
@@ -552,20 +745,78 @@
                 gap: 12px;
             }
 
+            /* Mobile Bottom Bar - Single Row Layout */
             .bottom-bar {
-                flex-direction: column;
-                align-items: stretch;
+                flex-direction: row;
+                align-items: center;
+                justify-content: space-between;
+                gap: 8px;
+                padding: 12px 16px;
             }
 
             .bar-left,
             .bar-right,
             .bar-center {
-                width: 100%;
-                justify-content: space-between;
+                width: auto;
+                flex: none;
+                justify-content: center;
             }
 
-            .btn {
+            .bar-left,
+            .bar-right {
+                flex: 0 0 auto;
+            }
+
+            .bar-center {
+                display: flex;
+                gap: 12px;
                 flex: 1;
                 justify-content: center;
+            }
+
+            /* Mobile Button Styles */
+            .btn {
+                flex: none;
+                justify-content: center;
+                padding: 8px 12px;
+                font-size: 0.75rem;
+                min-width: auto;
+                border-radius: 12px;
+            }
+
+            /* Navigation buttons (prev/next) - icon only */
+            .bar-left .btn,
+            .bar-right .btn {
+                padding: 10px;
+                width: 44px;
+                height: 44px;
+            }
+
+            .bar-left .btn .btn-text,
+            .bar-right .btn .btn-text {
+                display: none;
+            }
+
+            .bar-left .btn i,
+            .bar-right .btn i {
+                font-size: 1.2rem;
+            }
+
+            /* Center buttons (flag/finish) - icon with text below */
+            .bar-center .btn {
+                flex-direction: column;
+                gap: 4px;
+                padding: 8px 16px 10px;
+                min-width: 70px;
+            }
+
+            .bar-center .btn i {
+                font-size: 1.1rem;
+            }
+
+            .bar-center .btn .btn-text {
+                font-size: 0.65rem;
+                font-weight: 600;
+                line-height: 1;
             }
         }

@@ -533,7 +533,7 @@ function editPost(postId) {
     // TODO: Implement edit functionality
 }
 
-function deletePost(postId) {
+function xo(postId) {
     if (confirm('Apakah Anda yakin ingin menghapus postingan ini?')) {
         // TODO: Implement delete functionality
         console.log('Delete post:', postId);

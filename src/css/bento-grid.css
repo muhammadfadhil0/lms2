@@ -1,0 +1,127 @@
+/* Bento Grid Styles */
+@tailwind components;
+
+@layer components {
+  /* Container for the bento grid */
+  .bento-grid {
+    @apply mt-10 grid gap-4 sm:mt-16 lg:grid-cols-3 lg:grid-rows-2;
+  }
+
+  /* Base bento card styles */
+  .bento-card {
+    @apply relative lg:row-span-2;
+  }
+
+  /* Background layer for bento cards */
+  .bento-card-bg {
+    @apply absolute inset-px rounded-lg bg-gray-100;
+  }
+
+  /* Main content container */
+  .bento-card-content {
+    @apply relative flex h-full flex-col overflow-hidden rounded-lg;
+  }
+
+  /* Text content area */
+  .bento-card-text {
+    @apply px-8 pt-8 pb-3 sm:px-10 sm:pt-10 sm:pb-0;
+  }
+
+  /* Title styling */
+  .bento-card-title {
+    @apply mt-2 text-lg font-medium tracking-tight text-gray-900 max-lg:text-center;
+  }
+
+  /* Description styling */
+  .bento-card-description {
+    @apply mt-2 max-w-lg text-sm/6 text-gray-600 max-lg:text-center;
+  }
+
+  /* Image container */
+  .bento-card-image {
+    @apply @container relative min-h-120 w-full grow max-lg:mx-auto max-lg:max-w-sm;
+  }
+
+  /* Image wrapper */
+  .bento-card-image-wrapper {
+    @apply absolute inset-x-10 top-5 bottom-0 overflow-hidden;
+  }
+
+  /* Image styling */
+  .bento-card-img {
+    @apply size-full object-cover object-top;
+  }
+
+  /* Shadow/outline layer */
+  .bento-card-outline {
+    @apply pointer-events-none absolute inset-px rounded-lg shadow-sm outline outline-gray-900/15;
+  }
+
+  /* Specific styles for left cards */
+  .bento-card-left .bento-card-bg {
+    @apply lg:rounded-l-3xl;
+  }
+  
+  .bento-card-left .bento-card-content {
+    @apply lg:rounded-l-3xl;
+  }
+  
+  .bento-card-left .bento-card-outline {
+    @apply lg:rounded-l-4xl;
+  }
+
+  /* Specific styles for middle cards - Updated with 10px border radius */
+  .bento-card-middle .bento-card-bg {
+    @apply rounded-[10px];
+  }
+  
+  .bento-card-middle .bento-card-content {
+    @apply rounded-[10px];
+  }
+  
+  .bento-card-middle .bento-card-outline {
+    @apply rounded-[10px];
+  }
+
+  /* Specific styles for right cards */
+  .bento-card-right .bento-card-bg {
+    @apply max-lg:rounded-b-4xl lg:rounded-r-4xl;
+  }
+  
+  .bento-card-right .bento-card-content {
+    @apply rounded-[calc(var(--radius-lg)+1px)] max-lg:rounded-b-[calc(2rem+1px)] lg:rounded-r-[calc(2rem+1px)];
+  }
+  
+  .bento-card-right .bento-card-outline {
+    @apply max-lg:rounded-b-4xl lg:rounded-r-4xl;
+  }
+
+  /* Special content for code display card */
+  .bento-card-code {
+    @apply relative min-h-120 w-full grow;
+  }
+
+  .bento-card-code-container {
+    @apply absolute top-10 right-0 bottom-0 left-10 overflow-hidden rounded-tl-xl bg-white/60 outline outline-gray-900/10;
+  }
+
+  .bento-card-code-header {
+    @apply flex bg-white outline outline-gray-900/5;
+  }
+
+  .bento-card-code-tabs {
+    @apply -mb-px flex text-sm/6 font-medium text-gray-600;
+  }
+
+  .bento-card-code-tab-active {
+    @apply border-r border-b border-r-gray-900/10 border-b-gray-900/20 bg-gray-900/5 px-4 py-2 text-gray-900;
+  }
+
+  .bento-card-code-tab {
+    @apply border-r border-gray-400/10 px-4 py-2;
+  }
+
+  .bento-card-code-content {
+    @apply px-6 pt-6 pb-14;
+  }
+}

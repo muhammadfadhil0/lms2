@@ -422,30 +422,32 @@ class KelasPosting {
     }
     
     showAlert(message, type = 'info') {
-        // Create alert element
+        // Create alert element with inline slide animation
         const alert = document.createElement('div');
-        alert.className = `fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg transition-all duration-300 transform translate-x-full ${
+        alert.className = `fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg ${
             type === 'success' ? 'bg-green-500 text-white' :
             type === 'error' ? 'bg-red-500 text-white' :
             'bg-blue-500 text-white'
         }`;
+        alert.style.transition = 'transform 0.28s ease, opacity 0.28s ease';
+        alert.style.transform = 'translateX(100%)';
         alert.innerHTML = `
             <div class="flex items-center">
                 <i class="ti ti-${type === 'success' ? 'check' : type === 'error' ? 'x' : 'info-circle'} mr-2"></i>
                 <span>${message}</span>
             </div>
         `;
-        
+
         document.body.appendChild(alert);
-        
+
         // Animate in
         setTimeout(() => {
-            alert.classList.remove('translate-x-full');
-        }, 100);
-        
+            alert.style.transform = 'translateX(0)';
+        }, 20);
+
         // Remove after 3 seconds
         setTimeout(() => {
-            alert.classList.add('translate-x-full');
+            alert.style.transform = 'translateX(100%)';
             setTimeout(() => {
                 if (alert.parentNode) {
                     alert.parentNode.removeChild(alert);

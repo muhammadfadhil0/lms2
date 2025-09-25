@@ -2,6 +2,26 @@
 class AutoSaveManager {
     constructor(ujianSiswaId) {
         this.ujianSiswaId = ujianSiswaId;
+        // Defensive: jika ujianSiswaId tidak valid, matikan autosave dan beri pesan jelas di console
+        if (!this.ujianSiswaId || isNaN(parseInt(this.ujianSiswaId)) || Number(this.ujianSiswaId) <= 0) {
+            console.error('AutoSaveManager disabled: invalid ujianSiswaId:', this.ujianSiswaId);
+            // Provide a no-op instance surface so callers won't break
+            this.saveTimeout = null;
+            this.saveQueue = new Map();
+            this.isProcessing = false;
+            this.saveDelay = 1000;
+            this.maxRetries = 3;
+            this.statusIndicators = new Map();
+            this.initEventListeners = () => {};
+            this.loadInitialStatus = async () => { this.showGlobalSaveStatus && this.showGlobalSaveStatus('error'); };
+            this.showGlobalSaveStatus = (s) => {
+                const container = document.getElementById('answer-status-container');
+                if (container) container.innerHTML = `<div class="save-status status-error"><span class="label">Auto-save dinonaktifkan (ujianSiswaId tidak valid)</span></div>`;
+            };
+            // show error status immediately
+            try { this.showGlobalSaveStatus('error'); } catch (e) {}
+            return;
+        }
         this.saveTimeout = null;
         this.saveQueue = new Map(); // Map untuk queue jawaban yang belum disimpan
         this.isProcessing = false;
@@ -160,13 +180,23 @@ class AutoSaveManager {
                 method: 'POST',
                 body: formData
             });
-            
+
+            // Read response text for better debugging when something goes wrong
+            const rawText = await response.text();
+
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                console.error(`AutoSave server returned HTTP ${response.status}`, rawText);
+                throw new Error(`HTTP error! status: ${response.status} - ${rawText}`);
             }
-            
-            const result = await response.json();
-            
+
+            let result;
+            try {
+                result = JSON.parse(rawText);
+            } catch (parseErr) {
+                console.error('Failed to parse JSON from auto-save response:', parseErr, rawText);
+                throw new Error('Invalid JSON response from server');
+            }
+
             if (result.success) {
                 this.updateQuestionStatus(soalId, 'saved');
                 this.updateQuestionMapIndicator(soalId, true);
@@ -177,6 +207,7 @@ class AutoSaveManager {
                 // Log untuk debugging
                 console.log(`Auto-saved answer for soal ${soalId}:`, result);
             } else {
+                console.error('AutoSave API returned success=false:', result, 'raw:', rawText);
                 throw new Error(result.message || 'Failed to save');
             }
             

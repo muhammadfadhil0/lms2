@@ -49,15 +49,16 @@ class SoalLogic {
     // Membuat soal jawaban singkat/panjang
     public function buatSoalJawaban($ujian_id, $nomorSoal, $pertanyaan, $tipeSoal, $kunciJawaban = '', $poin = 10) {
         try {
-            $sql = "INSERT INTO soal (ujian_id, nomorSoal, pertanyaan, tipeSoal, kunciJawaban, poin, autoGrading) 
-                    VALUES (?, ?, ?, ?, ?, ?, 0)";
+            $sql = "INSERT INTO soal (ujian_id, nomorSoal, pertanyaan, tipeSoal, kunciJawaban, poin) 
+                    VALUES (?, ?, ?, ?, ?, ?)";
             $stmt = $this->conn->prepare($sql);
             $stmt->bind_param("iisssi", $ujian_id, $nomorSoal, $pertanyaan, $tipeSoal, $kunciJawaban, $poin);
             
             if ($stmt->execute()) {
+                $soal_id = $this->conn->insert_id;
                 $this->updateTotalSoalUjian($ujian_id);
                 $this->redistributeAutoScoreIfNeeded($ujian_id);
-                return ['success' => true, 'message' => 'Soal berhasil dibuat', 'soal_id' => $this->conn->insert_id];
+                return ['success' => true, 'message' => 'Soal berhasil dibuat', 'soal_id' => $soal_id];
             } else {
                 return ['success' => false, 'message' => 'Gagal membuat soal'];
             }

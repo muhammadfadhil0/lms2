@@ -226,6 +226,7 @@ class KelasPosting {
         const postsContainer = document.getElementById('postsContainer');
         if (!postsContainer) {
             console.error('Posts container not found');
+            this.hideLoadingIndicator();
             this.isLoading = false;
             return;
         }
@@ -335,26 +336,26 @@ class KelasPosting {
                     }
                     
                     // Check for notification highlight after posts are loaded (only on refresh)
-                    if (refresh && window.NotificationHighlight && window.location.hash) {
+                    if (window.NotificationHighlight && window.location.hash) {
                         const highlightTimeoutId = setTimeout(() => {
                             // Only call if element exists and hasn't been highlighted yet
                             const targetElement = document.querySelector(window.location.hash);
                             if (targetElement && !window.NotificationHighlight.highlightExecuted) {
                                 window.NotificationHighlight.handleNotificationHighlight();
                             }
-                            
                             // Remove this timeout from pending list
                             const timeoutIndex = this.pendingTimeouts.indexOf(highlightTimeoutId);
                             if (timeoutIndex > -1) {
                                 this.pendingTimeouts.splice(timeoutIndex, 1);
                             }
                         }, result.data.length * 50 + 200); // Wait for all posts to be rendered
-                        
                         // Track this timeout
                         this.pendingTimeouts.push(highlightTimeoutId);
                     }
                 } else {
                     this.hasMorePosts = false;
+                    // No more posts: ensure loading indicator removed
+                    this.hideLoadingIndicator();
                     
                     if (this.currentOffset === 0) {
                         // No posts at all
@@ -402,6 +403,8 @@ class KelasPosting {
                 </div>
             `;
         } finally {
+            // Always hide any scroll loading indicator and reset loading flag
+            try { this.hideLoadingIndicator(); } catch (e) { /* ignore */ }
             this.isLoading = false;
         }
     }
@@ -457,7 +460,7 @@ class KelasPosting {
         }
         
         const postElement = document.createElement('div');
-        postElement.className = 'bg-white rounded-lg shadow-sm mb-6';
+        postElement.className = 'post-container bg-white rounded-lg shadow-sm mb-6';
         postElement.id = `post-${post.id}`;
         postElement.setAttribute('data-post-id', post.id);
         postElement.setAttribute('data-user-id', post.user_id);
@@ -509,7 +512,7 @@ class KelasPosting {
                 <div class="mb-4">
                     <!-- Post Content -->
                     ${post.konten ? `
-                        <div class="text-gray-900 text-sm lg:text-base mb-3" style="line-height: 1.6; white-space: pre-wrap;">${this.escapeHtml(post.konten)}</div>
+                        <div class="post-content text-gray-900 text-sm lg:text-base mb-3" style="line-height: 1.6; white-space: pre-wrap; word-break: break-word; overflow-wrap: break-word; max-width: 100%;">${this.escapeHtml(post.konten)}</div>
                     ` : ''}
                     ${post.deadline ? `
                         <div class="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
@@ -563,6 +566,7 @@ class KelasPosting {
                             <textarea placeholder="Tulis komentar... (tekan Enter untuk mengirim)" 
                                 rows="2"
                                 class="w-full px-3 py-2 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-sm"
+                                style="word-break: break-word; overflow-wrap: break-word;"
                                 onkeydown="handleCommentKeydown(event, ${post.id})"
                                 required></textarea>
                             <div class="flex justify-end mt-2">
@@ -582,9 +586,10 @@ class KelasPosting {
         // Auto-load comments preview after element is created (only if comments are allowed)
         setTimeout(() => {
             if (this.permissions.canComment) {
+                // Wait for DOM element to be fully rendered and attached
                 this.loadCommentsPreview(post.id);
             }
-        }, 100);
+        }, 500); // Increased delay to ensure DOM is ready
         
         return postElement;
     }
@@ -902,9 +907,24 @@ class KelasPosting {
         quickCommentDiv.classList.add('hidden');
     }
     
-    async loadCommentsPreview(postId) {
+    async loadCommentsPreview(postId, retryCount = 0) {
         // Don't load comments if commenting is restricted
         if (!this.permissions.canComment) {
+            return;
+        }
+        
+        // Check if the preview div exists, retry if not (up to 3 times)
+        const previewDiv = document.getElementById(`comments-preview-${postId}`);
+        if (!previewDiv && retryCount < 3) {
+            console.log(`Preview div not found for post ${postId}, retrying in 200ms... (attempt ${retryCount + 1})`);
+            setTimeout(() => {
+                this.loadCommentsPreview(postId, retryCount + 1);
+            }, 200);
+            return;
+        }
+        
+        if (!previewDiv) {
+            console.error(`Preview div not found for post ${postId} after ${retryCount} retries`);
             return;
         }
         
@@ -937,7 +957,13 @@ class KelasPosting {
         const viewAllBtn = document.querySelector(`[data-post-id="${postId}"].view-all-comments`);
         
         if (!previewDiv) {
-            console.error('Preview div not found for post', postId);
+            console.error('Preview div not found for post', postId, '- element may not be fully rendered yet');
+            return;
+        }
+        
+        // Double-check that the element is actually in the DOM and visible
+        if (!document.body.contains(previewDiv)) {
+            console.error('Preview div for post', postId, 'is not attached to DOM');
             return;
         }
         
@@ -1016,7 +1042,7 @@ class KelasPosting {
                 <div class="flex-1 ${isPreview ? 'text-sm' : ''}">
                     <div class="bg-gray-100 rounded-lg px-3 py-2">
                         <p class="font-medium text-gray-900 text-xs">${this.escapeHtml(comment.nama_penulis || comment.namaKomentator)}</p>
-                        <p class="text-gray-800 ${isPreview ? 'text-xs' : 'text-sm'}">${this.escapeHtml(comment.komentar)}</p>
+                        <p class="comment-content text-gray-800 ${isPreview ? 'text-xs' : 'text-sm'}" style="word-break: break-word; overflow-wrap: break-word;">${this.escapeHtml(comment.komentar)}</p>
                     </div>
                     <div class="flex items-center mt-1 space-x-2 text-xs text-gray-500">
                         <span>${timeAgo}</span>
@@ -1330,7 +1356,7 @@ class KelasPosting {
 
         // Assignment header with info
         let assignmentHeader = `
-            <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 mt-3" data-assignment-id="${post.assignment_id}">
+            <div id="post-assignment-${post.assignment_id}" class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 mt-3" data-assignment-id="${post.assignment_id}">
                 <div class="flex items-start space-x-3">
                     <div class="flex-shrink-0">
                         <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
@@ -1375,24 +1401,7 @@ class KelasPosting {
                             ` : ''}
                         </div>
                         
-                        ${post.assignment_file_path ? `
-                            <div class="p-3 bg-white rounded-lg border border-gray-200">
-                                <div class="flex items-center space-x-3">
-                                    <div class="flex-shrink-0">
-                                        <i class="${getFileIcon(post.assignment_file_path)} text-blue-600 text-xl"></i>
-                                    </div>
-                                    <div class="flex-1 min-w-0">
-                                        <div class="text-xs font-medium text-gray-500 uppercase tracking-wide">File Tugas</div>
-                                        <div class="text-sm font-semibold text-gray-900 truncate">${post.assignment_file_path.split('/').pop()}</div>
-                                    </div>
-                                    <a href="/lms${post.assignment_file_path.startsWith('/') ? '' : '/'}${post.assignment_file_path}" target="_blank" 
-                                       class="flex items-center space-x-1 bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex-shrink-0">
-                                        <i class="ti ti-download"></i>
-                                        <span class="hidden sm:inline">Download</span>
-                                    </a>
-                                </div>
-                            </div>
-                        ` : ''}
+                        ${this.renderAssignmentFiles(post)}
                     </div>
                 </div>
             </div>
@@ -1404,9 +1413,9 @@ class KelasPosting {
             if (isDeadlinePassed) {
                 assignmentActions = `
                     <div class="bg-red-50 border border-red-200 rounded-lg p-3 mt-3">
-                        <div class="flex items-center">
+                        <div class="flex ">
                             <i class="ti ti-clock-x text-red-600 mr-2"></i>
-                            <span class="text-sm text-red-800">Deadline telah terlewat</span>
+                            <span class="text-sm text-red-800">Deadline telah terlewat, hubungi pengajar untuk perpanjangan waktu jika di butuhkan</span>
                         </div>
                     </div>
                 `;
@@ -1606,15 +1615,101 @@ class KelasPosting {
                                 <div class="text-xs text-gray-600">Dinilai</div>
                             </div>
                         </div>
-                        <button onclick="openAssignmentReports(${post.assignment_id})" class="bg-gray-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-700 transition-colors">
-                            Lihat Laporan
-                        </button>
+                        <div class="flex space-x-2">
+                            <button onclick="openEditAssignmentModal(${post.assignment_id})" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
+                                Edit Tugas
+                            </button>
+                            <button onclick="openAssignmentReports(${post.assignment_id})" class="bg-gray-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-700 transition-colors">
+                                Lihat Laporan
+                            </button>
+                        </div>
                     </div>
                 </div>
             `;
         }
 
         return assignmentHeader + assignmentActions;
+    }
+
+    renderAssignmentFiles(post) {
+        console.log('✏️ [DEBUG] renderAssignmentFiles called for post:', post.id);
+        console.log('✏️ [DEBUG] post.assignment_files:', post.assignment_files);
+        
+        // Check if there are multiple files from tugas_files table
+        if (post.assignment_files && post.assignment_files.length > 0) {
+            console.log('✏️ [DEBUG] Rendering', post.assignment_files.length, 'assignment files');
+            // Render multiple files as stacked divs
+            const filesHtml = post.assignment_files.map(file => {
+                const fileIcon = getFileIconClass(file.file_name);
+                return `
+                    <div class="p-3 bg-white rounded-lg border border-gray-200 mb-2 last:mb-0">
+                        <div class="flex items-center space-x-3">
+                            <div class="flex-shrink-0">
+                                <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                    <i class="${fileIcon} text-blue-600"></i>
+                                </div>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="text-xs font-medium text-gray-500 uppercase tracking-wide">File Tugas</div>
+                                <div class="text-sm font-semibold text-gray-900 truncate">${this.escapeHtml(file.file_name)}</div>
+                                <div class="text-xs text-gray-500 mt-0.5">${this.formatFileSize(file.file_size)} • Klik untuk mengunduh</div>
+                            </div>
+                            <a href="/lms${file.file_path}" target="_blank" 
+                               class="flex items-center space-x-1 bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex-shrink-0">
+                                <i class="ti ti-download"></i>
+                                <span class="hidden sm:inline">Download</span>
+                            </a>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            console.log('✏️ [DEBUG] Assignment files HTML generated');
+            return `<div class="space-y-2">${filesHtml}</div>`;
+        }
+        
+        // Fallback to old single file display for backward compatibility
+        if (post.assignment_file_path) {
+            console.log('✏️ [DEBUG] Using fallback single file display for:', post.assignment_file_path);
+            const fileIcon = getFileIcon(post.assignment_file_path);
+            return `
+                <div class="p-3 bg-white rounded-lg border border-gray-200">
+                    <div class="flex items-center space-x-3">
+                        <div class="flex-shrink-0">
+                            <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                <i class="${fileIcon} text-blue-600"></i>
+                            </div>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="text-xs font-medium text-gray-500 uppercase tracking-wide">File Tugas</div>
+                            <div class="text-sm font-semibold text-gray-900 truncate">${post.assignment_file_path.split('/').pop()}</div>
+                            <div class="text-xs text-gray-500 mt-0.5">Klik untuk mengunduh file</div>
+                        </div>
+                        <a href="/lms${post.assignment_file_path.startsWith('/') ? '' : '/'}${post.assignment_file_path}" target="_blank" 
+                           class="flex items-center space-x-1 bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex-shrink-0">
+                            <i class="ti ti-download"></i>
+                            <span class="hidden sm:inline">Download</span>
+                        </a>
+                    </div>
+                </div>
+            `;
+        }
+        
+        console.log('✏️ [DEBUG] No assignment files found to render');
+        return ''; // No files
+    }
+
+
+
+    formatFileSize(bytes) {
+        if (!bytes) return '';
+        if (bytes === 0) return '0 Bytes';
+        
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     }
 }
 
@@ -2087,14 +2182,14 @@ class AssignmentNavigator {
         postElement.classList.add('assignment-highlight');
         
         // Also add inline styles as fallback to ensure visibility
-        postElement.style.setProperty('border', '4px solid #f97316', 'important');
-        postElement.style.setProperty('box-shadow', '0 0 0 8px rgba(249, 115, 22, 0.4)', 'important');
-        postElement.style.setProperty('background-color', 'rgba(249, 115, 22, 0.05)', 'important');
-        postElement.style.setProperty('transform', 'scale(1.02)', 'important');
-        postElement.style.setProperty('transition', 'all 0.3s ease-in-out', 'important');
-        postElement.style.setProperty('border-radius', '8px', 'important');
-        postElement.style.setProperty('z-index', '999', 'important');
-        postElement.style.setProperty('position', 'relative', 'important');
+    postElement.style.setProperty('border', '2px solid #f97316', 'important');
+    postElement.style.setProperty('box-shadow', '0 0 0 4px rgba(249, 115, 22, 0.28)', 'important');
+    postElement.style.setProperty('background-color', 'rgba(249, 115, 22, 0.04)', 'important');
+    postElement.style.setProperty('transform', 'scale(1.01)', 'important');
+    postElement.style.setProperty('transition', 'all 0.25s ease-in-out', 'important');
+    postElement.style.setProperty('border-radius', '8px', 'important');
+    postElement.style.setProperty('z-index', '999', 'important');
+    postElement.style.setProperty('position', 'relative', 'important');
         
         // Verify the styles were applied
         console.log('🎨 Class list after adding highlight:', postElement.classList.toString());
@@ -2159,6 +2254,34 @@ function formatFileSize(bytes) {
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+function getFileIconClass(filename) {
+    if (!filename) return 'ti ti-file';
+    
+    const ext = filename.toLowerCase().split('.').pop();
+    const iconMap = {
+        'pdf': 'ti ti-file-type-pdf',
+        'doc': 'ti ti-file-type-doc',
+        'docx': 'ti ti-file-type-doc',
+        'xls': 'ti ti-file-type-xls',
+        'xlsx': 'ti ti-file-type-xls', 
+        'ppt': 'ti ti-file-type-ppt',
+        'pptx': 'ti ti-file-type-ppt',
+        'txt': 'ti ti-file-text',
+        'jpg': 'ti ti-photo',
+        'jpeg': 'ti ti-photo',
+        'png': 'ti ti-photo',
+        'gif': 'ti ti-photo',
+        'mp4': 'ti ti-video',
+        'mp3': 'ti ti-music',
+        'avi': 'ti ti-video',
+        'mov': 'ti ti-video',
+        'zip': 'ti ti-file-zip',
+        'rar': 'ti ti-file-zip'
+    };
+    
+    return iconMap[ext] || 'ti ti-file';
 }
 
 function getFileIconHtml(extension) {

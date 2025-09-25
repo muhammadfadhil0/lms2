@@ -3,7 +3,7 @@ session_start();
 
 // Redirect jika belum login atau bukan guru
 if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'guru') {
-    header('Location: ../../index.php');
+    header('Location: ../../login.php');
     exit();
 }
 
@@ -97,6 +97,7 @@ $autoScore = (int)($ujian['autoScore'] ?? 0);
             border-radius: 8px;
             overflow: hidden;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e5e7eb;
         }
 
         .results-table th {
@@ -156,7 +157,7 @@ $autoScore = (int)($ujian['autoScore'] ?? 0);
             display: inline-flex;
             align-items: center;
             padding: 4px 8px;
-            border-radius: 12px;
+            border-radius: 5px;
             font-size: 12px;
             font-weight: 500;
         }
@@ -804,7 +805,7 @@ $autoScore = (int)($ujian['autoScore'] ?? 0);
                                 </div>
                                 
                                 <!-- Save Button -->
-                                <div class="mt-6 text-center">
+                                <div class="mt-6 text-right">
                                     <button onclick="saveFormulirScores()" class="btn-orange px-8 py-3">
                                         <i class="ti ti-device-floppy"></i>
                                         <span>Simpan Nilai</span>
@@ -821,19 +822,30 @@ $autoScore = (int)($ujian['autoScore'] ?? 0);
                                 </h2>
 
                                 <!-- Info Ujian -->
-                                <div class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                                <div class="mb-6 p-4 bg-gray-100 border border-gray-200 rounded-lg">
                                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                                        <div>
-                                            <span class="text-blue-700 font-medium">Nama Ujian:</span>
-                                            <span class="text-blue-900"><?= htmlspecialchars($ujian['namaUjian']) ?></span>
+                                        <div class="flex items-start gap-3">
+                                            <i class="ti ti-file-text w-6 h-6 text-blue-700 flex-shrink-0"></i>
+                                            <div>
+                                                <div class="text-xs text-blue-700 font-semibold">Nama Ujian</div>
+                                                <div class="text-sm text-blue-900 font-medium"><?= htmlspecialchars($ujian['namaUjian']) ?></div>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <span class="text-blue-700 font-medium">Mata Pelajaran:</span>
-                                            <span class="text-blue-900"><?= htmlspecialchars($ujian['mataPelajaran'] ?? '-') ?></span>
+
+                                        <div class="flex items-start gap-3">
+                                            <i class="ti ti-book w-6 h-6 text-blue-700 flex-shrink-0"></i>
+                                            <div>
+                                                <div class="text-xs text-blue-700 font-semibold">Mata Pelajaran</div>
+                                                <div class="text-sm text-blue-900 font-medium"><?= htmlspecialchars($ujian['mataPelajaran'] ?? '-') ?></div>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <span class="text-blue-700 font-medium">Total Soal:</span>
-                                            <span class="text-blue-900"><?= count($soalList) ?> soal</span>
+
+                                        <div class="flex items-start gap-3">
+                                            <i class="ti ti-list w-6 h-6 text-blue-700 flex-shrink-0"></i>
+                                            <div>
+                                                <div class="text-xs text-blue-700 font-semibold">Total Soal</div>
+                                                <div class="text-sm text-blue-900 font-medium"><?= count($soalList) ?> soal</div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -857,7 +869,8 @@ $autoScore = (int)($ujian['autoScore'] ?? 0);
                                         </div>
                                     </div>
                                 <?php else: ?>
-                                    <div class="overflow-x-auto">
+                                    <!-- Desktop Table View (hidden on mobile) -->
+                                    <div class="hidden md:block overflow-x-auto border border-gray-200 rounded-lg">
                                         <table class="results-table">
                                             <thead>
                                                 <tr>
@@ -877,11 +890,26 @@ $autoScore = (int)($ujian['autoScore'] ?? 0);
                                                         <td><?= $no++ ?></td>
                                                         <td>
                                                             <div class="flex items-center">
-                                                                <div class="w-8 h-8 bg-orange text-white rounded-full flex items-center justify-center text-sm font-medium mr-3">
+                                                                <div class="w-8 h-8 rounded-full overflow-hidden mr-3 flex-shrink-0">
                                                                     <?php
                                                                     $nama = $hasil['namaLengkap'] ?? 'Unknown User';
-                                                                    echo strtoupper(substr($nama, 0, 1));
+                                                                    if (isset($hasil['fotoProfil']) && !empty($hasil['fotoProfil'])): 
+                                                                        $photoPath = '';
+                                                                        if (strpos($hasil['fotoProfil'], 'uploads/profile/') === 0) {
+                                                                            $photoPath = '../../' . $hasil['fotoProfil'];
+                                                                        } else {
+                                                                            $photoPath = '../../uploads/profile/' . $hasil['fotoProfil'];
+                                                                        }
                                                                     ?>
+                                                                        <img src="<?= htmlspecialchars($photoPath) ?>" 
+                                                                             alt="Profile Photo" 
+                                                                             class="w-full h-full object-cover"
+                                                                             onerror="this.parentElement.innerHTML='<div class=\'w-full h-full bg-orange text-white rounded-full flex items-center justify-center text-sm font-medium\'><?= strtoupper(substr($nama, 0, 1)) ?></div>'">
+                                                                    <?php else: ?>
+                                                                        <div class="w-full h-full bg-orange text-white rounded-full flex items-center justify-center text-sm font-medium">
+                                                                            <?= strtoupper(substr($nama, 0, 1)) ?>
+                                                                        </div>
+                                                                    <?php endif; ?>
                                                                 </div>
                                                                 <div>
                                                                     <span class="font-medium text-gray-800"><?= htmlspecialchars($nama) ?></span>
@@ -894,28 +922,28 @@ $autoScore = (int)($ujian['autoScore'] ?? 0);
                                                         <td class="text-center">
                                                             <?php $jumlahBenar = (int)($hasil['jumlahBenar'] ?? 0); ?>
                                                             <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                                                <i class="ti ti-check text-xs mr-1"></i>
                                                                 <?= $jumlahBenar ?>
                                                             </span>
                                                         </td>
-                                                        <td class="text-center">
-                                                            <?php
-                                                            $jumlahSalah = (int)($hasil['jumlahSalah'] ?? 0);
-                                                            $totalSoal = count($soalList);
-                                                            $tidakDijawab = $totalSoal - $jumlahBenar - $jumlahSalah;
-                                                            ?>
-                                                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                                                <i class="ti ti-x text-xs mr-1"></i>
-                                                                <?= $jumlahSalah ?>
-                                                            </span>
-                                                            <?php if ($tidakDijawab > 0): ?>
-                                                                <div class="mt-1">
-                                                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
-                                                                        <i class="ti ti-minus text-xs mr-1"></i>
-                                                                        <?= $tidakDijawab ?> kosong
+                                                        <td>
+                                                            <div class="flex gap-2 items-center justify-center">
+                                                                <?php
+                                                                $jumlahSalah = (int)($hasil['jumlahSalah'] ?? 0);
+                                                                $totalSoal = count($soalList);
+                                                                $tidakDijawab = $totalSoal - $jumlahBenar - $jumlahSalah;
+                                                                ?>
+                                                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                                                    <i class="text-xs mr-1"></i>
+                                                                    <?= $jumlahSalah ?>
+                                                                </span>
+                                                                <span>/</span>
+                                                                <?php if ($tidakDijawab > 0): ?>
+                                                                    <span class="inline-flex items-center mt-1 px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                                                                        <i class="text-xs mr-1"></i>
+                                                                        <?= $tidakDijawab ?>
                                                                     </span>
-                                                                </div>
-                                                            <?php endif; ?>
+                                                                <?php endif; ?>
+                                                            </div>
                                                         </td>
                                                         <td>
                                                             <?php
@@ -936,15 +964,118 @@ $autoScore = (int)($ujian['autoScore'] ?? 0);
                                                             </span>
                                                         </td>
                                                         <td>
-                                                            <button onclick="showDetailModal(<?= (int)($hasil['id'] ?? 0) ?>)"
-                                                                class="px-3 py-1 text-xs bg-orange text-white rounded hover:bg-orange-600 transition-colors">
-                                                                <i class="ti ti-eye"></i> Detail
-                                                            </button>
+                                                            <a href="detail-jawaban-guru.php?ujian_id=<?= $ujian_id ?>&ujian_siswa_id=<?= (int)($hasil['id'] ?? 0) ?>"
+                                                                class="inline-flex items-center px-3 py-1 text-xs bg-orange text-white rounded hover:bg-orange-600 transition-colors">
+                                                                <i class="ti ti-eye mr-1"></i> Detail
+                                                            </a>
                                                         </td>
                                                     </tr>
-                                                <?php endforeach; ?>
+                                                <?php $no++; endforeach; ?>
                                             </tbody>
                                         </table>
+                                    </div>
+
+                                    <!-- Mobile Card View (hidden on desktop) -->
+                                    <div class="md:hidden space-y-4">
+                                        <?php $no = 1;
+                                        foreach ($hasilUjian as $hasil): ?>
+                                            <div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                                                <!-- Header dengan nama siswa -->
+                                                <div class="flex items-center justify-between mb-3">
+                                                    <div class="flex items-center">
+                                                        <div class="w-10 h-10 rounded-full overflow-hidden mr-3 flex-shrink-0">
+                                                            <?php
+                                                            $nama = $hasil['namaLengkap'] ?? 'Unknown User';
+                                                            if (isset($hasil['fotoProfil']) && !empty($hasil['fotoProfil'])): 
+                                                                $photoPath = '';
+                                                                if (strpos($hasil['fotoProfil'], 'uploads/profile/') === 0) {
+                                                                    $photoPath = '../../' . $hasil['fotoProfil'];
+                                                                } else {
+                                                                    $photoPath = '../../uploads/profile/' . $hasil['fotoProfil'];
+                                                                }
+                                                            ?>
+                                                                <img src="<?= htmlspecialchars($photoPath) ?>" 
+                                                                     alt="Profile Photo" 
+                                                                     class="w-full h-full object-cover"
+                                                                     onerror="this.parentElement.innerHTML='<div class=\'w-full h-full bg-orange text-white rounded-full flex items-center justify-center text-sm font-bold\'><?= strtoupper(substr($nama, 0, 1)) ?></div>'">
+                                                            <?php else: ?>
+                                                                <div class="w-full h-full bg-orange text-white rounded-full flex items-center justify-center text-sm font-bold">
+                                                                    <?= strtoupper(substr($nama, 0, 1)) ?>
+                                                                </div>
+                                                            <?php endif; ?>
+                                                        </div>
+                                                        <div>
+                                                            <div class="font-medium text-gray-900 text-sm"><?= htmlspecialchars($nama) ?></div>
+                                                            <?php if (isset($hasil['siswa_id'])): ?>
+                                                                <div class="text-xs text-gray-500">ID: <?= $hasil['siswa_id'] ?></div>
+                                                            <?php endif; ?>
+                                                        </div>
+                                                    </div>
+                                                    <div class="text-xs font-medium text-gray-500">#<?= $no++ ?></div>
+                                                </div>
+
+                                                <!-- Status dan Nilai -->
+                                                <div class="flex items-center gap-2 justify-end mb-3">
+                                                    <div class="flex items-center space-x-2">
+                                                        <?php
+                                                        $status = $hasil['status'] ?? 'belum';
+                                                        $statusClass = $status === 'selesai' ? 'status-selesai' : ($status === 'sedang_mengerjakan' ? 'status-sedang' : 'status-belum');
+                                                        ?>
+                                                        <span class="status-badge <?= $statusClass ?>">
+                                                            <?= ucfirst(str_replace('_', ' ', $status)) ?>
+                                                        </span>
+                                                    </div>
+                                                    <div class="text-right">
+                                                        <?php
+                                                        $nilai = (float)($hasil['totalNilai'] ?? 0);
+                                                        $scoreClass = $nilai >= 85 ? 'score-excellent' : ($nilai >= 70 ? 'score-good' : ($nilai >= 60 ? 'score-average' : 'score-poor'));
+                                                        ?>
+                                                        <span class="score-badge <?= $scoreClass ?> text-lg font-bold">
+                                                            <?= number_format($nilai, 1) ?>
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Statistik Jawaban -->
+                                                <div class="grid grid-cols-3 gap-3 mb-4">
+                                                    <div class="text-center p-2 bg-green-50 rounded-lg border border-green-200">
+                                                        <?php $jumlahBenar = (int)($hasil['jumlahBenar'] ?? 0); ?>
+                                                        <div class="text-green-700 font-bold text-lg"><?= $jumlahBenar ?></div>
+                                                        <div class="text-xs text-green-600 flex items-center justify-center">
+                                                            Benar
+                                                        </div>
+                                                    </div>
+                                                    <div class="text-center p-2 bg-red-50 rounded-lg border border-red-200">
+                                                        <?php
+                                                        $jumlahSalah = (int)($hasil['jumlahSalah'] ?? 0);
+                                                        ?>
+                                                        <div class="text-red-700 font-bold text-lg"><?= $jumlahSalah ?></div>
+                                                        <div class="text-xs text-red-600 flex items-center justify-center">
+                                                            Salah
+                                                        </div>
+                                                    </div>
+                                                    <div class="text-center p-2 bg-gray-50 rounded-lg border border-gray-200">
+                                                        <?php
+                                                        $totalSoal = count($soalList);
+                                                        $tidakDijawab = $totalSoal - $jumlahBenar - $jumlahSalah;
+                                                        ?>
+                                                        <div class="text-gray-700 font-bold text-lg"><?= $tidakDijawab ?></div>
+                                                        <div class="text-xs text-gray-600 flex items-center justify-center">
+                                                            Kosong
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Tombol Detail -->
+                                                <div class="pt-2 border-t border-gray-100">
+                                                    <a href="detail-jawaban-guru.php?ujian_id=<?= $ujian_id ?>&ujian_siswa_id=<?= (int)($hasil['id'] ?? 0) ?>"
+                                                        class="w-full px-4 py-2 text-sm bg-orange text-white rounded-lg hover:bg-orange-600 transition-colors font-medium flex items-center justify-center">
+                                                        <i class="ti ti-eye mr-2"></i>
+                                                        Lihat Detail
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        <?php endforeach; ?>
                                     </div>
                                 <?php endif; ?>
                             </div>
@@ -1752,8 +1883,13 @@ $autoScore = (int)($ujian['autoScore'] ?? 0);
             let cardContent = `
                 <div class="bg-white rounded-lg p-6 border border-gray-200">
                     <div class="text-center mb-6">
-                        <div class="w-16 h-16 bg-orange text-white rounded-full flex items-center justify-center text-xl font-bold mx-auto mb-2">
-                            ${data.siswa_nama.charAt(0).toUpperCase()}
+                        <div class="w-16 h-16 rounded-full overflow-hidden mx-auto mb-2">
+                            ${data.fotoProfil && data.fotoProfil.trim() !== '' ? 
+                                `<img src="${data.fotoProfil.startsWith('uploads/profile/') ? '../../' + data.fotoProfil : '../../uploads/profile/' + data.fotoProfil}" 
+                                      alt="Profile Photo" 
+                                      class="w-full h-full object-cover"
+                                      onerror="this.parentElement.innerHTML='<div class=\\'w-full h-full bg-orange text-white rounded-full flex items-center justify-center text-xl font-bold\\'>${data.siswa_nama.charAt(0).toUpperCase()}</div>'">` :
+                                `<div class="w-full h-full bg-orange text-white rounded-full flex items-center justify-center text-xl font-bold">${data.siswa_nama.charAt(0).toUpperCase()}</div>`}
                         </div>
                         <h4 class="text-lg font-bold text-gray-800">${data.siswa_nama}</h4>
                         <p class="text-gray-600">Soal ${data.nomorSoal} - ${data.tipeSoal.replace('_', ' ')}</p>

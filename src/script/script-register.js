@@ -165,14 +165,14 @@
             .then(data => {
                 loadingIcon.style.display = 'none';
                 
-                if (data.status === 'available') {
+                if (data.available === true) {
                     checkIcon.style.display = 'block';
                     statusText.textContent = 'Username tersedia';
                     statusText.className = 'text-green-500';
                     usernameAvailable = true;
-                } else if (data.status === 'unavailable') {
+                } else if (data.available === false) {
                     xIcon.style.display = 'block';
-                    statusText.textContent = 'Username tidak tersedia';
+                    statusText.textContent = data.message || 'Username tidak tersedia';
                     statusText.className = 'text-red-500';
                     usernameAvailable = false;
                 } else {

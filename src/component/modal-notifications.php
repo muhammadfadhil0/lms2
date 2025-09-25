@@ -151,6 +151,31 @@ function getApiBasePath() {
     return '../logic/';
 }
 
+// Alternative function to try multiple paths
+async function fetchNotificationsWithFallback() {
+    const possiblePaths = [
+        '../logic/get-notifications.php',
+        'src/logic/get-notifications.php',
+        '/lms/src/logic/get-notifications.php'
+    ];
+    
+    for (const path of possiblePaths) {
+        try {
+            console.log('🔗 Trying path:', path);
+            const response = await fetch(path);
+            
+            if (response.ok) {
+                console.log('✅ Success with path:', path);
+                return response;
+            }
+        } catch (error) {
+            console.log('❌ Failed with path:', path, error);
+        }
+    }
+    
+    throw new Error('All notification API paths failed');
+}
+
 // Initialize notification modal when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize notification functionality
@@ -196,49 +221,146 @@ async function loadAllNotifications() {
     const emptyEl = document.getElementById('notifications-empty');
     const countEl = document.getElementById('notifications-count');
     
-    // Show loading
-    loadingEl.classList.remove('hidden');
-    listEl.innerHTML = '';
-    emptyEl.classList.add('hidden');
-    
+    console.log('🔍 Modal DOM elements:', {
+        loadingEl, listEl, emptyEl, countEl
+    });
+
+    // Clear previous content
+    if (listEl) listEl.innerHTML = '';
+    if (emptyEl) emptyEl.classList.add('hidden');
+
+    // First check if we have cached notifications from beranda
+    if (window.berandaNotificationsCache && window.berandaNotificationsCache.length > 0) {
+        console.log('� Modal: Using cached notifications from beranda');
+        const cachedNotifications = window.berandaNotificationsCache;
+        
+        if (countEl) countEl.textContent = cachedNotifications.length;
+        
+        if (listEl) {
+            cachedNotifications.forEach((notification, index) => {
+                console.log(`📝 Modal (cached): Processing notification ${index + 1}:`, notification.title);
+                const notificationEl = createNotificationElement(notification);
+                listEl.appendChild(notificationEl);
+            });
+        }
+        
+        if (loadingEl) loadingEl.classList.add('hidden');
+        return; // Exit early with cached data
+    }
+
+    // Show loading state only if no cache available
+    if (loadingEl) loadingEl.classList.remove('hidden');
+
     try {
-        const response = await fetch(getApiBasePath() + 'get-notifications.php', {
+        console.log('🚀 Modal: No cache available, loading from API...');
+        
+        const response = await fetch('../logic/get-notifications.php', {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
-            }
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            credentials: 'same-origin'
         });
         
-        const data = await response.json();
+        console.log('📡 Modal Response status:', response.status);
+        console.log('📡 Modal Response type:', response.type);
         
-        if (data.success && data.notifications) {
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const responseText = await response.text();
+        console.log('� Modal Raw response (first 200 chars):', responseText.substring(0, 200));
+        
+        // Check if response looks like HTML (error page)
+        if (responseText.trim().startsWith('<')) {
+            console.error('❌ Modal: Received HTML instead of JSON');
+            console.log('🔍 Modal: Full HTML response:', responseText);
+            throw new Error('Received HTML response instead of JSON');
+        }
+        
+        let data;
+        try {
+            data = JSON.parse(responseText);
+        } catch (parseError) {
+            console.error('❌ Modal JSON Parse Error:', parseError);
+            console.log('❌ Modal: Failed to parse:', responseText);
+            throw parseError;
+        }
+        
+        console.log('✅ Modal: Successfully parsed data:', data);
+
+        if (data.success && Array.isArray(data.notifications)) {
             const notifications = data.notifications;
-            countEl.textContent = notifications.length;
+            console.log(`📋 Modal: Found ${notifications.length} notifications`);
+            
+            if (countEl) countEl.textContent = notifications.length;
             
             if (notifications.length > 0) {
-                notifications.forEach(notification => {
-                    const notificationEl = createNotificationElement(notification);
-                    listEl.appendChild(notificationEl);
+                notifications.forEach((notification, index) => {
+                    console.log(`📝 Modal: Processing notification ${index + 1}:`, notification.title);
+                    
+                    try {
+                        const notificationEl = createNotificationElement(notification);
+                        if (notificationEl && listEl) {
+                            console.log('➕ Modal: Appending notification element to list');
+                            listEl.appendChild(notificationEl);
+                            console.log('✅ Modal: Successfully added notification to DOM');
+                        } else {
+                            console.error('❌ Modal: Failed to create notification element or list not found');
+                        }
+                    } catch (error) {
+                        console.error('❌ Modal: Error creating/adding notification:', error);
+                    }
                 });
+                if (emptyEl) emptyEl.classList.add('hidden');
             } else {
-                emptyEl.classList.remove('hidden');
+                console.log('📭 Modal: No notifications to display');
+                if (emptyEl) emptyEl.classList.remove('hidden');
             }
         } else {
-            console.error('Error loading notifications:', data.message);
-            emptyEl.classList.remove('hidden');
+            console.error('❌ Modal: Invalid response structure:', data);
+            if (emptyEl) emptyEl.classList.remove('hidden');
         }
+        
     } catch (error) {
-        console.error('Error loading notifications:', error);
-        emptyEl.classList.remove('hidden');
+        console.error('❌ Modal: Error loading notifications:', error);
+        
+        // Try to use cached notifications from beranda
+        if (window.berandaNotificationsCache && window.berandaNotificationsCache.length > 0) {
+            console.log('🎯 Modal: Using cached notifications from beranda');
+            const cachedNotifications = window.berandaNotificationsCache;
+            
+            if (countEl) countEl.textContent = cachedNotifications.length;
+            
+            cachedNotifications.forEach((notification, index) => {
+                console.log(`📝 Modal (cached): Processing notification ${index + 1}:`, notification.title);
+                const notificationEl = createNotificationElement(notification);
+                if (listEl) listEl.appendChild(notificationEl);
+            });
+            
+            if (emptyEl) emptyEl.classList.add('hidden');
+        } else {
+            console.log('❌ Modal: No cached notifications available');
+            if (emptyEl) emptyEl.classList.remove('hidden');
+        }
     } finally {
-        loadingEl.classList.add('hidden');
+        if (loadingEl) loadingEl.classList.add('hidden');
     }
-}
-
-// Create notification element from template
+}// Create notification element from template
 function createNotificationElement(notification) {
+    console.log('🔧 Creating notification element for:', notification);
+    
     const template = document.getElementById('notification-item-template');
+    if (!template) {
+        console.error('❌ Template not found: notification-item-template');
+        return null;
+    }
+    console.log('✅ Template found:', template);
+    
     const clone = template.content.cloneNode(true);
+    console.log('✅ Template cloned:', clone);
     
     const container = clone.querySelector('.notification-item');
     const icon = clone.querySelector('.notification-icon');
@@ -249,12 +371,26 @@ function createNotificationElement(notification) {
     const unreadIndicator = clone.querySelector('.unread-indicator');
     const markReadBtn = clone.querySelector('.mark-read-btn');
     
+    console.log('🔍 Template elements found:', {
+        container, icon, title, message, time, classText, unreadIndicator, markReadBtn
+    });
+    
     // Set notification data
     container.setAttribute('data-notification-id', notification.id);
     
-    // Set icon and color based on type
-    const iconClass = getNotificationIcon(notification.type);
-    const colorClass = getNotificationColor(notification.type);
+    // Set icon and color based on type or from API
+    let iconClass;
+    if (notification.icon) {
+        // Icon dari database (global notification) - tambahkan ti- prefix
+        iconClass = `${notification.icon}`;
+    } else {
+        // Icon dari getNotificationIcon untuk tipe lain (sudah ada ti- prefix)
+        iconClass = getNotificationIcon(notification.type);
+    }
+    
+    const colorClass = notification.color || getNotificationColor(notification.type);
+    
+    // Format final: ti ti-[nama-icon]
     icon.className = `notification-icon ti ${iconClass} text-lg ${colorClass}`;
     
     // Set content
@@ -347,6 +483,9 @@ function hasValidRedirectTarget(notification) {
         case 'pengingat_ujian':
             return notification.related_id;
             
+        case 'global_notification':
+            return false; // Global notifications don't have specific redirect targets
+            
         default:
             return false;
     }
@@ -409,6 +548,9 @@ function getNotificationIcon(type) {
         case 'postingan_baru': return 'ti-message-circle';
         case 'ujian_baru': return 'ti-file-text';
         case 'pengingat_ujian': return 'ti-bell';
+        case 'like_postingan': return 'ti-heart';
+        case 'komentar_postingan': return 'ti-message-2';
+        case 'global_notification': return 'ti-speakerphone';
         default: return 'ti-info-circle';
     }
 }
@@ -420,6 +562,9 @@ function getNotificationColor(type) {
         case 'postingan_baru': return 'text-green-500';
         case 'ujian_baru': return 'text-purple-500';
         case 'pengingat_ujian': return 'text-orange-500';
+        case 'like_postingan': return 'text-red-500';
+        case 'komentar_postingan': return 'text-indigo-500';
+        case 'global_notification': return 'text-orange-600';
         default: return 'text-gray-500';
     }
 }
@@ -616,6 +761,11 @@ function updateBerandaNotifications() {
     // This will reload the notifications in beranda sidebar
     if (typeof loadBerandaNotifications === 'function') {
         loadBerandaNotifications();
+    }
+    
+    // Update notification badge if function exists
+    if (typeof loadNotificationBadge === 'function') {
+        loadNotificationBadge();
     }
 }
 

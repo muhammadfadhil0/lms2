@@ -14,7 +14,7 @@ if (isset($_POST['login'])) {
     
     // Validasi input kosong
     if (empty($username) || empty($password)) {
-        header("Location: ../../index.php?error=empty");
+        header("Location: ../../login.php?error=empty");
         exit();
     }
     
@@ -29,7 +29,7 @@ if (isset($_POST['login'])) {
         // Redirect berdasarkan role
         switch ($result['user']['role']) {
             case 'admin':
-                header("Location: ../front/admin-dashboard.php");
+                header("Location: ../front/beranda-admin.php");
                 break;
             case 'guru':
                 header("Location: ../front/beranda-guru.php");
@@ -43,20 +43,23 @@ if (isset($_POST['login'])) {
         exit();
     } else {
         // Login gagal
-        if (strpos($result['message'], 'tidak ditemukan') !== false) {
-            header("Location: ../../index.php?error=user_not_found");
+        if (isset($result['requires_verification']) && $result['requires_verification']) {
+            // User belum verifikasi email
+            header("Location: ../../login.php?error=email_not_verified&email=" . urlencode($result['email']));
+        } elseif (strpos($result['message'], 'tidak ditemukan') !== false) {
+            header("Location: ../../login.php?error=user_not_found");
         } elseif (strpos($result['message'], 'Password') !== false) {
-            header("Location: ../../index.php?error=wrong_password");
+            header("Location: ../../login.php?error=wrong_password");
         } elseif (strpos($result['message'], 'aktif') !== false) {
-            header("Location: ../../index.php?error=account_inactive");
+            header("Location: ../../login.php?error=account_inactive");
         } else {
-            header("Location: ../../index.php?error=login_failed");
+            header("Location: ../../login.php?error=login_failed");
         }
         exit();
     }
 } else {
     // Akses langsung ke file login.php
-    header("Location: ../../index.php");
+    header("Location: ../../login.php");
     exit();
 }
 ?>

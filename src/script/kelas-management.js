@@ -4,6 +4,35 @@ async function createKelas(event) {
     
     const form = event.target;
     const formData = new FormData(form);
+    // Handle mata pelajaran kustom
+    try {
+        const mataPelajaran = formData.get('mataPelajaran');
+        if (mataPelajaran === '__custom') {
+            const customVal = (formData.get('mataPelajaranCustom') || '').toString().trim();
+            if (!customVal) {
+                showNotification('Mata pelajaran kustom harus diisi', 'error');
+                return;
+            }
+            if (customVal.length < 2) {
+                showNotification('Nama mata pelajaran kustom terlalu pendek', 'error');
+                return;
+            }
+            if (customVal.length > 100) {
+                showNotification('Nama mata pelajaran kustom terlalu panjang', 'error');
+                return;
+            }
+            // Pastikan nama mata pelajaran hanya berisi huruf, angka, spasi, dan tanda baca dasar
+            const cleanCustomVal = customVal.replace(/[^\w\s\-\.]/g, '').trim();
+            if (!cleanCustomVal) {
+                showNotification('Nama mata pelajaran kustom harus berisi minimal huruf atau angka', 'error');
+                return;
+            }
+            // Replace original field with custom value for backend
+            formData.set('mataPelajaran', cleanCustomVal);
+        }
+    } catch(e) {
+        console.error('Custom mapel handling error', e);
+    }
     // Cari submit button menggunakan selector yang lebih spesifik
     const submitBtn = document.querySelector('button[form="add-class-form"]');
     const originalText = submitBtn ? submitBtn.innerHTML : 'Tambah Kelas';
@@ -34,7 +63,14 @@ async function createKelas(event) {
             
             // Reload page with new class highlight
             setTimeout(() => {
-                window.location.href = 'beranda-guru.php?new_class=' + result.kelas_id;
+                // Check if we're on buat-ujian page
+                if (window.location.pathname.includes('buat-ujian-guru.php')) {
+                    // Just reload the current page to show new class in dropdown
+                    window.location.reload();
+                } else {
+                    // For other pages, redirect to beranda-guru
+                    window.location.href = 'beranda-guru.php?new_class=' + result.kelas_id;
+                }
             }, 2000);
         } else {
             showNotification(result.message || 'Gagal membuat kelas', 'error');
@@ -53,30 +89,52 @@ async function createKelas(event) {
 
 // Function untuk menampilkan notifikasi
 function showNotification(message, type = 'info') {
-    // Create notification element
+    // Create notification element with explicit slide-in/out using transform
     const notification = document.createElement('div');
     notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg max-w-sm ${
         type === 'success' ? 'bg-green-500 text-white' :
         type === 'error' ? 'bg-red-500 text-white' :
         'bg-blue-500 text-white'
     }`;
-    
+
+    // Use inline styles for a predictable slide animation (translateX from 100% -> 0)
+    notification.style.transition = 'transform 0.28s ease, opacity 0.28s ease';
+    notification.style.transform = 'translateX(100%)';
+    notification.style.opacity = '1';
+
     notification.innerHTML = `
         <div class="flex items-center">
             <i class="ti ti-${type === 'success' ? 'check' : type === 'error' ? 'x' : 'info-circle'} mr-2"></i>
             <span>${message}</span>
-            <button onclick="this.parentElement.parentElement.remove()" class="ml-2 text-white hover:text-gray-200">
+            <button class="ml-2 text-white hover:text-gray-200" aria-label="close-toast">
                 <i class="ti ti-x"></i>
             </button>
         </div>
     `;
-    
+
     document.body.appendChild(notification);
-    
+
+    // Slide in
+    setTimeout(() => {
+        notification.style.transform = 'translateX(0)';
+    }, 20);
+
+    // Close button handler
+    const closeBtn = notification.querySelector('[aria-label="close-toast"]');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+            notification.style.transform = 'translateX(100%)';
+            setTimeout(() => notification.remove(), 280);
+        });
+    }
+
     // Auto remove after 5 seconds
     setTimeout(() => {
         if (notification.parentElement) {
-            notification.remove();
+            notification.style.transform = 'translateX(100%)';
+            setTimeout(() => {
+                if (notification.parentElement) notification.remove();
+            }, 280);
         }
     }, 5000);
 }
@@ -149,6 +207,7 @@ async function submitJoinKelas() {
     try {
         const response = await fetch('../logic/join-kelas.php', {
             method: 'POST',
+            credentials: 'same-origin',
             body: formData
         });
         

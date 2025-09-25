@@ -385,13 +385,19 @@ function updateProfilePreviewToDefault() {
 function showAlert(message, type = 'info') {
     // Create alert element
     const alert = document.createElement('div');
-    alert.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg max-w-sm transition-all duration-300 transform translate-x-full`;
-    
-    // Make it responsive for mobile
+    alert.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg`;
+
+    // Make it responsive for mobile: set left/right to span full width with small margins
     if (window.innerWidth < 640) {
-        alert.className = alert.className.replace('right-4 max-w-sm', 'right-2 left-2 max-w-none');
+        alert.style.left = '0.5rem';
+        alert.style.right = '0.5rem';
+        alert.style.maxWidth = 'calc(100% - 1rem)';
     }
-    
+
+    alert.style.transition = 'transform 0.28s ease, opacity 0.28s ease';
+    alert.style.transform = 'translateX(100%)';
+    alert.style.opacity = '1';
+
     // Set colors based on type
     if (type === 'success') {
         alert.className += ' bg-green-100 border border-green-400 text-green-700';
@@ -400,29 +406,38 @@ function showAlert(message, type = 'info') {
     } else {
         alert.className += ' bg-blue-100 border border-blue-400 text-blue-700';
     }
-    
+
     alert.innerHTML = `
         <div class="flex items-center">
             <div class="flex-1">
                 <p class="text-sm font-medium">${message}</p>
             </div>
-            <button onclick="this.parentElement.parentElement.remove()" class="ml-3 text-gray-400 hover:text-gray-600">
+            <button class="ml-3 text-gray-400 hover:text-gray-600" aria-label="close-toast">
                 <i class="ti ti-x"></i>
             </button>
         </div>
     `;
-    
+
     document.body.appendChild(alert);
-    
-    // Animate in - remove translate-x-full class to show the alert
+
+    // Animate in
     setTimeout(() => {
-        alert.classList.remove('translate-x-full');
-    }, 100);
-    
+        alert.style.transform = 'translateX(0)';
+    }, 20);
+
+    // Close button
+    const closeBtn = alert.querySelector('[aria-label="close-toast"]');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+            alert.style.transform = 'translateX(100%)';
+            setTimeout(() => alert.remove(), 280);
+        });
+    }
+
     // Auto remove after 5 seconds
     setTimeout(() => {
         if (alert.parentElement) {
-            alert.classList.add('translate-x-full');
+            alert.style.transform = 'translateX(100%)';
             setTimeout(() => {
                 if (alert.parentElement) {
                     alert.remove();

@@ -1,5 +1,6 @@
 <?php
 require_once 'koneksi.php';
+require_once 'notification-logic.php';
 
 class PostinganLogic {
     private $conn;
@@ -77,7 +78,15 @@ class PostinganLogic {
             
             // Get images for each post and assignment submission status if needed
             foreach ($postingan as &$post) {
+                error_log("✏️ [DEBUG] Processing post ID: " . $post['id'] . ", Type: " . $post['tipe_postingan']);
                 $post['gambar'] = $this->getGambarPostingan($post['id']);
+                
+                // Get assignment files if this is an assignment post
+                if ($post['tipe_postingan'] === 'assignment' && $post['assignment_id']) {
+                    error_log("✏️ [DEBUG] Getting assignment files for assignment ID: " . $post['assignment_id']);
+                    $post['assignment_files'] = $this->getAssignmentFiles($post['assignment_id']);
+                    error_log("✏️ [DEBUG] Found " . count($post['assignment_files']) . " assignment files");
+                }
                 $post['files'] = $this->getFilePostingan($post['id']); // Add file attachments
                 
                 // Convert assignment file path to URL if exists
@@ -126,6 +135,28 @@ class PostinganLogic {
                 $stmt->bind_param("ii", $postingan_id, $user_id);
                 
                 if ($stmt->execute()) {
+                    // Send notification to post owner (only if not liking own post)
+                    $postOwner = $this->getPostOwner($postingan_id);
+                    if ($postOwner && $postOwner['user_id'] != $user_id) {
+                        $notificationLogic = new NotificationLogic();
+                        
+                        // Get user info who liked the post
+                        $likerSql = "SELECT namaLengkap, username FROM users WHERE id = ?";
+                        $likerStmt = $this->conn->prepare($likerSql);
+                        $likerStmt->bind_param("i", $user_id);
+                        $likerStmt->execute();
+                        $liker = $likerStmt->get_result()->fetch_assoc();
+                        
+                        $notificationLogic->createNotification(
+                            $postOwner['user_id'],
+                            'like_postingan',
+                            'Postingan Disukai',
+                            ($liker['namaLengkap'] ?? $liker['username']) . ' menyukai postingan Anda',
+                            $postingan_id,
+                            $postOwner['kelas_id']
+                        );
+                    }
+                    
                     return ['success' => true, 'action' => 'liked', 'message' => 'Like berhasil'];
                 } else {
                     return ['success' => false, 'message' => 'Gagal menambah like'];
@@ -144,10 +175,34 @@ class PostinganLogic {
             $stmt->bind_param("iis", $postingan_id, $user_id, $komentar);
             
             if ($stmt->execute()) {
+                $komentar_id = $this->conn->insert_id;
+                
+                // Send notification to post owner (only if not commenting on own post)
+                $postOwner = $this->getPostOwner($postingan_id);
+                if ($postOwner && $postOwner['user_id'] != $user_id) {
+                    $notificationLogic = new NotificationLogic();
+                    
+                    // Get user info who commented
+                    $commenterSql = "SELECT namaLengkap, username FROM users WHERE id = ?";
+                    $commenterStmt = $this->conn->prepare($commenterSql);
+                    $commenterStmt->bind_param("i", $user_id);
+                    $commenterStmt->execute();
+                    $commenter = $commenterStmt->get_result()->fetch_assoc();
+                    
+                    $notificationLogic->createNotification(
+                        $postOwner['user_id'],
+                        'komentar_postingan',
+                        'Komentar Baru',
+                        ($commenter['namaLengkap'] ?? $commenter['username']) . ' mengomentari postingan Anda',
+                        $postingan_id,
+                        $postOwner['kelas_id']
+                    );
+                }
+                
                 return [
                     'success' => true, 
                     'message' => 'Komentar berhasil ditambahkan',
-                    'komentar_id' => $this->conn->insert_id
+                    'komentar_id' => $komentar_id
                 ];
             } else {
                 return ['success' => false, 'message' => 'Gagal menambah komentar'];
@@ -649,6 +704,54 @@ class PostinganLogic {
             
         } catch (Exception $e) {
             error_log("Error deleting assignment data: " . $e->getMessage());
+        }
+    }
+    
+    public function getAssignmentFiles($assignment_id) {
+        error_log("✏️ [DEBUG] getAssignmentFiles called for assignment_id: $assignment_id");
+        $sql = "SELECT id, file_name, file_path, file_size, file_type, upload_order 
+                FROM tugas_files 
+                WHERE tugas_id = ? 
+                ORDER BY upload_order ASC, id ASC";
+        
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param("i", $assignment_id);
+        $stmt->execute();
+        
+        $files = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        error_log("✏️ [DEBUG] Found " . count($files) . " files in database for assignment $assignment_id");
+        
+        // Convert file paths to proper URLs
+        foreach ($files as &$file) {
+            if ($file['file_path']) {
+                // Ensure consistent path format
+                if (!str_starts_with($file['file_path'], '/')) {
+                    $file['file_path'] = '/' . $file['file_path'];
+                }
+            }
+        }
+        
+        return $files;
+    }
+
+    // Helper function to get post owner info
+    private function getPostOwner($postingan_id) {
+        try {
+            $sql = "SELECT p.user_id, p.kelas_id, u.namaLengkap, u.username, u.role 
+                    FROM postingan_kelas p 
+                    JOIN users u ON p.user_id = u.id 
+                    WHERE p.id = ?";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bind_param("i", $postingan_id);
+            $stmt->execute();
+            
+            $result = $stmt->get_result();
+            if ($result->num_rows > 0) {
+                return $result->fetch_assoc();
+            }
+            return null;
+        } catch (Exception $e) {
+            return null;
         }
     }
 }

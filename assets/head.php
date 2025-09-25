@@ -5,6 +5,7 @@
 <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
 <!-- Role-based Sidebar Styles -->
 <link rel="stylesheet" href="../css/sidebar-roles.css">
+
 <style>
     body {
         font-family: 'Inter', sans-serif;
@@ -56,6 +57,8 @@
     .ring-orange-500 {
         --tw-ring-color: rgb(255, 99, 71);
     }
+
+    /* Dark mode styles removed per request */
 </style>
 
 <!-- Global Notifications Modal -->
@@ -138,4 +141,14 @@ function triggerNotificationsModal() {
         console.warn('Notifications modal not available');
     }
 }
+
+// Theme management removed. Keep a tiny helper to apply saved font-size early to avoid FOUC.
+(function() {
+    try {
+        const savedFontSize = localStorage.getItem('userFontSize') || '100';
+        document.documentElement.style.fontSize = (parseInt(savedFontSize, 10) / 100) + 'rem';
+    } catch (e) {
+        // ignore
+    }
+})();
 </script>

@@ -1,4 +1,7 @@
 <?php
+// Prevent any output before JSON headers
+ob_start();
+
 session_start();
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
@@ -10,8 +13,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit(0);
 }
 
-require_once 'config.php';
-require_once 'chat-handler.php';
+// Clear any buffered output to ensure clean JSON
+ob_clean();
+
+require_once 'pingo-api-helper.php';
 
 // Check if user is logged in
 if (!isset($_SESSION['user'])) {
@@ -21,7 +26,7 @@ if (!isset($_SESSION['user'])) {
 }
 
 try {
-    $chatHandler = new ChatHandler();
+    $apiHelper = new PingoApiHelper();
     
     switch ($_SERVER['REQUEST_METHOD']) {
         case 'POST':
@@ -31,11 +36,41 @@ try {
                 throw new Exception('Pesan tidak boleh kosong');
             }
             
-            $userMessage = trim($input['message']);
+            $aiMessage = trim($input['message']); // Full message for AI (with document content)
+            $userDisplayMessage = isset($input['user_display_message']) ? trim($input['user_display_message']) : $aiMessage;
             $userId = $_SESSION['user']['id'];
             
-            // Get chat response
-            $response = $chatHandler->sendMessage($userId, $userMessage);
+            // Extract attachment data if provided
+            $attachment = isset($input['attachment']) ? $input['attachment'] : null;
+            
+            // 🔍 DEBUG: Log attachment data for debugging Vision API issues
+            if ($attachment) {
+                error_log("⭐ 🔍 VISION DEBUG - Attachment received:");
+                error_log("⭐ 📊 Attachment type: " . (is_array($attachment) ? 'array' : gettype($attachment)));
+                error_log("⭐ 📋 Attachment keys: " . (is_array($attachment) ? implode(', ', array_keys($attachment)) : 'N/A'));
+                
+                if (is_array($attachment)) {
+                    if (isset($attachment['images'])) {
+                        error_log("⭐ 🖼️ Images count: " . (is_array($attachment['images']) ? count($attachment['images']) : '0'));
+                        if (is_array($attachment['images']) && count($attachment['images']) > 0) {
+                            $firstImage = $attachment['images'][0];
+                            error_log("⭐ 📸 First image info:");
+                            error_log("⭐    - Name: " . ($firstImage['name'] ?? 'N/A'));
+                            error_log("⭐    - MIME: " . ($firstImage['mime_type'] ?? 'N/A'));
+                            error_log("⭐    - Size: " . ($firstImage['file_size'] ?? 'N/A'));
+                            error_log("⭐    - Has base64: " . (isset($firstImage['base64_data']) ? 'YES (' . strlen($firstImage['base64_data']) . ' chars)' : 'NO'));
+                        }
+                    }
+                    if (isset($attachment['documents'])) {
+                        error_log("⭐ 📄 Documents count: " . (is_array($attachment['documents']) ? count($attachment['documents']) : '0'));
+                    }
+                }
+                error_log("⭐ 🔍 VISION DEBUG - End attachment info");
+            }
+            
+            // Use API helper to send message with attachment and selected API key
+            // Pass both AI message and display message
+            $response = $apiHelper->sendMessage($userId, $aiMessage, 'pingo', $attachment, $userDisplayMessage);
             
             echo json_encode($response);
             break;
@@ -43,8 +78,9 @@ try {
         case 'GET':
             // Get chat history
             $userId = $_SESSION['user']['id'];
-            $history = $chatHandler->getChatHistory($userId);
+            $history = $apiHelper->getChatHistory($userId, null, 100); // Get last 100 messages with proper ordering
             
+            // Messages are already in chronological order from the database query
             echo json_encode([
                 'success' => true,
                 'messages' => $history

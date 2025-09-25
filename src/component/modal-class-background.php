@@ -3,7 +3,7 @@
     <dialog id="class-background-modal" aria-labelledby="background-title" class="fixed inset-0 size-auto max-h-none max-w-none overflow-y-auto bg-transparent backdrop:bg-transparent">
         <el-dialog-backdrop class="fixed inset-0 bg-gray-500/75 transition-opacity data-closed:opacity-0 data-enter:duration-300 data-enter:ease-out data-leave:duration-200 data-leave:ease-in"></el-dialog-backdrop>
 
-        <div tabindex="0" class="flex min-h-full items-end justify-center p-6 text-center focus:outline-none sm:items-center sm:p-0">
+        <div tabindex="0" class="flex min-h-full items-end justify-center p-4 text-center focus:outline-none sm:items-center sm:p-0">
             <el-dialog-panel class="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all data-closed:translate-y-4 data-closed:opacity-0 data-enter:duration-300 data-enter:ease-out data-leave:duration-200 data-leave:ease-in sm:my-8 sm:w-full sm:max-w-xl data-closed:sm:translate-y-0 data-closed:sm:scale-95">
                 <div class="bg-white px-5 pt-6 pb-5 sm:p-7 sm:pb-5">
                     <!-- Header dengan tombol kembali -->
@@ -66,7 +66,7 @@
                     </form>
                 </div>
                 
-                <div class="bg-gray-50 px-5 py-5 sm:px-6 flex justify-between">
+                <div class="bg-gray-50 px-5 py-5 sm:px-6 flex justify-end items-center gap-3">
                     <button type="button" onclick="backToSettings()" 
                         class="inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500">
                         Batal

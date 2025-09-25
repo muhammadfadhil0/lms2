@@ -419,13 +419,16 @@ class ClassSettingsManager {
     }
 
     showNotification(message, type = 'info') {
-        // Create notification element
+        // Create notification element with inline slide animation
         const notification = document.createElement('div');
-        notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg transition-all duration-300 transform translate-x-full`;
-        
+        notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg`;
+
         // Set very high z-index to appear above modals and backdrops
         notification.style.zIndex = '9999';
-        
+        notification.style.transition = 'transform 0.28s ease, opacity 0.28s ease';
+        notification.style.transform = 'translateX(100%)';
+        notification.style.opacity = '1';
+
         if (type === 'success') {
             notification.className += ' bg-green-500 text-white';
         } else if (type === 'error') {
@@ -433,34 +436,39 @@ class ClassSettingsManager {
         } else {
             notification.className += ' bg-blue-500 text-white';
         }
-        
+
         notification.innerHTML = `
             <div class="flex items-center">
                 <span class="mr-2">${message}</span>
-                <button onclick="this.parentElement.parentElement.remove()" class="ml-2 text-white hover:text-gray-200">
-                    <i class="ti ti-x"></i>
-                </button>
+                <button class="ml-2 text-white hover:text-gray-200" aria-label="close-toast"><i class="ti ti-x"></i></button>
             </div>
         `;
-        
+
         // Add additional styling for better visibility above modals
         notification.style.boxShadow = '0 25px 50px -12px rgba(0, 0, 0, 0.5)';
         notification.style.border = '2px solid rgba(255, 255, 255, 0.2)';
-        
+
         document.body.appendChild(notification);
-        
+
         // Animate in
         setTimeout(() => {
-            notification.classList.remove('translate-x-full');
-        }, 100);
-        
-        // Auto remove after 4 seconds (increased for better visibility)
+            notification.style.transform = 'translateX(0)';
+        }, 20);
+
+        // Close button handler
+        const closeBtn = notification.querySelector('[aria-label="close-toast"]');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => notification.remove(), 280);
+            });
+        }
+
+        // Auto remove after 4 seconds
         setTimeout(() => {
-            notification.classList.add('translate-x-full');
+            notification.style.transform = 'translateX(100%)';
             setTimeout(() => {
-                if (notification.parentElement) {
-                    notification.remove();
-                }
+                if (notification.parentElement) notification.remove();
             }, 300);
         }, 4000);
     }

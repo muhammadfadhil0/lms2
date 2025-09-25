@@ -231,6 +231,10 @@ class NotificationLogic {
                 return 'ti-file-text';
             case 'pengingat_ujian':
                 return 'ti-bell';
+            case 'like_postingan':
+                return 'ti-heart';
+            case 'komentar_postingan':
+                return 'ti-message-2';
             default:
                 return 'ti-info-circle';
         }
@@ -249,6 +253,10 @@ class NotificationLogic {
                 return 'text-purple-500';
             case 'pengingat_ujian':
                 return 'text-orange-500';
+            case 'like_postingan':
+                return 'text-red-500';
+            case 'komentar_postingan':
+                return 'text-indigo-500';
             default:
                 return 'text-gray-500';
         }

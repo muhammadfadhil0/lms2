@@ -2,11 +2,12 @@
 session_start();
 $currentPage = 'ujian';
 if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'guru') {
-  header('Location: ../../index.php');
+  header('Location: ../../login.php');
   exit();
 }
 require_once '../logic/ujian-logic.php';
 require_once '../logic/soal-logic.php';
+require_once '../logic/time-helper.php';
 $ujianLogic = new UjianLogic();
 $soalLogic = new SoalLogic();
 $guru_id = $_SESSION['user']['id'];
@@ -101,40 +102,87 @@ function statusBadgeClass($status)
                 <i class="ti ti-info-circle text-orange mr-2"></i>
                 Identitas Ujian
               </h2>
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                <div>
-                  <p class="text-gray-600">Nama Ujian:</p>
-                  <p class="font-medium text-gray-800"><?= htmlspecialchars($ujian['namaUjian']) ?></p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div class="flex items-center space-x-3">
+                  <span class="w-8 h-8 rounded-md bg-orange-50 flex items-center justify-center text-orange-600">
+                  <i class="ti ti-id-badge"></i>
+                  </span>
+                  <div>
+                  <div class="text-xs text-gray-400">Nama Ujian</div>
+                  <div class="font-medium text-gray-800"><?= htmlspecialchars($ujian['namaUjian']) ?></div>
+                  </div>
                 </div>
-                <div>
-                  <p class="text-gray-600">Kelas:</p>
-                  <p class="font-medium text-gray-800"><?= htmlspecialchars($ujian['namaKelas'] ?? '-') ?></p>
+
+                <div class="flex items-center space-x-3">
+                  <span class="w-8 h-8 rounded-md bg-orange-50 flex items-center justify-center text-orange-600">
+                  <i class="ti ti-building-banks"></i>
+                  </span>
+                  <div>
+                  <div class="text-xs text-gray-400">Kelas</div>
+                  <div class="font-medium text-gray-800"><?= htmlspecialchars($ujian['namaKelas'] ?? '-') ?></div>
+                  </div>
                 </div>
-                <div>
-                  <p class="text-gray-600">Mata Pelajaran:</p>
-                  <p class="font-medium text-gray-800"><?= htmlspecialchars($ujian['mataPelajaran']) ?></p>
+
+                <div class="flex items-center space-x-3">
+                  <span class="w-8 h-8 rounded-md bg-orange-50 flex items-center justify-center text-orange-600">
+                  <i class="ti ti-book"></i>
+                  </span>
+                  <div>
+                  <div class="text-xs text-gray-400">Mata Pelajaran</div>
+                  <div class="font-medium text-gray-800"><?= htmlspecialchars($ujian['mataPelajaran']) ?></div>
+                  </div>
                 </div>
-                <div>
-                  <p class="text-gray-600">Durasi:</p>
-                  <p class="font-medium text-gray-800"><?= (int)$ujian['durasi'] ?> menit</p>
+
+                <div class="flex items-center space-x-3">
+                  <span class="w-8 h-8 rounded-md bg-orange-50 flex items-center justify-center text-orange-600">
+                  <i class="ti ti-clock"></i>
+                  </span>
+                  <div>
+                  <div class="text-xs text-gray-400">Durasi</div>
+                  <div class="font-medium text-gray-800"><?= (int)$ujian['durasi'] ?> menit</div>
+                  </div>
                 </div>
-                <div>
-                  <p class="text-gray-600">Tanggal:</p>
-                  <p class="font-medium text-gray-800"><?= htmlspecialchars(date('d M Y', strtotime($ujian['tanggalUjian']))) ?></p>
+
+                <div class="flex items-center space-x-3">
+                  <span class="w-8 h-8 rounded-md bg-orange-50 flex items-center justify-center text-orange-600">
+                  <i class="ti ti-calendar"></i>
+                  </span>
+                  <div>
+                  <div class="text-xs text-gray-400">Tanggal</div>
+                  <div class="font-medium text-gray-800"><?= htmlspecialchars(date('d M Y', strtotime($ujian['tanggalUjian']))) ?></div>
+                  </div>
                 </div>
-                <div>
-                  <p class="text-gray-600">Waktu:</p>
-                  <p class="font-medium text-gray-800"><?= htmlspecialchars(substr($ujian['waktuMulai'], 0, 5)) ?> - <?= htmlspecialchars(substr($ujian['waktuSelesai'], 0, 5)) ?></p>
+
+                <div class="flex items-center space-x-3">
+                  <span class="w-8 h-8 rounded-md bg-orange-50 flex items-center justify-center text-orange-600">
+                  <i class="ti ti-clock-hour-2"></i>
+                  </span>
+                  <div>
+                  <div class="text-xs text-gray-400">Waktu</div>
+                  <div class="font-medium text-gray-800"><?= htmlspecialchars(TimeHelper::formatTimeRange($ujian['waktuMulai'], $ujian['waktuSelesai'])) ?> <span class="text-xs text-gray-500">(24 jam)</span></div>
+                  </div>
                 </div>
-                <div>
-                  <p class="text-gray-600">Total Soal:</p>
-                  <p class="font-medium text-gray-800"><?= (int)($ujian['totalSoal'] ?? count($soalList)) ?></p>
+
+                <div class="flex items-center space-x-3">
+                  <span class="w-8 h-8 rounded-md bg-orange-50 flex items-center justify-center text-orange-600">
+                  <i class="ti ti-list-check"></i>
+                  </span>
+                  <div>
+                  <div class="text-xs text-gray-400">Total Soal</div>
+                  <div class="font-medium text-gray-800"><?= (int)($ujian['totalSoal'] ?? count($soalList)) ?></div>
+                  </div>
                 </div>
-                <div>
-                  <p class="text-gray-600">Total Poin:</p>
-                  <p class="font-medium text-gray-800"><?= (int)($ujian['totalPoin'] ?? ($autoScoreActive ? 100 : 0)) ?></p>
+
+                <div class="flex items-center space-x-3">
+                  <span class="w-8 h-8 rounded-md bg-orange-50 flex items-center justify-center text-orange-600">
+                  <i class="ti ti-award"></i>
+                  </span>
+                  <div>
+                  <div class="text-xs text-gray-400">Total Poin</div>
+                  <div class="font-medium text-gray-800"><?= (int)($ujian['totalPoin'] ?? ($autoScoreActive ? 100 : 0)) ?></div>
+                  </div>
                 </div>
-              </div>
+                </div>
               <?php if (!empty($ujian['deskripsi'])): ?>
                 <div class="mt-4">
                   <p class="text-gray-600 text-sm mb-1">Deskripsi:</p>
@@ -156,11 +204,11 @@ function statusBadgeClass($status)
                 </div>
               <?php else: ?>
                 <ul class="space-y-4">
-                  <?php foreach ($soalList as $s): ?>
+                  <?php foreach ($soalList as $i => $s): ?>
                     <li class="border border-gray-200 rounded-lg p-4 text-sm bg-white shadow-sm">
                       <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
                         <div class="flex items-center space-x-2">
-                          <span class="inline-flex items-center justify-center w-7 h-7 text-sm font-semibold rounded bg-orange text-white"><?= (int)$s['nomorSoal'] ?></span>
+                          <span class="inline-flex items-center justify-center w-7 h-7 text-sm font-semibold rounded bg-orange text-white"><?= $i + 1 ?></span>
                           <span class="text-xs px-2 py-1 rounded bg-gray-100 text-gray-600 capitalize"><?= htmlspecialchars(str_replace('_', ' ', $s['tipeSoal'])) ?></span>
                         </div>
                         <span class="text-xs px-2 py-1 rounded bg-green-50 border border-green-200 text-green-700">Poin: <?= (int)$s['poin'] ?></span>

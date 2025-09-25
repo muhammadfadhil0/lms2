@@ -1,5 +1,14 @@
+<?php
+// Check maintenance mode
+$maintenanceConfig = include '../config/maintenance.php';
+if ($maintenanceConfig['maintenance_mode'] === true) {
+    header('Location: ../../maintenance.php');
+    exit();
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
+<?php require '../component/modal-choose-role.php'; ?>
 
 <head>
     <meta charset="UTF-8">
@@ -9,11 +18,44 @@
 </head>
 
 <body>
+    <?php
+    // Ambil role dari parameter URL
+    $role = isset($_GET['role']) ? $_GET['role'] : '';
+    $roleDisplay = '';
+    $roleColor = '';
+    
+    if ($role == 'siswa') {
+        $roleDisplay = 'Siswa';
+        $roleColor = 'blue';
+    } elseif ($role == 'guru') {
+        $roleDisplay = 'Guru';
+        $roleColor = 'orange';
+    } else {
+        // Jika role tidak valid, redirect ke choose-role.php
+        header('Location: choose-role.php');
+        exit();
+    }
+    ?>
     <div class="flex min-h-full flex-col justify-center px-6 py-12 lg:px-8">
         <div class="sm:mx-auto sm:w-full  sm:max-w-sm">
             <img src="../../assets/img/logo.png" alt="Point" class="mx-auto h-20 w-auto text-left md:text-center" />
             <h2 class="mt-10 text-left md:text-center text-2xl font-bold tracking-tight text-black">Daftar Akun Baru</h2>
             <p class="mt-1 text-left md:text-center text-sm text-gray-600">Buat akun baru untuk mengakses Point</p>
+            
+            <!-- Role indicator -->
+            <div class="mt-4 flex justify-center">
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium 
+                    <?php echo $roleColor == 'blue' ? 'bg-blue-100 text-blue-800' : 'bg-orange-100 text-orange-800'; ?>">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <?php if ($role == 'siswa'): ?>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                        <?php else: ?>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                        <?php endif; ?>
+                    </svg>
+                    Daftar sebagai <?php echo $roleDisplay; ?>
+                </span>
+            </div>
         </div>
 
         <div class="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
@@ -55,6 +97,9 @@
             }
             ?>
             <form action="../logic/back-register.php" method="POST" class="space-y-6">
+                <!-- Hidden field untuk role -->
+                <input type="hidden" name="role" value="<?php echo htmlspecialchars($role); ?>" />
+                
                 <div>
                     <label for="namaLengkap" class="block text-sm/6 font-medium text-gray-900">Nama Lengkap</label>
                     <div class="mt-2">
@@ -138,7 +183,10 @@
             </form>
 
 
-            <p class="mt-2 text-center text-sm/6 text-gray-500">Sudah punya akun? <a href="../../index.php" class="font-semibold text-orange hover:text-indigo-500">Masuk sekarang</a></p>
+            <p class="mt-2 text-center text-sm/6 text-gray-500">
+                Sudah punya akun? <a href="../../login.php" class="font-semibold text-orange hover:text-indigo-500">Masuk sekarang</a> |
+                <button class="font-semibold text-gray-600 hover:text-gray-800" command="show-modal" commandfor="choose-role">Ganti Role</button>
+            </p>
         </div>
     </div>
 

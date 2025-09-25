@@ -18,21 +18,59 @@
                              <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
                                  <h3 id="dialog-title" class="text-base font-semibold text-gray-900">Mengalami kesulitan untuk login?</h3>
                                  <div class="mt-2">
-                                     <p class="text-sm text-gray-500">Tim IT Support kami siap membantu Anda melalui WhatsApp untuk menyelesaikan masalah login dengan cepat.</p>
+                                     <p class="text-sm text-gray-500">Pilih masalah yang Anda alami:</p>
                                  </div>
                              </div>
                          </div>
                      </div>
-                     <div class="bg-gray-50 px-4 py-3 sm:px-6 text-center">
-                         <a href="https://wa.me/6281234567890?text=Halo%2C%20saya%20mengalami%20masalah%20login%20di%20sistem%20Point.%20Mohon%20bantuannya." target="_blank" class="inline-flex w-full justify-center rounded-md bg-green-600 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-green-500 items-center">
-                             <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-brand-whatsapp w-4 h-4 mr-2" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                                 <path stroke="none" d="m0 0h24v24H0z" fill="none" />
-                                 <path d="m3 21l1.65 -3.8a9 9 0 1 1 3.4 2.9l-5.05 .9" />
-                                 <path d="m9 10a.5 .5 0 0 0 1 0v-1a.5 .5 0 0 0 -1 0v1a5 5 0 0 0 5 5h1a.5 .5 0 0 0 0 -1h-1a.5 .5 0 0 0 0 1" />
-                             </svg>
-                             Hubungi WhatsApp
-                         </a>
-                         <p class="mt-3 text-center text-xs text-gray-400">Klik atau sentuh mana saja untuk menutup</p>
+                     <div class="bg-gray-50 px-4 py-3 sm:px-6">
+                         <div class="space-y-3">
+                             <!-- Option 1: Lupa Akun -->
+                             <button onclick="window.location.href='src/front/forgot-username-step1.php'" class="w-full flex items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-3 text-left hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                                 <div class="flex items-center">
+                                     <div class="flex-shrink-0">
+                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                             <path stroke="none" d="m0 0h24v24H0z" fill="none" />
+                                             <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
+                                             <path d="M12 10m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" />
+                                             <path d="M6.168 18.849a4 4 0 0 1 3.832 -2.849h4a4 4 0 0 1 3.834 2.855" />
+                                         </svg>
+                                     </div>
+                                     <div class="ml-3">
+                                         <p class="text-sm font-medium text-gray-900">Saya lupa akun saya</p>
+                                         <p class="text-xs text-gray-500">Username atau email tidak diingat</p>
+                                     </div>
+                                 </div>
+                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                     <path stroke="none" d="m0 0h24v24H0z" fill="none" />
+                                     <path d="M9 6l6 6l-6 6" />
+                                 </svg>
+                             </button>
+
+                             <!-- Option 2: Lupa Password -->
+                             <button class="w-full flex items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-3 text-left hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                                 <div class="flex items-center">
+                                     <div class="flex-shrink-0">
+                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                             <path stroke="none" d="m0 0h24v24H0z" fill="none" />
+                                             <path d="M5 13a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v6a2 2 0 0 1 -2 2H7a2 2 0 0 1 -2 -2v-6z" />
+                                             <path d="M11 16a1 1 0 1 0 2 0a1 1 0 0 0 -2 0" />
+                                             <path d="M8 11V7a4 4 0 1 1 8 0v4" />
+                                         </svg>
+                                     </div>
+                                     <div class="ml-3">
+                                         <p class="text-sm font-medium text-gray-900">Saya lupa password saya</p>
+                                         <p class="text-xs text-gray-500">Password tidak diingat atau ingin reset</p>
+                                     </div>
+                                 </div>
+                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                     <path stroke="none" d="m0 0h24v24H0z" fill="none" />
+                                     <path d="M9 6l6 6l-6 6" />
+                                 </svg>
+                             </button>
+                         </div>
+                         
+                         <p class="mt-4 text-center text-xs text-gray-400">Klik atau sentuh mana saja untuk menutup</p>
                      </div>
                  </el-dialog-panel>
              </div>

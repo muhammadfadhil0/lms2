@@ -5,11 +5,12 @@
 
     // Check if user is logged in and is a guru
     if (!isset($_SESSION['user']) || $_SESSION['user']['role'] != 'guru') {
-        header("Location: ../../index.php");
+        header("Location: ../../login.php");
         exit();
     }
     require_once '../logic/ujian-logic.php';
     require_once '../logic/soal-logic.php';
+    require_once '../logic/time-helper.php';
     $ujianLogic = new UjianLogic();
     $soalLogic = new SoalLogic();
     $guru_id = $_SESSION['user']['id'];
@@ -33,6 +34,10 @@
     }
     // Ambil daftar soal yang sudah ada
     $soalList = $soalLogic->getSoalByUjian($ujian_id);
+    
+    // Sekarang topik sudah terpisah di database, baca langsung dari field topik
+    $topik = $ujian['topik'] ?? '';
+    $deskripsi = $ujian['deskripsi'] ?? '';
     ?>
     <!-- includes -->
     <?php require '../component/sidebar.php'; ?>
@@ -220,8 +225,11 @@
                         </div>
                     </div>
                     <div class="flex items-center space-x-2 md:space-x-4">
-                        <span class="text-sm text-gray-500">Auto-saved</span>
-                        <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                        <div id="save-status" class="flex items-center space-x-2">
+                            <i class="ti ti-device-floppy text-lg text-gray-500" aria-hidden="true"></i>
+                            <span id="last-saved" class="text-sm text-gray-500">Belum disimpan</span>
+                        </div>
+                        <div id="save-dot" class="w-2 h-2 bg-amber-300 rounded-full"></div>
                     </div>
                 </div>
             </header>
@@ -292,7 +300,7 @@
                                     </div>
                                     <div>
                                         <p class="text-gray-600">Materi:</p>
-                                        <p class="font-medium text-gray-800" id="exam-topic-display">(Lihat deskripsi)</p>
+                                        <p class="font-medium text-gray-800" id="exam-topic-display"><?= !empty($topik) ? htmlspecialchars($topik) : '-' ?></p>
                                     </div>
                                     <div>
                                         <p class="text-gray-600">Tanggal:</p>
@@ -300,12 +308,12 @@
                                     </div>
                                     <div>
                                         <p class="text-gray-600">Waktu:</p>
-                                        <p class="font-medium text-gray-800" id="exam-time-display"><?= htmlspecialchars(substr($ujian['waktuMulai'], 0, 5)) ?> - <?= htmlspecialchars(substr($ujian['waktuSelesai'], 0, 5)) ?> (<?= (int)$ujian['durasi'] ?> menit)</p>
+                                        <p class="font-medium text-gray-800" id="exam-time-display"><?= htmlspecialchars(TimeHelper::formatTimeRange($ujian['waktuMulai'], $ujian['waktuSelesai'])) ?> <span class="text-xs text-gray-500">(24 jam)</span> (<?= (int)$ujian['durasi'] ?> menit)</p>
                                     </div>
                                 </div>
                                 <div class="mt-4">
                                     <p class="text-gray-600 text-sm">Deskripsi:</p>
-                                    <p class="text-gray-800 text-sm whitespace-pre-line" id="exam-description-display"><?= nl2br(htmlspecialchars($ujian['deskripsi'] ?? '')) ?></p>
+                                    <p class="text-gray-800 text-sm" id="exam-description-display"><?= !empty($deskripsi) ? nl2br(htmlspecialchars($deskripsi)) : '-' ?></p>
                                 </div>
                             </div>
 
@@ -315,7 +323,7 @@
                                     <?php $idx = 0;
                                     foreach ($soalList as $s): $idx++;
                                         $tipeRaw = $s['tipeSoal'];
-                                        $tipeValue = $tipeRaw === 'pilihan_ganda' ? 'multiple_choice' : ($tipeRaw === 'jawaban_singkat' ? 'short_answer' : ($tipeRaw === 'jawaban_panjang' ? 'long_answer' : 'multiple_choice'));
+                                        $tipeValue = $tipeRaw === 'pilihan_ganda' ? 'multiple_choice' : ($tipeRaw === 'isian_singkat' ? 'short_answer' : ($tipeRaw === 'essay' ? 'long_answer' : 'multiple_choice'));
                                         $isMC = $tipeValue === 'multiple_choice';
                                         $pilihan = $s['pilihan_array'] ?? [];
                                         $kunci = $s['kunciJawaban'] ?? '';
@@ -330,7 +338,6 @@
                                                         <i class="ti ti-grip-vertical"></i>
                                                     </div>
                                                     <h3 class="text-lg font-medium text-gray-800">Soal <?= $idx ?></h3>
-                                                    <span class="text-sm text-gray-500">(Wajib)</span>
                                                 </div>
                                                 <div class="flex items-center space-x-2">
                                                     <button class="duplicate-question p-2 text-gray-400 hover:text-orange transition-colors rounded-lg hover:bg-gray-50" title="Duplikat Soal">
@@ -395,9 +402,11 @@
                                                 <textarea class="answer-key-text w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 resize-none" rows="2" placeholder="Masukkan kunci jawaban..."><?= !$isMC ? htmlspecialchars($kunci) : ''; ?></textarea>
                                             </div>
                                             <?php if ($autoScoreFlag && !$isMC): ?>
-                                                <div class="absolute hidden inset-0 flex items-center justify-center text-center p-4">
-                                                    <div class="bg-white/80 backdrop-blur-sm rounded-md p-3 text-xs font-medium text-amber-700 border border-amber-300 shadow-sm">
-                                                        Penilaian otomatis diaktifkan. Soal selain pilihan ganda tidak diujikan.
+                                                <div class="absolute inset-0 flex items-center justify-center text-center p-4 z-10">
+                                                    <div class="bg-white/90 backdrop-blur-sm rounded-md p-3 text-sm font-medium text-amber-800 border border-amber-400 shadow-md">
+                                                        <i class="ti ti-alert-triangle mb-2 text-lg"></i><br>
+                                                        <strong>Penilaian Otomatis Aktif</strong><br>
+                                                        <span class="text-xs">Soal essay tidak dinilai dalam mode ini</span>
                                                     </div>
                                                 </div>
                                             <?php endif; ?>
@@ -421,7 +430,6 @@
                                                     <i class="ti ti-grip-vertical"></i>
                                                 </div>
                                                 <h3 class="text-lg font-medium text-gray-800">Soal 1</h3>
-                                                <span class="text-sm text-gray-500">(Wajib)</span>
                                             </div>
                                             <div class="flex items-center space-x-2">
                                                 <button class="duplicate-question p-2 text-gray-400 hover:text-orange transition-colors rounded-lg hover:bg-gray-50" title="Duplikat Soal">
@@ -515,7 +523,7 @@
                         </div>
 
                         <!-- Sidebar Tools (1/4 width on lg screens) -->
-                        <div class="lg:col-span-1">
+                        <div class="lg:col-span-1 space-y-4">
                             <div class="sidebar-tools bg-white rounded-lg shadow-sm border border-gray-200 p-4">
                                 <h3 class="text-lg font-medium text-gray-800 mb-4">Tools</h3>
 
@@ -541,9 +549,14 @@
                                 <div class="mt-6">
                                     <h4 class="text-sm font-medium text-gray-700 mb-3">Navigasi Soal</h4>
                                     <div id="question-nav" class="grid grid-cols-5 gap-2">
-                                        <?php if (!empty($soalList)): foreach ($soalList as $i => $s): $n = $i + 1; ?>
-                                                <button class="question-nav-item flex items-center justify-center aspect-square text-sm rounded-lg border <?= $n === 1 ? 'border-orange bg-orange-50 text-orange font-semibold' : 'border-gray-200 text-gray-700 hover:bg-gray-50'; ?>" data-question="<?= $n ?>" title="Soal <?= $n ?>">
+                                        <?php if (!empty($soalList)): foreach ($soalList as $i => $s): $n = $i + 1; 
+                                            $isActive = !$autoScoreFlag || $s['tipeSoal'] === 'pilihan_ganda';
+                                        ?>
+                                                <button class="question-nav-item flex items-center justify-center aspect-square text-sm rounded-lg border <?= $n === 1 ? 'border-orange bg-orange-50 text-orange font-semibold' : ($isActive ? 'border-gray-200 text-gray-700 hover:bg-gray-50' : 'border-gray-300 bg-gray-100 text-gray-400'); ?>" data-question="<?= $n ?>" title="Soal <?= $n ?><?= !$isActive ? ' (Non-aktif)' : '' ?>">
                                                     <?= $n ?>
+                                                    <?php if (!$isActive): ?>
+                                                        <span class="absolute -top-1 -right-1 w-2 h-2 bg-amber-400 rounded-full"></span>
+                                                    <?php endif; ?>
                                                 </button>
                                             <?php endforeach;
                                         else: ?>
@@ -556,14 +569,33 @@
                                 <div class="mt-6 pt-4 border-t border-gray-200">
                                     <h4 class="text-sm font-medium text-gray-700 mb-3">Statistik</h4>
                                     <div class="space-y-2 text-sm">
+                                        <?php if ($autoScoreFlag): ?>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">Soal Aktif:</span>
+                                            <span id="total-questions" class="font-medium"><?= count(array_filter($soalList, fn($s) => $s['tipeSoal'] === 'pilihan_ganda')) ?></span>
+                                        </div>
                                         <div class="flex justify-between">
                                             <span class="text-gray-600">Total Soal:</span>
-                                            <span id="total-questions" class="font-medium"><?= $autoScoreFlag ? count(array_filter($soalList, fn($s) => $s['tipeSoal'] === 'pilihan_ganda')) : count($soalList) ?></span>
+                                            <span class="font-medium text-gray-500"><?= count($soalList) ?></span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">Poin:</span>
+                                            <span id="total-points" class="font-medium">100</span>
+                                        </div>
+                                        <div class="text-xs text-amber-600 mt-2">
+                                            <i class="ti ti-info-circle mr-1"></i>
+                                            Hanya soal pilihan ganda yang dinilai
+                                        </div>
+                                        <?php else: ?>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600">Total Soal:</span>
+                                            <span id="total-questions" class="font-medium"><?= count($soalList) ?></span>
                                         </div>
                                         <div class="flex justify-between">
                                             <span class="text-gray-600">Total Poin:</span>
-                                            <span id="total-points" class="font-medium"><?= $autoScoreFlag ? 100 : array_sum(array_column($soalList, 'poin')) ?></span>
+                                            <span id="total-points" class="font-medium"><?= array_sum(array_column($soalList, 'poin')) ?></span>
                                         </div>
+                                        <?php endif; ?>
                                     </div>
                                 </div>
                             </div>
@@ -651,6 +683,9 @@
                 }
             })();
         </script>
+        
+        <!-- Dynamic Modal Component -->
+        <?php require '../component/modal-dynamic.php'; ?>
     </body>
 
     </html>

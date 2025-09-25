@@ -2,9 +2,9 @@
     <dialog id="upload-material-modal" aria-labelledby="material-dialog-title" class="fixed inset-0 size-auto max-h-none max-w-none overflow-y-auto bg-transparent backdrop:bg-transparent">
         <el-dialog-backdrop class="fixed inset-0 bg-gray-500/75 transition-opacity data-closed:opacity-0 data-enter:duration-300 data-enter:ease-out data-leave:duration-200 data-leave:ease-in"></el-dialog-backdrop>
 
-    <div tabindex="0" class="flex min-h-full items-center justify-center p-4 text-center focus:outline-none sm:p-0">
-            <el-dialog-panel class="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all data-closed:translate-y-4 data-closed:opacity-0 data-enter:duration-300 data-enter:ease-out data-leave:duration-200 data-leave:ease-in sm:my-8 sm:w-full sm:max-w-2xl data-closed:sm:translate-y-0 data-closed:sm:scale-95">
-        <div class="bg-white px-4 pt-5 pb-4 sm:p-7 sm:pb-5">
+    <div tabindex="0" class="flex min-h-full items-center justify-center p-2 px-3 text-center focus:outline-none sm:p:0 sm:p-0">
+            <el-dialog-panel class="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all data-closed:translate-y-4 data-closed:opacity-0 data-enter:duration-300 data-enter:ease-out data-leave:duration-200 data-leave:ease-in my-2 mx-2 sm:my-8 sm:mx-0 sm:w-full sm:max-w-2xl data-closed:sm:translate-y-0 data-closed:sm:scale-95">
+        <div class="bg-white px-3 pt-4 pb-4 sm:p-7 sm:pb-5">
                     <div class="sm:flex sm:items-start">
             <div class="mx-auto flex size-12 bg-green-100 shrink-0 items-center justify-center rounded-full sm:mx-0 sm:size-12">
                 <span class="ti ti-upload text-lg text-green-600 sm:text-xl"></span>
@@ -47,7 +47,7 @@
                     </div>
                 </div>
                 
-                <div class="bg-gray-50 px-4 py-4 sm:px-6 sm:py-5 flex flex-col sm:flex-row-reverse gap-2.5 sm:gap-3">
+                <div class="bg-gray-50 px-5 py-5 sm:px-6 flex justify-end items-center gap-3">
                     <button type="submit" form="upload-material-form"
                         class="w-full sm:w-auto inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2.5 bg-green-600 text-sm sm:text-base font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
                         Upload Materi

@@ -58,21 +58,18 @@
 
                             <div>
                                 <label for="mataPelajaran" class="block text-sm font-medium text-gray-700 mb-1">Mata Pelajaran</label>
-                                <select id="mataPelajaran" name="mataPelajaran" required
+                                <select id="mataPelajaran" name="mataPelajaran" required onchange="toggleCustomMapel()"
                                     class="block w-full px-3 py-2 rounded-md border border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-sm">
                                     <option value="" disabled selected>Pilih Mata Pelajaran</option>
-                                    <option value="Matematika">Matematika</option>
-                                    <option value="Bahasa Indonesia">Bahasa Indonesia</option>
-                                    <option value="Informatika">Informatika</option>
-                                    <option value="Fisika">Fisika</option>
-                                    <option value="Kimia">Kimia</option>
-                                    <option value="Biologi">Biologi</option>
-                                    <option value="Sejarah">Sejarah</option>
-                                    <option value="Geografi">Geografi</option>
-                                    <option value="Bahasa Inggris">Bahasa Inggris</option>
-                                    <option value="Seni Budaya">Seni Budaya</option>
-                                    <option value="Olahraga">Olahraga</option>
+                                    <option value="Umum">Umum</option>
+                                    <option value="__custom">Kustom...</option>
                                 </select>
+                                <div id="custom-mapel-wrapper" class="mt-2 hidden">
+                                    <input type="text" id="mataPelajaranCustom" name="mataPelajaranCustom" 
+                                        placeholder="Isi nama mata pelajaran kustom" minlength="2" maxlength="100"
+                                        class="block w-full px-3 py-2 rounded-md border border-dashed border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-sm" />
+                                    <p id="custom-mapel-hint" class="mt-1 text-xs text-gray-500">Masukkan nama mata pelajaran kustom (misal: Literasi Digital).</p>
+                                </div>
                             </div>
 
                             <div class="grid grid-cols-2 gap-3">
@@ -119,3 +116,28 @@
         </div>
     </dialog>
 </el-dialog>
+<script>
+function toggleCustomMapel() {
+    const select = document.getElementById('mataPelajaran');
+    const wrapper = document.getElementById('custom-mapel-wrapper');
+    const input = document.getElementById('mataPelajaranCustom');
+    if (!select || !wrapper || !input) return;
+    if (select.value === '__custom') {
+        wrapper.classList.remove('hidden');
+        input.required = true;
+        input.focus();
+    } else {
+        wrapper.classList.add('hidden');
+        input.required = false;
+        input.value = '';
+    }
+}
+
+// Pastikan saat modal dibuka ulang, state sesuai
+document.addEventListener('DOMContentLoaded', () => {
+    const select = document.getElementById('mataPelajaran');
+    if (select) {
+        select.addEventListener('change', toggleCustomMapel);
+    }
+});
+</script>
