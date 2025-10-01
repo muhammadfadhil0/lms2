@@ -258,7 +258,7 @@ function statusText($status)
                                 data-class-id="<?= $u['id'] ?>"
                                 data-nama-ujian="<?= htmlspecialchars($u['namaUjian']) ?>"
                                 data-nama-kelas="<?= htmlspecialchars($u['namaKelas']) ?>"
-                                data-mata-pelajaran="<?= htmlspecialchars($u['mataPelajaran'] ?? '') ?>"
+
                                 data-deskripsi="<?= htmlspecialchars($u['deskripsi'] ?? '') ?>"
                                 data-topik="<?= htmlspecialchars($u['topik'] ?? '') ?>">
                                 <div class="h-32 sm:h-40 md:h-48 bg-gradient-to-br from-indigo-400 to-indigo-600 relative">
@@ -393,7 +393,7 @@ function statusText($status)
             resultsContainerSelector: '.search-results-container',
             cardSelector: '.search-card',
             apiEndpoint: '../logic/search-ujian-siswa-api.php',
-            searchFields: ['namaUjian', 'deskripsi', 'mataPelajaran', 'namaKelas', 'topik'],
+            searchFields: ['namaUjian', 'deskripsi', 'namaKelas', 'topik'],
             debounceDelay: 800,
             minSearchLength: 1
         };

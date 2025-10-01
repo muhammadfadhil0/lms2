@@ -196,14 +196,12 @@ if ($ujian_id > 0) {
                                         <option value="">Pilih Kelas</option>
                                         <?php foreach ($kelasGuru as $k): ?>
                                             <option value="<?= (int) $k['id'] ?>" <?= (isset($old['exam_class']) && (int) $old['exam_class'] == (int) $k['id']) ? 'selected' : '' ?>>
-                                                <?= htmlspecialchars($k['namaKelas']) ?>
-                                                (<?= htmlspecialchars($k['mataPelajaran']) ?>)</option>
+                                                <?= htmlspecialchars($k['namaKelas']) ?></option>
                                         <?php endforeach; ?>
                                     </select>
                                 <?php endif; ?>
                                 
-                                <p class="text-xs text-gray-500 mt-1">Pilih kelas yang akan mengikuti ujian ini. Pingo
-                                    AI akan memahami mata pelajaran dari informasi kelas.</p>
+                                <p class="text-xs text-gray-500 mt-1">Pilih kelas yang akan mengikuti ujian ini.</p>
                             </div>
 
                             <!-- Materi/Topik -->

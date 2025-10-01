@@ -1054,6 +1054,110 @@ $settings = [
                                 </select>
                             </div>
                         </div>
+
+                        <!-- Analisis Postingan - Beranda User -->
+                        <div class="list-item">
+                            <div class="list-item-content">
+                                <div class="list-item-title">
+                                    <i class="ti ti-sparkles mr-1"></i>
+                                    Analisis Postingan - Beranda User
+                                    <span class="priority-badge priority-medium">New</span>
+                                </div>
+                                <div class="list-item-description">
+                                    API key untuk fitur AI explanation di halaman beranda siswa (beranda-user.php)
+                                </div>
+                            </div>
+                            <div class="list-item-actions">
+                                <select class="form-select" style="min-width: 200px;" onchange="updatePageApiKey('ai-explanation-beranda', this.value)">
+                                    <option value="">Pilih API Key</option>
+                                    <?php foreach ($settings['api_keys'] as $apiKey): ?>
+                                        <?php if ($apiKey['is_active']): ?>
+                                            <option value="<?= $apiKey['id'] ?>">
+                                                <?= htmlspecialchars($apiKey['service_label']) ?>
+                                            </option>
+                                        <?php endif; ?>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Analisis Postingan - Kelas User -->
+                        <div class="list-item">
+                            <div class="list-item-content">
+                                <div class="list-item-title">
+                                    <i class="ti ti-sparkles mr-1"></i>
+                                    Analisis Postingan - Kelas User
+                                    <span class="priority-badge priority-medium">New</span>
+                                </div>
+                                <div class="list-item-description">
+                                    API key untuk fitur AI explanation di halaman kelas siswa (kelas-user.php)
+                                </div>
+                            </div>
+                            <div class="list-item-actions">
+                                <select class="form-select" style="min-width: 200px;" onchange="updatePageApiKey('ai-explanation-kelas-user', this.value)">
+                                    <option value="">Pilih API Key</option>
+                                    <?php foreach ($settings['api_keys'] as $apiKey): ?>
+                                        <?php if ($apiKey['is_active']): ?>
+                                            <option value="<?= $apiKey['id'] ?>">
+                                                <?= htmlspecialchars($apiKey['service_label']) ?>
+                                            </option>
+                                        <?php endif; ?>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Analisis Postingan - Kelas Guru -->
+                        <div class="list-item">
+                            <div class="list-item-content">
+                                <div class="list-item-title">
+                                    <i class="ti ti-sparkles mr-1"></i>
+                                    Analisis Postingan - Kelas Guru
+                                    <span class="priority-badge priority-medium">New</span>
+                                </div>
+                                <div class="list-item-description">
+                                    API key untuk fitur AI explanation di halaman kelas guru (kelas-guru.php)
+                                </div>
+                            </div>
+                            <div class="list-item-actions">
+                                <select class="form-select" style="min-width: 200px;" onchange="updatePageApiKey('ai-explanation-kelas-guru', this.value)">
+                                    <option value="">Pilih API Key</option>
+                                    <?php foreach ($settings['api_keys'] as $apiKey): ?>
+                                        <?php if ($apiKey['is_active']): ?>
+                                            <option value="<?= $apiKey['id'] ?>">
+                                                <?= htmlspecialchars($apiKey['service_label']) ?>
+                                            </option>
+                                        <?php endif; ?>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- AI Evaluation - Detail Jawaban Guru -->
+                        <div class="list-item">
+                            <div class="list-item-content">
+                                <div class="list-item-title">
+                                    <i class="ti ti-brain mr-1"></i>
+                                    AI Evaluation - Detail Jawaban Siswa
+                                    <span class="priority-badge priority-high">Latest</span>
+                                </div>
+                                <div class="list-item-description">
+                                    API key untuk fitur evaluasi AI di halaman detail jawaban siswa (detail-jawaban-guru.php)
+                                </div>
+                            </div>
+                            <div class="list-item-actions">
+                                <select class="form-select" style="min-width: 200px;" onchange="updatePageApiKey('ai-evaluation-detail-jawaban', this.value)">
+                                    <option value="">Pilih API Key</option>
+                                    <?php foreach ($settings['api_keys'] as $apiKey): ?>
+                                        <?php if ($apiKey['is_active']): ?>
+                                            <option value="<?= $apiKey['id'] ?>">
+                                                <?= htmlspecialchars($apiKey['service_label']) ?>
+                                            </option>
+                                        <?php endif; ?>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -2197,7 +2301,7 @@ $settings = [
         });
 
         async function loadCurrentPageApiSettings() {
-            const pages = ['pingo', 'buat-soal', 'vision'];
+            const pages = ['pingo', 'buat-soal', 'vision', 'ai-explanation-beranda', 'ai-explanation-kelas-user', 'ai-explanation-kelas-guru', 'ai-evaluation-detail-jawaban'];
             
             for (const page of pages) {
                 try {

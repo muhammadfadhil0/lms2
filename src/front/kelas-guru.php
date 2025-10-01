@@ -306,18 +306,18 @@ require_once '../logic/profile-photo-helper.php';
                                         <p class="text-sm text-gray-600">Mahasiswa</p>
                                     </div>
                                 </div>
-                                <div class="flex items-center">
+                                <!-- <div class="flex items-center">
                                     <div
                                         class="w-10 h-10 bg-orange-tipis rounded-lg flex items-center justify-center mr-3">
                                         <i class="ti ti-book text-orange"></i>
                                     </div>
                                     <div>
                                         <p class="text-xl font-bold text-gray-900">
-                                            <?php echo htmlspecialchars($detailKelas['mataPelajaran']); ?></p>
-                                        <p class="text-sm text-gray-600">Mata Pelajaran</p>
+                                            <?php echo htmlspecialchars($detailKelas['deskripsi'] ?? 'Kelas Pembelajaran'); ?></p>
+                                        <p class="text-sm text-gray-600">Deskripsi</p>
                                     </div>
-                                </div>
-                                <div class="flex items-center cursor-pointer hover:bg-gray-50 rounded-lg p-2 -m-2 transition-all duration-200"
+                                </div> -->
+                                <div class="flex mb-3 items-center cursor-pointer hover:bg-gray-50 rounded-lg p-2 -m-2 transition-all duration-200"
                                     onclick="copyClassCode('<?php echo htmlspecialchars($detailKelas['kodeKelas']); ?>')"
                                     title="Klik untuk menyalin kode kelas">
                                     <div
@@ -369,6 +369,7 @@ require_once '../logic/profile-photo-helper.php';
     <?php require '../component/modal-schedule-list.php'; ?>
     <?php require '../component/modal-material-list.php'; ?>
     <?php require '../component/modal-classmates-list.php'; ?>
+    <?php require '../component/modal-ai-explanation.php'; ?>
 
     <script src="../script/menu-bar-script.js"></script>
     <script src="../script/class-settings-manager.js"></script>
@@ -381,6 +382,7 @@ require_once '../logic/profile-photo-helper.php';
     <script src="../script/assignment-file-manager.js?v=<?php echo time(); ?>"></script>
     <script src="../script/kelas-files-manager.js"></script>
     <script src="../script/list-modals-manager.js?v=<?php echo time(); ?>"></script>
+    <script src="../script/ai-explanation-manager.js?v=<?php echo time(); ?>"></script>
     <script src="../script/kelas-posting-stable.js?v=<?php echo time(); ?>"></script>
     <script>
         // Initialize global variables
@@ -452,6 +454,12 @@ require_once '../logic/profile-photo-helper.php';
 
             // Initialize list modals manager
             window.listModalsManager = new ListModalsManager(kelasId);
+
+            // Initialize AI explanation manager (with small delay to ensure DOM is ready)
+            setTimeout(() => {
+                window.aiExplanationManager = new AiExplanationManager();
+                console.log('AI Explanation Manager initialized successfully');
+            }, 200);
 
             // Global helpers using manager
             window.openScheduleListModal = function () { window.listModalsManager.open('schedule'); };

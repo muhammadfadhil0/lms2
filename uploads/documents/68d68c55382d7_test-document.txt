@@ -1,0 +1,33 @@
+Test Document untuk Chunking System
+
+Ini adalah dokumen test sederhana untuk menguji sistem chunking.
+
+Bagian pertama ini berisi pengenalan tentang sistem chunking.
+Sistem chunking adalah teknologi yang memungkinkan pembagian dokumen besar menjadi potongan-potongan kecil yang lebih mudah diproses.
+
+Keuntungan sistem chunking:
+1. Mengurangi penggunaan token AI hingga 80-90%
+2. Memproses dokumen lebih cepat
+3. Pencarian konten lebih akurat
+4. Hemat biaya AI processing
+
+Bagian kedua membahas implementasi teknis.
+Sistem ini menggunakan PHP untuk backend processing, MySQL untuk database storage, dan JavaScript untuk frontend interaction.
+
+Fitur-fitur utama:
+- Upload PDF, DOCX, TXT files
+- Smart text chunking dengan overlap
+- Keyword extraction otomatis  
+- Full-text search dengan relevance scoring
+- Progress indicators untuk user experience
+
+Bagian ketiga adalah kesimpulan.
+Dengan sistem chunking ini, pengguna dapat menghemat token secara signifikan dan tetap mendapatkan hasil AI yang akurat.
+
+Testing scenarios:
+- Upload document berhasil
+- Chunking process berjalan lancar
+- Search functionality bekerja dengan baik
+- Integration dengan PingoChat sempurna
+
+End of test document.

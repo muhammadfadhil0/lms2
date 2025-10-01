@@ -44,13 +44,14 @@ if (isset($_POST['exam_topics']) && is_array($_POST['exam_topics'])) {
     $topik = trim($_POST['exam_topic']);
 }
 
-// Ambil mata pelajaran dari data kelas yang dipilih
-$mataPelajaran = '';
+// Set mata pelajaran default (karena kolom mataPelajaran sudah dihapus dari tabel kelas)
+$mataPelajaran = 'Umum';
 $kelasDetail = null;
 if ($kelas_id) {
     $kelasDetail = $kelasLogic->getDetailKelas($kelas_id);
     if ($kelasDetail && (int)$kelasDetail['guru_id'] === (int)$guru_id) {
-        $mataPelajaran = $kelasDetail['mataPelajaran'];
+        // Mata pelajaran sekarang tidak diambil dari kelas, menggunakan default 'Umum'
+        $mataPelajaran = 'Umum';
     }
 }
 

@@ -9,15 +9,15 @@ class KelasLogic {
     }
     
     // Membuat kelas baru
-    public function buatKelas($namaKelas, $deskripsi, $mataPelajaran, $guru_id, $maxSiswa = 30) {
+    public function buatKelas($namaKelas, $deskripsi, $guru_id, $maxSiswa = 30) {
         try {
             // Generate kode kelas unik
-            $kodeKelas = $this->generateKodeKelas($mataPelajaran);
+            $kodeKelas = $this->generateKodeKelas($namaKelas);
             
-            $sql = "INSERT INTO kelas (namaKelas, deskripsi, mataPelajaran, kodeKelas, guru_id, maxSiswa, status) 
-                    VALUES (?, ?, ?, ?, ?, ?, 'aktif')";
+            $sql = "INSERT INTO kelas (namaKelas, deskripsi, kodeKelas, guru_id, maxSiswa, status) 
+                    VALUES (?, ?, ?, ?, ?, 'aktif')";
             $stmt = $this->conn->prepare($sql);
-            $stmt->bind_param("ssssis", $namaKelas, $deskripsi, $mataPelajaran, $kodeKelas, $guru_id, $maxSiswa);
+            $stmt->bind_param("sssis", $namaKelas, $deskripsi, $kodeKelas, $guru_id, $maxSiswa);
             
             if ($stmt->execute()) {
                 return [
@@ -35,16 +35,16 @@ class KelasLogic {
     }
     
     // Generate kode kelas unik
-    private function generateKodeKelas($mataPelajaran) {
-        // Clean mata pelajaran untuk prefix yang aman
-        $cleanMapel = preg_replace('/[^A-Za-z0-9]/', '', $mataPelajaran);
+    private function generateKodeKelas($namaKelas) {
+        // Clean nama kelas untuk prefix yang aman
+        $cleanKelas = preg_replace('/[^A-Za-z0-9]/', '', $namaKelas);
         
         // Jika setelah dibersihkan terlalu pendek, gunakan default
-        if (strlen($cleanMapel) < 3) {
-            $cleanMapel = 'KLS'; // Default prefix
+        if (strlen($cleanKelas) < 3) {
+            $cleanKelas = 'KLS'; // Default prefix
         }
         
-        $prefix = strtoupper(substr($cleanMapel, 0, 3));
+        $prefix = strtoupper(substr($cleanKelas, 0, 3));
         $number = str_pad(rand(1, 999), 3, '0', STR_PAD_LEFT);
         return $prefix . $number;
     }
@@ -69,6 +69,73 @@ class KelasLogic {
             return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
         } catch (Exception $e) {
             return [];
+        }
+    }
+    
+    // Cek apakah guru bisa membuat kelas baru berdasarkan role dan limit
+    public function canCreateClass($guru_id) {
+        try {
+            // Get guru role info
+            $sql = "SELECT role_type, subscription_plan, max_classes FROM users WHERE id = ? AND role = 'guru'";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bind_param("i", $guru_id);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            
+            if ($result->num_rows === 0) {
+                return ['success' => false, 'message' => 'Guru tidak ditemukan'];
+            }
+            
+            $guru = $result->fetch_assoc();
+            
+            // Jika pro, bisa unlimited
+            if ($guru['role_type'] === 'pro') {
+                return ['success' => true, 'can_create' => true, 'role' => 'pro'];
+            }
+            
+            // Hitung jumlah kelas aktif guru
+            $sqlCount = "SELECT COUNT(*) as total_kelas FROM kelas WHERE guru_id = ? AND status = 'aktif'";
+            $stmtCount = $this->conn->prepare($sqlCount);
+            $stmtCount->bind_param("i", $guru_id);
+            $stmtCount->execute();
+            $countResult = $stmtCount->get_result();
+            $totalKelas = $countResult->fetch_assoc()['total_kelas'];
+            
+            $maxClasses = $guru['max_classes'] ?? 5; // Default 5 untuk free
+            
+            return [
+                'success' => true,
+                'can_create' => $totalKelas < $maxClasses,
+                'role' => $guru['role_type'],
+                'current_classes' => $totalKelas,
+                'max_classes' => $maxClasses,
+                'remaining' => max(0, $maxClasses - $totalKelas)
+            ];
+            
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => 'Error: ' . $e->getMessage()];
+        }
+    }
+    
+    // Get guru subscription info
+    public function getGuruSubscriptionInfo($guru_id) {
+        try {
+            $sql = "SELECT u.role_type, u.subscription_plan, u.max_classes, u.subscription_expires_at,
+                           sp.display_name, sp.features
+                    FROM users u 
+                    LEFT JOIN subscription_plans sp ON u.subscription_plan = sp.plan_name 
+                    WHERE u.id = ? AND u.role = 'guru'";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bind_param("i", $guru_id);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            
+            if ($result->num_rows > 0) {
+                return $result->fetch_assoc();
+            }
+            return null;
+        } catch (Exception $e) {
+            return null;
         }
     }
     
@@ -213,12 +280,12 @@ class KelasLogic {
     }
     
     // Update kelas
-    public function updateKelas($kelas_id, $namaKelas, $deskripsi, $mataPelajaran, $maxSiswa) {
+    public function updateKelas($kelas_id, $namaKelas, $deskripsi, $maxSiswa) {
         try {
-            $sql = "UPDATE kelas SET namaKelas = ?, deskripsi = ?, mataPelajaran = ?, maxSiswa = ? 
+            $sql = "UPDATE kelas SET namaKelas = ?, deskripsi = ?, maxSiswa = ? 
                     WHERE id = ?";
             $stmt = $this->conn->prepare($sql);
-            $stmt->bind_param("sssii", $namaKelas, $deskripsi, $mataPelajaran, $maxSiswa, $kelas_id);
+            $stmt->bind_param("ssii", $namaKelas, $deskripsi, $maxSiswa, $kelas_id);
             
             if ($stmt->execute()) {
                 return ['success' => true, 'message' => 'Kelas berhasil diupdate'];
@@ -430,11 +497,10 @@ if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST' &
 
         case 'update_class':
             $namaKelas = $_POST['namaKelas'] ?? '';
-            $mataPelajaran = $_POST['mataPelajaran'] ?? '';
             $deskripsi = $_POST['deskripsi'] ?? '';
             $maxSiswa = isset($_POST['maxSiswa']) ? intval($_POST['maxSiswa']) : 30;
             
-            echo json_encode($kelasLogic->updateKelas($kelas_id, $namaKelas, $deskripsi, $mataPelajaran, $maxSiswa));
+            echo json_encode($kelasLogic->updateKelas($kelas_id, $namaKelas, $deskripsi, $maxSiswa));
             break;
 
         case 'remove_student':

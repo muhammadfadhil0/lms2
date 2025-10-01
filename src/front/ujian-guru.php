@@ -303,7 +303,7 @@ function badgeColor($status)
             resultsContainerSelector: '.search-results-container',
             cardSelector: '.search-card',
             apiEndpoint: '../logic/search-ujian-api.php',
-            searchFields: ['namaUjian', 'deskripsi', 'mataPelajaran', 'namaKelas', 'topik'],
+            searchFields: ['namaUjian', 'deskripsi', 'namaKelas', 'topik'],
             debounceDelay: 800,
             minSearchLength: 1
         };

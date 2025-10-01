@@ -80,7 +80,6 @@ try {
         AND (
             u.namaUjian LIKE ? OR 
             u.deskripsi LIKE ? OR 
-            u.mataPelajaran LIKE ? OR 
             k.namaKelas LIKE ? OR
             u.topik LIKE ?
         )
@@ -88,14 +87,13 @@ try {
     
     $searchParam = '%' . $searchQuery . '%';
     $stmt = $pdo->prepare($sql);
-    $stmt->execute([$siswa_id, $siswa_id, $searchParam, $searchParam, $searchParam, $searchParam, $searchParam]);
+    $stmt->execute([$siswa_id, $siswa_id, $searchParam, $searchParam, $searchParam, $searchParam]);
     
     $exams = [];
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         // Store both original and highlighted text
         $row['namaUjian_highlighted'] = highlightMatch($row['namaUjian'], $searchQuery);
         $row['deskripsi_highlighted'] = highlightMatch($row['deskripsi'], $searchQuery);
-        $row['mataPelajaran_highlighted'] = highlightMatch($row['mataPelajaran'], $searchQuery);
         $row['namaKelas_highlighted'] = highlightMatch($row['namaKelas'], $searchQuery);
         $row['topik_highlighted'] = highlightMatch($row['topik'], $searchQuery);
         

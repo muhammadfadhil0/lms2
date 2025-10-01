@@ -1325,30 +1325,15 @@ class UjianLogic {
     }
     
     public function getMataPelajaran() {
-        $sql = "SELECT DISTINCT mataPelajaran FROM ujian WHERE mataPelajaran IS NOT NULL ORDER BY mataPelajaran ASC";
-        $result = $this->conn->query($sql);
-        
-        $mapel_list = [];
-        if ($result) {
-            while ($row = $result->fetch_assoc()) {
-                $mapel_list[] = $row['mataPelajaran'];
-            }
-        }
-        
-        // Add common subjects if not in database
+        // Return common subjects only since mataPelajaran column has been removed from kelas table
         $common_subjects = ['Matematika', 'Bahasa Indonesia', 'Bahasa Inggris', 'IPA', 'IPS', 'PKN', 'Agama', 'Olahraga', 'Seni', 'TIK'];
-        foreach ($common_subjects as $subject) {
-            if (!in_array($subject, $mapel_list)) {
-                $mapel_list[] = $subject;
-            }
-        }
         
-        sort($mapel_list);
-        return $mapel_list;
+        sort($common_subjects);
+        return $common_subjects;
     }
     
     public function getKelas() {
-        $sql = "SELECT id, namaKelas, mataPelajaran FROM kelas WHERE status = 'aktif' ORDER BY namaKelas ASC";
+        $sql = "SELECT id, namaKelas FROM kelas WHERE status = 'aktif' ORDER BY namaKelas ASC";
         $result = $this->conn->query($sql);
         
         return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];

@@ -29,24 +29,6 @@
                             </div>
                             
                             <div>
-                                <label for="edit-mataPelajaran" class="block text-base font-medium text-gray-700 mb-2">Mata Pelajaran</label>
-                                <select id="edit-mataPelajaran" name="mataPelajaran" required
-                                    class="mt-1 block w-full px-3 py-3 rounded-md border-2 border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-base">
-                                    <option value="Matematika" <?php echo $detailKelas['mataPelajaran'] == 'Matematika' ? 'selected' : ''; ?>>Matematika</option>
-                                    <option value="Bahasa Indonesia" <?php echo $detailKelas['mataPelajaran'] == 'Bahasa Indonesia' ? 'selected' : ''; ?>>Bahasa Indonesia</option>
-                                    <option value="Informatika" <?php echo $detailKelas['mataPelajaran'] == 'Informatika' ? 'selected' : ''; ?>>Informatika</option>
-                                    <option value="Fisika" <?php echo $detailKelas['mataPelajaran'] == 'Fisika' ? 'selected' : ''; ?>>Fisika</option>
-                                    <option value="Kimia" <?php echo $detailKelas['mataPelajaran'] == 'Kimia' ? 'selected' : ''; ?>>Kimia</option>
-                                    <option value="Biologi" <?php echo $detailKelas['mataPelajaran'] == 'Biologi' ? 'selected' : ''; ?>>Biologi</option>
-                                    <option value="Sejarah" <?php echo $detailKelas['mataPelajaran'] == 'Sejarah' ? 'selected' : ''; ?>>Sejarah</option>
-                                    <option value="Geografi" <?php echo $detailKelas['mataPelajaran'] == 'Geografi' ? 'selected' : ''; ?>>Geografi</option>
-                                    <option value="Bahasa Inggris" <?php echo $detailKelas['mataPelajaran'] == 'Bahasa Inggris' ? 'selected' : ''; ?>>Bahasa Inggris</option>
-                                    <option value="Seni Budaya" <?php echo $detailKelas['mataPelajaran'] == 'Seni Budaya' ? 'selected' : ''; ?>>Seni Budaya</option>
-                                    <option value="Olahraga" <?php echo $detailKelas['mataPelajaran'] == 'Olahraga' ? 'selected' : ''; ?>>Olahraga</option>
-                                </select>
-                            </div>
-                            
-                            <div>
                                 <label for="edit-deskripsi" class="block text-base font-medium text-gray-700 mb-2">Deskripsi Kelas</label>
                                 <textarea id="edit-deskripsi" name="deskripsi" rows="4"
                                     class="mt-1 block w-full px-3 py-3 rounded-md border-2 border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 text-base"

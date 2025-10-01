@@ -16,18 +16,40 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     
     // Get form data
     $namaKelas = trim($_POST['namaKelas'] ?? '');
-    $mataPelajaran = trim($_POST['mataPelajaran'] ?? '');
     $deskripsi = trim($_POST['deskripsi'] ?? '');
     $maxSiswa = intval($_POST['maxSiswa'] ?? 30);
     
     // Validate input
-    if (empty($namaKelas) || empty($mataPelajaran)) {
-        echo json_encode(['success' => false, 'message' => 'Nama kelas dan mata pelajaran harus diisi']);
+    if (empty($namaKelas)) {
+        echo json_encode(['success' => false, 'message' => 'Nama kelas harus diisi']);
+        exit();
+    }
+    
+    // Check if guru can create more classes (subscription limit)
+    $classLimitCheck = $kelasLogic->canCreateClass($guru_id);
+    if (!$classLimitCheck['success']) {
+        echo json_encode(['success' => false, 'message' => $classLimitCheck['message']]);
+        exit();
+    }
+    
+    if (!$classLimitCheck['can_create']) {
+        $role = $classLimitCheck['role'] ?? 'free';
+        $maxClasses = $classLimitCheck['max_classes'] ?? 5;
+        $currentClasses = $classLimitCheck['current_classes'] ?? 0;
+        
+        echo json_encode([
+            'success' => false, 
+            'message' => "Anda telah mencapai batas maksimum {$maxClasses} kelas untuk akun {$role}. Upgrade ke Pro untuk kelas unlimited.",
+            'limit_reached' => true,
+            'role' => $role,
+            'max_classes' => $maxClasses,
+            'current_classes' => $currentClasses
+        ]);
         exit();
     }
     
     // Create class
-    $result = $kelasLogic->buatKelas($namaKelas, $deskripsi, $mataPelajaran, $guru_id, $maxSiswa);
+    $result = $kelasLogic->buatKelas($namaKelas, $deskripsi, $guru_id, $maxSiswa);
     
     if ($result['success']) {
         echo json_encode([

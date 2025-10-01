@@ -176,8 +176,132 @@ if (!$dashboardData) {
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        /* Post Layout Fixes */
+        .bg-white.rounded-lg.shadow-sm.border.border-gray-200 {
+            overflow: hidden;
+            /* Prevent content from breaking out */
+        }
+
+        /* Media Container Fixes */
+        .post-media-container {
+            width: 100%;
+            max-width: 100%;
+            overflow: hidden;
+        }
+
+        .post-media-grid {
+            display: grid;
+            gap: 0.5rem;
+            width: 100%;
+            max-width: 100%;
+        }
+
+        .post-media-grid.grid-1 {
+            grid-template-columns: 1fr;
+        }
+
+        .post-media-grid.grid-2 {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .post-media-grid.grid-3 {
+            grid-template-columns: 2fr 1fr;
+            grid-template-rows: 1fr 1fr;
+        }
+
+        .post-media-grid.grid-3 .post-media-item:first-child {
+            grid-row: span 2;
+        }
+
+        .post-media-grid.grid-4 {
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+        }
+
+        .post-media-item {
+            position: relative;
+            aspect-ratio: 1;
+            overflow: hidden;
+            border-radius: 0.5rem;
+        }
+
+        .post-media-item.single {
+            aspect-ratio: 16/9;
+            max-height: 400px;
+        }
+
+        .post-media {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Comments section fixes */
+        div[id^="comments-preview-"] {
+            max-width: 100%;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        /* Assignment content fixes */
+        .bg-gradient-to-r.from-blue-50.to-indigo-50 {
+            max-width: 100%;
+            overflow: hidden;
+        }
+
+        /* Prevent content overflow */
+        .post-content {
+            max-width: 100%;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        /* Ensure all containers stay within bounds */
+        .bg-white.rounded-lg .space-y-2,
+        .bg-white.rounded-lg .space-y-4 {
+            max-width: 100%;
+        }
+
+        /* Fix for assignment form containers */
+        div[id^="submission-form-"] {
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+
+        /* AI button positioning fix */
+        .ai-explain-btn {
+            white-space: nowrap;
+        }
+
+        /* Responsive fixes for mobile */
+        @media (max-width: 768px) {
+
+            .post-media-grid.grid-3,
+            .post-media-grid.grid-4 {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .post-media-grid.grid-3 .post-media-item:first-child {
+                grid-row: span 1;
+            }
+
+            .post-media-item {
+                aspect-ratio: 1;
+            }
+
+            .post-media-item.single {
+                aspect-ratio: 16/9;
+                max-height: 250px;
+            }
         }
     </style>
 </head>
@@ -375,67 +499,72 @@ if (!$dashboardData) {
                     <div class="sidebar-scroll bg-transparent p-2 mt-4 pb-4 ps-5 overflow-y-auto">
                         <!-- Card: Papan Iklan -->
                         <?php if (!empty($advertisements)): ?>
-                        <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-4 overflow-hidden">
-                            <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-                                <h3 class="text-base font-semibold text-gray-800">Rekomendasi</h3>
-                                <?php if (count($advertisements) > 1): ?>
-                                <div class="flex items-center space-x-2">
-                                    <button id="prev-ad-btn" class="text-sm text-gray-500 hover:text-gray-700 transition-colors">
-                                        <i class="ti ti-chevron-left"></i>
-                                    </button>
-                                    <button id="next-ad-btn" class="text-sm text-gray-500 hover:text-gray-700 transition-colors">
-                                        <i class="ti ti-chevron-right"></i>
-                                    </button>
+                            <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-4 overflow-hidden">
+                                <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                                    <h3 class="text-base font-semibold text-gray-800">Rekomendasi</h3>
+                                    <?php if (count($advertisements) > 1): ?>
+                                        <div class="flex items-center space-x-2">
+                                            <button id="prev-ad-btn"
+                                                class="text-sm text-gray-500 hover:text-gray-700 transition-colors">
+                                                <i class="ti ti-chevron-left"></i>
+                                            </button>
+                                            <button id="next-ad-btn"
+                                                class="text-sm text-gray-500 hover:text-gray-700 transition-colors">
+                                                <i class="ti ti-chevron-right"></i>
+                                            </button>
+                                        </div>
+                                    <?php endif; ?>
                                 </div>
-                                <?php endif; ?>
-                            </div>
-                            <div class="p-3 relative">
-                                <!-- Advertisement slider -->
-                                <div class="advertisement-slider relative">
-                                    <?php foreach ($advertisements as $index => $ad): ?>
-                                    <div class="advertisement-item <?php echo $index === 0 ? 'active' : ''; ?>"
-                                         data-ad-id="<?php echo $ad['id']; ?>">
-                                        <div class="rounded-lg overflow-hidden bg-gray-50 border border-gray-100 hover:shadow-md transition-shadow">
-                                            <?php if ($ad['link_url'] && $ad['link_url'] !== '#'): ?>
-                                            <a href="<?php echo htmlspecialchars($ad['link_url']); ?>" target="_blank" class="block">
-                                            <?php endif; ?>
-                                                <?php if ($ad['image_path']): ?>
-                                                <div class="w-full h-40 bg-cover bg-center bg-gray-200 <?php echo ($ad['link_url'] && $ad['link_url'] !== '#') ? 'cursor-pointer' : ''; ?>"
-                                                     style="background-image: url('<?php echo htmlspecialchars($ad['image_path']); ?>');"
-                                                     onerror="this.style.backgroundImage='url(../../assets/img/placeholder-ad.jpg)';">
-                                                </div>
-                                                <?php else: ?>
-                                                <div class="w-full h-40 bg-gradient-to-br from-orange-100 to-orange-200 flex items-center justify-center <?php echo ($ad['link_url'] && $ad['link_url'] !== '#') ? 'cursor-pointer' : ''; ?>">
-                                                    <i class="ti ti-photo text-4xl text-orange-400"></i>
-                                                </div>
-                                                <?php endif; ?>
-                                            <?php if ($ad['link_url'] && $ad['link_url'] !== '#'): ?>
-                                            </a>
-                                            <?php endif; ?>
-                                            <div class="p-3">
-                                                <div class="text-sm font-semibold text-gray-900">
-                                                    <?php echo htmlspecialchars($ad['title']); ?>
-                                                </div>
-                                                <div class="text-xs text-gray-500 mt-1 line-clamp-2">
-                                                    <?php echo htmlspecialchars($ad['description']); ?>
+                                <div class="p-3 relative">
+                                    <!-- Advertisement slider -->
+                                    <div class="advertisement-slider relative">
+                                        <?php foreach ($advertisements as $index => $ad): ?>
+                                            <div class="advertisement-item <?php echo $index === 0 ? 'active' : ''; ?>"
+                                                data-ad-id="<?php echo $ad['id']; ?>">
+                                                <div
+                                                    class="rounded-lg overflow-hidden bg-gray-50 border border-gray-100 hover:shadow-md transition-shadow">
+                                                    <?php if ($ad['link_url'] && $ad['link_url'] !== '#'): ?>
+                                                        <a href="<?php echo htmlspecialchars($ad['link_url']); ?>" target="_blank"
+                                                            class="block">
+                                                        <?php endif; ?>
+                                                        <?php if ($ad['image_path']): ?>
+                                                            <div class="w-full h-40 bg-cover bg-center bg-gray-200 <?php echo ($ad['link_url'] && $ad['link_url'] !== '#') ? 'cursor-pointer' : ''; ?>"
+                                                                style="background-image: url('<?php echo htmlspecialchars($ad['image_path']); ?>');"
+                                                                onerror="this.style.backgroundImage='url(../../assets/img/placeholder-ad.jpg)';">
+                                                            </div>
+                                                        <?php else: ?>
+                                                            <div
+                                                                class="w-full h-40 bg-gradient-to-br from-orange-100 to-orange-200 flex items-center justify-center <?php echo ($ad['link_url'] && $ad['link_url'] !== '#') ? 'cursor-pointer' : ''; ?>">
+                                                                <i class="ti ti-photo text-4xl text-orange-400"></i>
+                                                            </div>
+                                                        <?php endif; ?>
+                                                        <?php if ($ad['link_url'] && $ad['link_url'] !== '#'): ?>
+                                                        </a>
+                                                    <?php endif; ?>
+                                                    <div class="p-3">
+                                                        <div class="text-sm font-semibold text-gray-900">
+                                                            <?php echo htmlspecialchars($ad['title']); ?>
+                                                        </div>
+                                                        <div class="text-xs text-gray-500 mt-1 line-clamp-2">
+                                                            <?php echo htmlspecialchars($ad['description']); ?>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
+                                        <?php endforeach; ?>
                                     </div>
-                                    <?php endforeach; ?>
+
+                                    <?php if (count($advertisements) > 1): ?>
+                                        <!-- Advertisement indicators -->
+                                        <div class="flex justify-center mt-3 space-x-2">
+                                            <?php foreach ($advertisements as $index => $ad): ?>
+                                                <button class="ad-indicator <?php echo $index === 0 ? 'active' : ''; ?>"
+                                                    data-index="<?php echo $index; ?>"></button>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    <?php endif; ?>
                                 </div>
-                                
-                                <?php if (count($advertisements) > 1): ?>
-                                <!-- Advertisement indicators -->
-                                <div class="flex justify-center mt-3 space-x-2">
-                                    <?php foreach ($advertisements as $index => $ad): ?>
-                                    <button class="ad-indicator <?php echo $index === 0 ? 'active' : ''; ?>"
-                                            data-index="<?php echo $index; ?>"></button>
-                                    <?php endforeach; ?>
-                                </div>
-                                <?php endif; ?>
                             </div>
-                        </div>
                         <?php endif; ?>
 
                         <!-- Minimal Info Card (Desktop-only moved from top stats) -->
@@ -585,656 +714,34 @@ if (!$dashboardData) {
                     <h2 class="text-lg md:text-xl font-bold text-gray-800">Beranda</h2>
                 </div>
 
-                <!-- Posts Container for Dynamic Loading -->
-                <div id="berandaPostsContainer" class="space-y-4">
-                    <!-- Initial posts loaded via PHP for faster first paint -->
-                    <?php if (!empty($recentPosts)): ?>
-                        <?php foreach ($recentPosts as $post): ?>
-                            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6"
-                                data-user-id="<?php echo $post['user_id']; ?>" data-post-id="<?php echo $post['id']; ?>">
-                                <!-- Post Header -->
-                                <div class="flex items-start justify-between mb-3">
-                                    <div class="flex items-center space-x-3">
-                                        <div
-                                            class="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0 bg-gray-100">
-                                            <?php if (isset($post['fotoProfil']) && !empty($post['fotoProfil'])): ?>
-                                                <?php
-                                                $fotoProfil = $post['fotoProfil'];
-                                                // Check if it already contains the full path
-                                                if (strpos($fotoProfil, 'uploads/profile/') === 0) {
-                                                    $photoPath = '../../' . $fotoProfil;
-                                                } else {
-                                                    $photoPath = '../../uploads/profile/' . $fotoProfil;
-                                                }
-                                                ?>
-                                                <img src="<?php echo htmlspecialchars($photoPath); ?>" alt="Profile Photo"
-                                                    class="w-full h-full object-cover post-profile-photo"
-                                                    onerror="this.parentElement.innerHTML='<div class=\'w-full h-full bg-orange-600 rounded-full flex items-center justify-center\'><span class=\'text-white font-medium text-sm\'><?php echo strtoupper(substr($post['namaPenulis'], 0, 1)); ?></span></div>'">
-                                            <?php else: ?>
-                                                <!-- Fallback with role-based colors -->
-                                                <div class="w-full h-full rounded-full flex items-center justify-center <?php
-                                                switch ($post['rolePenulis']) {
-                                                    case 'admin':
-                                                        echo 'bg-red-100 text-red-600';
-                                                        break;
-                                                    case 'guru':
-                                                        echo 'bg-blue-100 text-blue-600';
-                                                        break;
-                                                    case 'siswa':
-                                                        echo 'bg-green-100 text-green-600';
-                                                        break;
-                                                    default:
-                                                        echo 'bg-orange-600 text-white';
-                                                }
-                                                ?>">
-                                                    <span class="font-medium text-sm">
-                                                        <?php echo strtoupper(substr($post['namaPenulis'], 0, 1)); ?>
-                                                    </span>
-                                                </div>
-                                            <?php endif; ?>
-                                        </div>
-                                        <div>
-                                            <div class="flex items-center space-x-2">
-                                                <h4 class="font-medium text-gray-900">
-                                                    <?php echo htmlspecialchars($post['namaPenulis']); ?>
-                                                </h4>
-                                                <span class="text-sm text-gray-500">•</span>
-                                                <span
-                                                    class="text-sm text-orange-600 font-medium"><?php echo htmlspecialchars($post['namaKelas']); ?></span>
-                                            </div>
-                                            <p class="text-xs text-gray-500">
-                                                <?php echo date('d M Y, H:i', strtotime($post['dibuat'])); ?>
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Post Content -->
-                                <div class="mb-4">
-                                    <div class="post-content text-gray-800 whitespace-pre-wrap"><?php
-                                    // Convert markdown-style formatting to HTML
-                                    // First do the markdown replacements before htmlspecialchars
-                                    $formattedContent = $post['konten'];
-                                    // Bold text: **text** -> <strong>text</strong>
-                                    $formattedContent = preg_replace('/\*\*(.*?)\*\*/', '<strong>$1</strong>', $formattedContent);
-                                    // Italic text: *text* -> <em>text</em> (only single asterisks not already converted)
-                                    $formattedContent = preg_replace('/(?<!\*)\*([^*]+?)\*(?!\*)/', '<em>$1</em>', $formattedContent);
-                                    // Now escape HTML but preserve our formatting tags
-                                    $formattedContent = htmlspecialchars($formattedContent, ENT_QUOTES, 'UTF-8', false);
-                                    // Unescape our formatting tags
-                                    $formattedContent = str_replace(['&lt;strong&gt;', '&lt;/strong&gt;', '&lt;em&gt;', '&lt;/em&gt;'], ['<strong>', '</strong>', '<em>', '</em>'], $formattedContent);
-                                    echo $formattedContent;
-                                    ?></div>
-
-                                    <!-- Assignment Content (if it's an assignment post) -->
-                                    <?php if ($post['tipePost'] === 'tugas' || $post['tipe_postingan'] === 'assignment'): ?>
-                                        <div id="post-assignment-<?php echo $post['assignment_id'] ?? 0; ?>"></div>
-                                        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 mt-3"
-                                            data-assignment-id="<?php echo $post['assignment_id'] ?? 0; ?>">
-                                            <div class="flex items-start space-x-3">
-                                                <div class="flex-shrink-0">
-                                                    <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                                                        <i class="ti ti-clipboard-text text-blue-600 text-xl"></i>
-                                                    </div>
-                                                </div>
-                                                <div class="flex-1 min-w-0">
-                                                    <div class="flex items-start justify-between mb-3">
-                                                        <h3
-                                                            class="text-xl font-bold text-gray-900 flex items-center assignment-title">
-                                                            <i class="ti ti-assignment text-blue-600 mr-2"></i>
-                                                            <?php echo isset($post['assignment_title']) ? htmlspecialchars($post['assignment_title']) : 'Tugas'; ?>
-                                                        </h3>
-                                                    </div>
-
-                                                    <!-- Assignment Details Grid -->
-                                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
-                                                        <?php if (isset($post['assignment_deadline']) && $post['assignment_deadline']): ?>
-                                                            <?php
-                                                            $isExpired = strtotime($post['assignment_deadline']) < time();
-                                                            ?>
-                                                            <div
-                                                                class="flex items-center space-x-2 p-3 bg-white rounded-lg border <?php echo $isExpired ? 'border-red-200 bg-red-50' : 'border-gray-200'; ?>">
-                                                                <div class="flex-shrink-0">
-                                                                    <i
-                                                                        class="ti ti-calendar-due text-lg <?php echo $isExpired ? 'text-red-500' : 'text-orange-500'; ?>"></i>
-                                                                </div>
-                                                                <div class="flex-1 min-w-0">
-                                                                    <div
-                                                                        class="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                                                                        Deadline</div>
-                                                                    <div
-                                                                        class="text-sm font-semibold <?php echo $isExpired ? 'text-red-700' : 'text-gray-900'; ?> truncate">
-                                                                        <span
-                                                                            class="hidden sm:inline"><?php echo date('l, d M Y H:i', strtotime($post['assignment_deadline'])); ?></span>
-                                                                        <span
-                                                                            class="sm:hidden"><?php echo date('d M, H:i', strtotime($post['assignment_deadline'])); ?></span>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        <?php endif; ?>
-
-                                                        <?php if (isset($post['assignment_max_score']) && $post['assignment_max_score']): ?>
-                                                            <div
-                                                                class="flex items-center space-x-2 p-3 bg-white rounded-lg border border-gray-200">
-                                                                <div class="flex-shrink-0">
-                                                                    <i class="ti ti-trophy text-lg text-yellow-500"></i>
-                                                                </div>
-                                                                <div class="flex-1">
-                                                                    <div
-                                                                        class="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                                                                        Nilai Maksimal</div>
-                                                                    <div class="text-sm font-semibold text-gray-900">
-                                                                        <?php echo $post['assignment_max_score']; ?> Poin
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        <?php endif; ?>
-                                                    </div>
-
-                                                    <?php if (!empty($post['assignment_files'])): ?>
-                                                        <div class="space-y-2">
-                                                            <?php foreach ($post['assignment_files'] as $index => $file): ?>
-                                                                <div class="p-3 bg-white rounded-lg border border-gray-200">
-                                                                    <div class="flex items-center space-x-3">
-                                                                        <div class="flex-shrink-0">
-                                                                            <?php
-                                                                            $ext = strtolower($file['ekstensi_file'] ?? pathinfo($file['nama_file'], PATHINFO_EXTENSION));
-                                                                            $iconClass = 'ti-file';
-                                                                            $iconColor = 'text-blue-600';
-                                                                            
-                                                                            switch ($ext) {
-                                                                                case 'pdf': $iconClass = 'ti-file-type-pdf'; $iconColor = 'text-red-600'; break;
-                                                                                case 'doc': case 'docx': $iconClass = 'ti-file-type-doc'; $iconColor = 'text-blue-600'; break;
-                                                                                case 'xls': case 'xlsx': $iconClass = 'ti-file-spreadsheet'; $iconColor = 'text-green-600'; break;
-                                                                                case 'ppt': case 'pptx': $iconClass = 'ti-presentation'; $iconColor = 'text-orange-600'; break;
-                                                                                case 'zip': case 'rar': $iconClass = 'ti-file-zip'; $iconColor = 'text-yellow-600'; break;
-                                                                            }
-                                                                            ?>
-                                                                            <i class="ti <?php echo $iconClass . ' ' . $iconColor; ?> text-xl"></i>
-                                                                        </div>
-                                                                        <div class="flex-1 min-w-0">
-                                                                            <div class="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                                                                                File Tugas <?php echo ($index + 1); ?>
-                                                                            </div>
-                                                                            <div class="text-sm font-semibold text-gray-900 truncate">
-                                                                                <?php echo htmlspecialchars($file['nama_file']); ?>
-                                                                            </div>
-                                                                            <?php if (!empty($file['ukuran_file'])): ?>
-                                                                                <div class="text-xs text-gray-500">
-                                                                                    <?php echo number_format($file['ukuran_file'] / 1024, 1); ?> KB
-                                                                                </div>
-                                                                            <?php endif; ?>
-                                                                        </div>
-                                                                        <a href="../../<?php echo htmlspecialchars($file['path_file']); ?>"
-                                                                            target="_blank"
-                                                                            class="flex items-center space-x-1 bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex-shrink-0">
-                                                                            <i class="ti ti-download"></i>
-                                                                            <span class="hidden sm:inline">Download</span>
-                                                                        </a>
-                                                                    </div>
-                                                                </div>
-                                                            <?php endforeach; ?>
-                                                        </div>
-                                                    <?php endif; ?>
-                                                </div>
-                                            </div>
-
-                                            <!-- Assignment Submission Status & Actions -->
-                                            <div class="mt-3 pt-3 border-t border-blue-200">
-                                                <?php
-                                                // Get submission status for this assignment
-                                                $submissionStatus = 'not_submitted';
-                                                $studentScore = null;
-                                                $isExpired = false;
-
-                                                if (isset($post['assignment_deadline']) && $post['assignment_deadline']) {
-                                                    $isExpired = strtotime($post['assignment_deadline']) < time();
-                                                }
-
-                                                // Check if we have submission data
-                                                if (isset($post['student_status'])) {
-                                                    if ($post['student_status'] === 'dinilai') {
-                                                        $submissionStatus = 'graded';
-                                                        $studentScore = $post['student_score'] ?? null;
-                                                    } elseif ($post['student_status'] === 'dikumpulkan') {
-                                                        $submissionStatus = 'submitted';
-                                                    }
-                                                }
-                                                ?>
-
-                                                <div class="flex items-center justify-between"
-                                                    id="assignment-status-row-<?php echo $post['assignment_id'] ?? 0; ?>">
-                                                    <div class="flex items-center">
-                                                        <?php if ($submissionStatus === 'graded'): ?>
-                                                            <span id="assignment-status-badge-<?php echo $post['assignment_id']; ?>"
-                                                                class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-100 text-green-800">
-                                                                <i class="ti ti-check-circle mr-1"></i>
-                                                                Sudah dinilai
-                                                                <?php if ($studentScore !== null): ?>
-                                                                    (<?php echo $studentScore; ?>)
-                                                                <?php endif; ?>
-                                                            </span>
-                                                        <?php elseif ($submissionStatus === 'submitted'): ?>
-                                                            <span id="assignment-status-badge-<?php echo $post['assignment_id']; ?>"
-                                                                class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800">
-                                                                <i class="ti ti-upload mr-1"></i>
-                                                                Sudah dikumpulkan
-                                                            </span>
-                                                        <?php elseif ($isExpired): ?>
-                                                            <span id="assignment-status-badge-<?php echo $post['assignment_id']; ?>"
-                                                                class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-red-100 text-red-800">
-                                                                <i class="ti ti-clock-x mr-1"></i>
-                                                                Terlambat
-                                                            </span>
-                                                        <?php else: ?>
-                                                            <span id="assignment-status-badge-<?php echo $post['assignment_id']; ?>"
-                                                                class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-yellow-100 text-yellow-800">
-                                                                <i class="ti ti-clock mr-1"></i>
-                                                                Belum dikumpulkan
-                                                            </span>
-                                                        <?php endif; ?>
-                                                    </div>
-
-                                                    <?php if ($submissionStatus !== 'graded' && !$isExpired && isset($post['assignment_id'])): ?>
-                                                        <button id="open-inline-form-btn-<?php echo $post['assignment_id']; ?>"
-                                                            onclick="showSubmissionForm(<?php echo $post['assignment_id']; ?>)"
-                                                            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors">
-                                                            <?php echo $submissionStatus === 'submitted' ? 'Update Tugas' : 'Kumpulkan Tugas'; ?>
-                                                        </button>
-                                                    <?php endif; ?>
-                                                </div>
-                                                <?php if (isset($post['assignment_id'])): ?>
-                                                    <!-- Progress Bar States -->
-                                                    <?php
-                                                    $progressWidth = 0;
-                                                    $leftState = 'text-gray-400';
-                                                    $rightState = 'text-gray-400';
-                                                    $barColor = 'bg-green-500';
-                                                    if ($submissionStatus === 'submitted') {
-                                                        $progressWidth = 50;
-                                                        $leftState = 'text-green-600';
-                                                    } elseif ($submissionStatus === 'graded') {
-                                                        $progressWidth = 100;
-                                                        $leftState = 'text-green-600';
-                                                        $rightState = 'text-green-600';
-                                                    }
-                                                    ?>
-                                                    <div class="mt-3"
-                                                        id="assignment-progress-wrapper-<?php echo $post['assignment_id']; ?>">
-                                                        <div
-                                                            class="flex justify-between text-[10px] md:text-xs font-medium mb-1 text-gray-500">
-                                                            <span class="flex items-center gap-1 <?php echo $leftState; ?>">
-                                                                <i class="ti ti-check"></i>
-                                                                Terkumpul
-                                                            </span>
-                                                            <span class="flex items-center gap-1 <?php echo $rightState; ?>">
-                                                                <i class="ti ti-star"></i>
-                                                                Dinilai
-                                                            </span>
-                                                        </div>
-                                                        <div class="relative h-2 bg-gray-200 rounded-full"
-                                                            id="assignment-progress-bar-<?php echo $post['assignment_id']; ?>">
-                                                            <div class="absolute inset-y-0 left-0 <?php echo $barColor; ?> rounded-full transition-all duration-500"
-                                                                id="assignment-progress-fill-<?php echo $post['assignment_id']; ?>"
-                                                                style="width: <?php echo $progressWidth; ?>%"></div>
-                                                            <div
-                                                                class="absolute -top-1 w-4 h-4 rounded-full border-2 border-white shadow left-0 translate-x-[-2px] flex items-center justify-center <?php echo ($progressWidth > 0) ? 'bg-green-500' : 'bg-gray-300'; ?>">
-                                                                <i class="ti ti-check text-white text-[10px]"></i>
-                                                            </div>
-                                                            <div
-                                                                class="absolute -top-1 w-4 h-4 rounded-full border-2 border-white shadow right-0 translate-x-[2px] flex items-center justify-center <?php echo ($progressWidth == 100) ? 'bg-green-500' : 'bg-gray-300'; ?>">
-                                                                <i class="ti ti-star text-white text-[10px]"></i>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                <?php endif; ?>
-                                                <?php if ($submissionStatus !== 'graded' && !$isExpired && isset($post['assignment_id'])): ?>
-                                                    <div id="submission-form-<?php echo $post['assignment_id']; ?>" class="hidden mt-4">
-                                                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                                                            <div class="flex items-start justify-between mb-4">
-                                                                <div>
-                                                                    <h4 class="font-semibold text-gray-900 mb-1">Kumpulkan Tugas:
-                                                                        <?php echo htmlspecialchars($post['assignment_title'] ?? 'Tugas'); ?>
-                                                                    </h4>
-                                                                    <?php if (!empty($post['assignment_deadline'])): ?>
-                                                                        <p class="text-xs text-gray-600 flex items-center"><i
-                                                                                class="ti ti-clock mr-1"></i>Deadline:
-                                                                            <?php echo date('d M Y, H:i', strtotime($post['assignment_deadline'])); ?>
-                                                                        </p>
-                                                                    <?php endif; ?>
-                                                                </div>
-                                                                <button
-                                                                    onclick="hideSubmissionForm(<?php echo $post['assignment_id']; ?>)"
-                                                                    type="button" class="text-gray-500 hover:text-gray-700"><i
-                                                                        class="ti ti-x"></i></button>
-                                                            </div>
-                                                            <div class="mb-4">
-                                                                <label class="block text-sm font-medium text-gray-700 mb-2">Pilih
-                                                                    File</label>
-                                                                <div class="flex items-center flex-wrap gap-3">
-                                                                    <input type="file"
-                                                                        id="submission-file-<?php echo $post['assignment_id']; ?>"
-                                                                        class="hidden"
-                                                                        accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.jpg,.jpeg,.png,.gif"
-                                                                        onchange="handleSubmissionFileSelect(<?php echo $post['assignment_id']; ?>, this)">
-                                                                    <button type="button"
-                                                                        onclick="document.getElementById('submission-file-<?php echo $post['assignment_id']; ?>').click()"
-                                                                        class="bg-white border border-gray-300 hover:bg-gray-100 px-4 py-2 rounded-lg text-sm font-medium">
-                                                                        <i class="ti ti-paperclip mr-2"></i>Pilih File
-                                                                    </button>
-                                                                    <span class="text-xs text-gray-500">PDF, DOC, PPT, Gambar (Maks
-                                                                        10MB)</span>
-                                                                </div>
-                                                            </div>
-                                                            <div id="submission-preview-<?php echo $post['assignment_id']; ?>"
-                                                                class="hidden mb-4">
-                                                                <div class="bg-white border border-gray-200 rounded-lg p-3">
-                                                                    <div class="flex items-center justify-between">
-                                                                        <div class="flex items-center space-x-3">
-                                                                            <div id="file-icon-<?php echo $post['assignment_id']; ?>"
-                                                                                class="text-blue-600 text-lg"><i class="ti ti-file"></i>
-                                                                            </div>
-                                                                            <div>
-                                                                                <div id="file-name-<?php echo $post['assignment_id']; ?>"
-                                                                                    class="text-sm font-medium text-gray-900"></div>
-                                                                                <div id="file-size-<?php echo $post['assignment_id']; ?>"
-                                                                                    class="text-xs text-gray-500"></div>
-                                                                            </div>
-                                                                        </div>
-                                                                        <button type="button"
-                                                                            onclick="removeSubmissionFile(<?php echo $post['assignment_id']; ?>)"
-                                                                            class="text-red-600 hover:text-red-800 p-1 rounded"><i
-                                                                                class="ti ti-x"></i></button>
-                                                                    </div>
-                                                                    <div id="image-preview-<?php echo $post['assignment_id']; ?>"
-                                                                        class="hidden mt-3">
-                                                                        <img class="max-w-full h-48 object-cover rounded-lg" />
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                            <div class="mb-4">
-                                                                <label class="block text-sm font-medium text-gray-700 mb-2"
-                                                                    for="submission-notes-<?php echo $post['assignment_id']; ?>">Catatan
-                                                                    (Opsional)</label>
-                                                                <textarea id="submission-notes-<?php echo $post['assignment_id']; ?>"
-                                                                    rows="3"
-                                                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                                                                    placeholder="Tambahkan catatan untuk guru..."></textarea>
-                                                            </div>
-                                                            <div class="flex justify-end items-center gap-3">
-                                                                <button type="button"
-                                                                    onclick="hideSubmissionForm(<?php echo $post['assignment_id']; ?>)"
-                                                                    class="text-gray-600 hover:text-gray-800 text-sm font-medium">Batal</button>
-                                                                <button type="button"
-                                                                    id="submit-btn-<?php echo $post['assignment_id']; ?>"
-                                                                    onclick="submitAssignment(<?php echo $post['assignment_id']; ?>)"
-                                                                    disabled
-                                                                    class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                                                                    <i class="ti ti-send mr-2"></i>Kumpulkan
-                                                                </button>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                <?php endif; ?>
-                                            </div>
-                                        </div>
-                                    <?php endif; ?>
-
-                                    <!-- Post Images -->
-                                    <?php if (!empty($post['gambar'])): ?>
-
-
-                                        <div class="mt-3 post-media-container">
-                                            <div class="post-media-grid grid-<?php echo count($post['gambar']); ?>">
-                                                <?php foreach ($post['gambar'] as $index => $media): ?>
-                                                    <?php
-                                                    // Handle different media path formats
-                                                    $mediaPath = '';
-                                                    if (isset($media['path_gambar']) && !empty($media['path_gambar'])) {
-                                                        // New format with full path
-                                                        $mediaPath = '../../' . $media['path_gambar'];
-                                                    } else {
-                                                        // Old format with just filename
-                                                        $mediaPath = '../../uploads/postingan/' . $media['nama_file'];
-                                                    }
-
-                                                    // Check if this is a video
-                                                    $isVideo = (isset($media['media_type']) && $media['media_type'] === 'video') ||
-                                                        (isset($media['tipe_file']) && strpos($media['tipe_file'], 'video/') === 0);
-                                                    $mediaClass = count($post['gambar']) === 1 ? 'single' : 'multiple';
-                                                    ?>
-
-                                                    <?php if ($isVideo): ?>
-                                                        <!-- Video Media -->
-                                                        <div class="post-media-item <?php echo $mediaClass; ?>">
-                                                            <video controls class="post-media" data-media-index="<?php echo $index; ?>"
-                                                                preload="metadata">
-                                                                <source src="<?php echo htmlspecialchars($mediaPath); ?>"
-                                                                    type="<?php echo htmlspecialchars($media['tipe_file'] ?? 'video/mp4'); ?>">
-                                                                Your browser does not support the video tag.
-                                                            </video>
-                                                            <div class="post-media-type-badge video">
-                                                                <i class="ti ti-video"></i> Video
-                                                            </div>
-                                                            <button class="media-download-btn"
-                                                                onclick="downloadMedia('<?php echo htmlspecialchars($mediaPath); ?>', '<?php echo htmlspecialchars($media['nama_file']); ?>')"
-                                                                title="Download Video">
-                                                                <i class="ti ti-download"></i>
-                                                            </button>
-                                                        </div>
-                                                    <?php else: ?>
-                                                        <!-- Image Media -->
-                                                        <div class="post-media-item <?php echo $mediaClass; ?>">
-                                                            <img src="<?php echo htmlspecialchars($mediaPath); ?>"
-                                                                alt="<?php echo htmlspecialchars($media['nama_file'] ?? 'Media postingan'); ?>"
-                                                                class="post-media" data-media-index="<?php echo $index; ?>"
-                                                                data-pswp-src="<?php echo htmlspecialchars($mediaPath); ?>"
-                                                                data-pswp-width="800" data-pswp-height="600" style="cursor: pointer;"
-                                                                onerror="this.style.display='none';">
-                                                            <div class="post-media-type-badge image">
-                                                                <i class="ti ti-photo"></i> Gambar
-                                                            </div>
-                                                            <button class="media-download-btn"
-                                                                onclick="downloadMedia('<?php echo htmlspecialchars($mediaPath); ?>', '<?php echo htmlspecialchars($media['nama_file']); ?>')"
-                                                                title="Download Gambar">
-                                                                <i class="ti ti-download"></i>
-                                                            </button>
-                                                        </div>
-                                                    <?php endif; ?>
-
-                                                    <?php
-                                                    // If there are more than 4 images, after rendering the 4th (index 3)
-                                                    // show an overlay on the 4th image indicating how many more images exist.
-                                                    $totalGambar = count($post['gambar']);
-                                                    if ($totalGambar > 4 && $index == 3) {
-                                                        ?>
-                                                        <div class="post-media-item multiple relative">
-                                                            <div
-                                                                class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-lg">
-                                                                <span
-                                                                    class="text-white font-bold text-lg">+<?php echo $totalGambar - 4; ?></span>
-                                                            </div>
-                                                        </div>
-                                                        <?php
-                                                        break;
-                                                    }
-                                                    ?>
-                                                <?php endforeach; ?>
-                                            </div>
-                                        </div>
-                                    <?php endif; ?>
-
-                                    <!-- Post Files -->
-                                    <?php if (!empty($post['files'])): ?>
-                                        <?php
-                                        // Helper function for file size formatting
-                                        if (!function_exists('formatFileSize')) {
-                                            function formatFileSize($bytes)
-                                            {
-                                                if ($bytes == 0)
-                                                    return '0 Bytes';
-                                                $k = 1024;
-                                                $sizes = ['Bytes', 'KB', 'MB', 'GB'];
-                                                $i = floor(log($bytes) / log($k));
-                                                return round(($bytes / pow($k, $i)), 2) . ' ' . $sizes[$i];
-                                            }
-                                        }
-                                        ?>
-                                        <div class="mt-3 space-y-2">
-                                            <?php foreach ($post['files'] as $file): ?>
-                                                <?php
-                                                // Get file extension for icon
-                                                $extension = strtolower($file['ekstensi_file']);
-
-                                                // Icon mapping
-                                                $iconMap = [
-                                                    'pdf' => ['icon' => 'ti-file-type-pdf', 'class' => 'pdf', 'bg' => 'bg-red-500'],
-                                                    'doc' => ['icon' => 'ti-file-type-doc', 'class' => 'word', 'bg' => 'bg-blue-500'],
-                                                    'docx' => ['icon' => 'ti-file-type-doc', 'class' => 'word', 'bg' => 'bg-blue-500'],
-                                                    'xls' => ['icon' => 'ti-file-type-xls', 'class' => 'excel', 'bg' => 'bg-green-500'],
-                                                    'xlsx' => ['icon' => 'ti-file-type-xls', 'class' => 'excel', 'bg' => 'bg-green-500'],
-                                                    'ppt' => ['icon' => 'ti-presentation', 'class' => 'powerpoint', 'bg' => 'bg-orange-500'],
-                                                    'pptx' => ['icon' => 'ti-presentation', 'class' => 'powerpoint', 'bg' => 'bg-orange-500'],
-                                                    'txt' => ['icon' => 'ti-file-text', 'class' => 'text', 'bg' => 'bg-gray-500'],
-                                                    'zip' => ['icon' => 'ti-file-zip', 'class' => 'archive', 'bg' => 'bg-yellow-600'],
-                                                    'rar' => ['icon' => 'ti-file-zip', 'class' => 'archive', 'bg' => 'bg-yellow-600'],
-                                                    '7z' => ['icon' => 'ti-file-zip', 'class' => 'archive', 'bg' => 'bg-yellow-600']
-                                                ];
-
-                                                $iconInfo = $iconMap[$extension] ?? ['icon' => 'ti-file', 'class' => 'default', 'bg' => 'bg-gray-500'];
-                                                ?>
-                                                <a href="../../<?php echo htmlspecialchars($file['path_file']); ?>"
-                                                    class="flex items-center p-3 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 hover:border-gray-300 transition-all hover:shadow-sm"
-                                                    target="_blank" rel="noopener noreferrer">
-                                                    <div
-                                                        class="w-12 h-12 <?php echo $iconInfo['bg']; ?> text-white rounded-lg flex items-center justify-center mr-3 flex-shrink-0 shadow-sm">
-                                                        <i class="ti <?php echo $iconInfo['icon']; ?> text-lg"></i>
-                                                    </div>
-                                                    <div class="flex-1 min-w-0">
-                                                        <div class="font-medium text-gray-900 truncate text-sm"
-                                                            title="<?php echo htmlspecialchars($file['nama_file']); ?>">
-                                                            <?php echo htmlspecialchars($file['nama_file']); ?>
-                                                        </div>
-                                                        <div class="text-xs text-gray-500 mt-1">
-                                                            <?php echo formatFileSize($file['ukuran_file']); ?>
-                                                        </div>
-                                                    </div>
-                                                    <div class="ml-3 text-gray-400 hover:text-gray-600">
-                                                        <i class="ti ti-download text-lg"></i>
-                                                    </div>
-                                                </a>
-                                            <?php endforeach; ?>
-                                        </div>
-                                    <?php endif; ?>
-                                </div>
-
-                                <!-- Post Actions -->
-                                <div class="flex items-center justify-between pt-3 border-t border-gray-100">
-                                    <div class="flex items-center space-x-4">
-                                        <!-- Like Button -->
-                                        <button
-                                            class="like-btn flex items-center space-x-2 <?php echo $post['userLiked'] ? 'text-red-600' : 'text-gray-600'; ?> hover:text-red-600 transition-colors"
-                                            data-post-id="<?php echo $post['id']; ?>"
-                                            data-liked="<?php echo $post['userLiked'] ? 'true' : 'false'; ?>">
-                                            <i
-                                                class="ti ti-heart<?php echo $post['userLiked'] ? '-filled text-red-600' : ''; ?>"></i>
-                                            <span class="like-count text-sm"><?php echo $post['jumlahLike']; ?></span>
-                                        </button>
-
-                                        <!-- Comment Button -->
-                                        <?php if (!$post['restrict_comments']): ?>
-                                            <button
-                                                class="comment-btn flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors"
-                                                data-post-id="<?php echo $post['id']; ?>">
-                                                <i class="ti ti-message-circle"></i>
-                                                <span class="comment-count text-sm"><?php echo $post['jumlahKomentar']; ?></span>
-                                            </button>
-                                        <?php else: ?>
-                                            <span class="flex items-center space-x-2 text-gray-400">
-                                                <i class="ti ti-message-circle-off"></i>
-                                                <span class="text-sm">Komentar dinonaktifkan</span>
-                                            </span>
-                                        <?php endif; ?>
-                                    </div>
-
-                                    <!-- Class Link -->
-                                    <a href="kelas-user.php?id=<?php echo $post['kelas_id']; ?>"
-                                        class="text-orange-600 hover:text-orange-700 text-sm font-medium">
-                                        Lihat Kelas
-                                    </a>
-                                </div>
-
-                                <!-- Comments Section for KelasPosting compatibility -->
-                                <?php if (!$post['restrict_comments']): ?>
-                                    <!-- View All Comments Button -->
-                                    <button class="view-all-comments text-orange text-sm hover:text-orange-600 transition-colors"
-                                        data-post-id="<?php echo $post['id']; ?>" style="display: none;">
-                                        Lihat komentar lainnya
-                                    </button>
-
-                                    <!-- Comments Preview - Always visible if there are comments -->
-                                    <div id="comments-preview-<?php echo $post['id']; ?>" class="mt-4 pt-4 border-t border-gray-100"
-                                        style="display: none;">
-                                        <!-- Preview comments (max 3) will be loaded here -->
-                                    </div>
-
-                                    <!-- Quick Comment Input -->
-                                    <div id="quick-comment-<?php echo $post['id']; ?>"
-                                        class="hidden mt-4 pt-4 border-t border-gray-100">
-                                        <form class="flex space-x-3" onsubmit="addQuickComment(event, <?php echo $post['id']; ?>)">
-                                            <div
-                                                class="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center flex-shrink-0">
-                                                <i class="ti ti-user text-white text-sm"></i>
-                                            </div>
-                                            <div class="flex-1">
-                                                <textarea placeholder="Tulis komentar... (tekan Enter untuk mengirim)" rows="2"
-                                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-sm"
-                                                    onkeydown="handleCommentKeydown(event, <?php echo $post['id']; ?>)"
-                                                    required></textarea>
-                                                <div class="flex justify-end mt-2">
-                                                    <button type="button" class="text-gray-500 text-sm mr-3"
-                                                        onclick="hideQuickComment(<?php echo $post['id']; ?>)">Batal</button>
-                                                    <button type="submit"
-                                                        class="bg-orange-600 text-white px-4 py-1.5 rounded-lg hover:bg-orange-700 text-sm">Kirim</button>
-                                                </div>
-                                            </div>
-                                        </form>
-                                    </div>
-                                <?php endif; ?>
-                            </div>
-                        <?php endforeach; ?>
-                    <?php else: ?>
-                        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center opacity-75 space-y-3">
-                            <i class="ti ti-message-off text-6xl text-gray-400 mb-2"></i>
-                            <h3 class="text-xl font-medium text-gray-700">Belum ada postingan</h3>
-                            <p class="text-gray-500">Postingan dari kelas yang Anda ikuti akan muncul di sini</p>
-                            <button command="show-modal" commandfor="join-class-modal"
-                                class="inline-flex items-center mx-auto p-2 border border-transparent rounded-full bg-orange-600 text-white hover:bg-orange-700 transition-colors">
-                                <i class="ti ti-user-plus text-lg md:text-xl"></i>
-                                <span class="inline md:hidden ml-1 text-sm">Gabung</span>
-                                <span class="hidden md:inline ml-1 text-sm">Gabung Kelas</span>
-                            </button>
-                        </div>
-                    <?php endif; ?>
-                </div>
-
-                <!-- Load More Button for Beranda -->
-                <?php if (!empty($recentPosts) && count($recentPosts) >= 5): ?>
-                    <div class="text-center mt-6">
-                        <button id="loadMoreBerandaPosts"
-                            class="inline-flex items-center px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors">
-                            <i class="ti ti-plus mr-2"></i>
-                            Muat Postingan Lainnya
-                        </button>
+                <!-- Posts Feed -->
+                <div id="postsContainer" class="space-y-6">
+                    <!-- Initial loading state -->
+                    <div class="text-center py-12 text-gray-500">
+                        <i class="ti ti-loader animate-spin text-4xl mb-4"></i>
+                        <p class="text-lg font-medium">Memuat postingan...</p>
+                        <p class="text-sm text-gray-400 mt-1">Mohon tunggu sebentar</p>
                     </div>
-                <?php endif; ?>
+                </div>
+                                <!-- Load More Button for Beranda (if needed) -->
+                <div class="text-center mt-6 hidden" id="loadMoreContainer">
+                    <button id="loadMorePosts"
+                        class="inline-flex items-center px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors">
+                        <i class="ti ti-plus mr-2"></i>
+                        Muat Postingan Lainnya
+                    </button>
+                </div>
             </div>
 
         </main>
+        </div>
+
+    </main>
     </div>
 
     <!-- Include Modal Components -->
     <?php require '../component/modal-comments.php'; ?>
+    <?php require '../component/modal-ai-explanation.php'; ?>
     <?php /* Modal submit assignment dihilangkan pada beranda karena diganti inline form */ ?>
 
     <script src="../script/menu-bar-script.js"></script>
@@ -1243,6 +750,7 @@ if (!$dashboardData) {
     <script src="../script/photoswipe-simple.js"></script>
     <script src="../script/assignment-manager.js"></script>
     <script src="../script/assignment-file-manager.js?v=<?php echo time(); ?>"></script>
+    <script src="../script/ai-explanation-manager.js?v=<?php echo time(); ?>"></script>
     <script src="../script/kelas-posting-stable.js?v=<?php echo time(); ?>"></script>
     <script>
         // BERANDA DEBUG & MEDIA FUNCTIONS
@@ -1344,7 +852,7 @@ if (!$dashboardData) {
                 if (data.success) {
                     // Cache notifications for modal fallback
                     window.berandaNotificationsCache = data.notifications;
-                    
+
                     updateBerandaNotificationsUI(data.notifications);
                     updateUnreadBadge();
                 } else {
@@ -1376,7 +884,7 @@ if (!$dashboardData) {
             notifications.forEach(notification => {
                 console.log('🔍 Beranda processing notification:', notification);
                 const isRead = notification.is_read == '1';
-                
+
                 // Handle both global and personal notifications - use same logic as modal
                 let iconClass, colorClass;
                 if (notification.source === 'global') {
@@ -1395,7 +903,7 @@ if (!$dashboardData) {
                     } else {
                         colorClass = 'text-blue-500';
                     }
-                    console.log('🎨 Global notification styling:', {iconClass, colorClass});
+                    console.log('🎨 Global notification styling:', { iconClass, colorClass });
                 } else {
                     // For personal notifications, use type-based icons
                     iconClass = getNotificationIcon(notification.type);
@@ -1473,6 +981,17 @@ if (!$dashboardData) {
         window.currentUserId = <?php echo $_SESSION['user']['id']; ?>;
         window.currentUserRole = '<?php echo $_SESSION['user']['role']; ?>';
 
+        // Emergency fallback to clear any stuck loading states
+        window.addEventListener('load', function() {
+            setTimeout(() => {
+                const postsContainer = document.getElementById('postsContainer');
+                if (postsContainer && postsContainer.innerHTML.includes('Memuat postingan')) {
+                    console.warn('⚠️ Emergency fallback: Clearing stuck loading state');
+                    loadInitialBerandaPosts();
+                }
+            }, 20000); // 20 second fallback after page load
+        });
+
         // Initialize like functionality
         document.addEventListener('DOMContentLoaded', function () {
             console.log('🚀 DOM Content Loaded - Initializing Beranda...');
@@ -1510,36 +1029,21 @@ if (!$dashboardData) {
                 });
             }
 
-            // Initialize KelasPosting for comments functionality (beranda context)
-            window.kelasPosting = new KelasPosting(null, {
-                canPost: false, // No posting in beranda
-                canComment: true // Allow commenting
-            });
+        // Note: We don't use KelasPosting for beranda since it's designed for specific kelas
+        // Instead, we use custom beranda post loading with get-beranda-posts.php API
+        
+        // Load initial posts for beranda
+        loadInitialBerandaPosts();
+        
+        // Debug: Check posts loading
+        console.log('KelasPosting initialized for beranda');
+        console.log('Posts container found:', document.getElementById('postsContainer') !== null);
 
-            // Prevent KelasPosting from loading posts since we already have them in PHP
-            if (window.kelasPosting) {
-                window.kelasPosting.initialized = true; // Mark as initialized to prevent auto-loading
-                window.kelasPosting.hasMorePosts = false; // Prevent infinite scroll
-            }
-
-            // Initialize beranda lazy loading
-            initializeBerandaLazyLoading();
-
-            // Debug: Check if we have posts
-            console.log('Recent posts loaded:', <?php echo json_encode(count($recentPosts)); ?>);
-            console.log('Has posts data:', <?php echo !empty($recentPosts) ? 'true' : 'false'; ?>);
-            <?php if (!empty($recentPosts)): ?>
-                console.log('First post:', <?php echo json_encode($recentPosts[0] ?? []); ?>);
-                console.log('Posts container children:', document.getElementById('berandaPostsContainer').children.length);
-            <?php endif; ?>
-
-            // Comment button functionality - use KelasPosting method
+            // Comment button functionality - use direct modal opening for beranda
             document.querySelectorAll('.comment-btn').forEach(btn => {
                 btn.addEventListener('click', function () {
                     const postId = this.dataset.postId;
-                    if (window.kelasPosting) {
-                        window.kelasPosting.openCommentsModal(postId);
-                    }
+                    openCommentsModal(postId); // Use direct function call
                 });
             });
 
@@ -1552,6 +1056,14 @@ if (!$dashboardData) {
                 });
             });
 
+            // ⭐ Initialize AI Explanation Manager
+            if (typeof AiExplanationManager !== 'undefined') {
+                console.log('🧠 Initializing AI Explanation Manager for Beranda...');
+                window.aiExplanationManager = new AiExplanationManager();
+            } else {
+                console.warn('⚠️ AiExplanationManager not loaded');
+            }
+
             // Load beranda notifications
             console.log('📬 Loading beranda notifications...');
             loadBerandaNotifications();
@@ -1562,17 +1074,14 @@ if (!$dashboardData) {
                 document.querySelectorAll('[id^="comments-preview-"]').forEach(container => {
                     const postId = container.id.replace('comments-preview-', '');
                     console.log('Loading comments for post:', postId);
-                    if (window.kelasPosting) {
-                        console.log('Loading comments preview for post', postId);
-                        window.kelasPosting.loadCommentsPreview(postId);
-                    }
+                    loadCommentsPreview(postId); // Use direct function call for beranda
                 });
-            }, 500); // Give time for KelasPosting to fully initialize
+            }, 500);
         });
 
-        // Initialize assignment manager for beranda
+        // Initialize AssignmentManager for beranda (same as kelas-guru.php)
         if (typeof AssignmentManager !== 'undefined') {
-            window.assignmentManager = new AssignmentManager(null, 'siswa'); // null for beranda context
+            window.assignmentManager = new AssignmentManager(null, '<?php echo $_SESSION['user']['role']; ?>'); // null for beranda context
         }
 
         // Advertisement Slider Functionality
@@ -1585,7 +1094,7 @@ if (!$dashboardData) {
             // Hide all advertisements
             advertisementItems.forEach(item => item.classList.remove('active'));
             adIndicators.forEach(indicator => indicator.classList.remove('active'));
-            
+
             // Show selected advertisement
             if (advertisementItems[index]) {
                 advertisementItems[index].classList.add('active');
@@ -1593,7 +1102,7 @@ if (!$dashboardData) {
             if (adIndicators[index]) {
                 adIndicators[index].classList.add('active');
             }
-            
+
             currentAdIndex = index;
         }
 
@@ -1611,7 +1120,7 @@ if (!$dashboardData) {
         if (advertisementItems.length > 1) {
             // Auto-rotate advertisements every 5 seconds
             adInterval = setInterval(nextAdvertisement, 5000);
-            
+
             // Add click handlers for indicators
             adIndicators.forEach((indicator, index) => {
                 indicator.addEventListener('click', () => {
@@ -1621,7 +1130,7 @@ if (!$dashboardData) {
                     adInterval = setInterval(nextAdvertisement, 5000);
                 });
             });
-            
+
             // Add click handler for next button
             const nextBtn = document.getElementById('next-ad-btn');
             if (nextBtn) {
@@ -1649,24 +1158,24 @@ if (!$dashboardData) {
         async function handleBerandaLike(postId, buttonElement) {
             try {
                 console.log('🔴 BERANDA handleBerandaLike called:', { postId });
-                
+
                 const formData = new FormData();
                 formData.append('post_id', postId);
                 formData.append('action', 'toggle_like');
-                
+
                 const response = await fetch('../logic/handle-like.php', {
                     method: 'POST',
                     body: formData
                 });
-                
+
                 const result = await response.json();
                 console.log('🔴 BERANDA Like response:', result);
-                
+
                 if (result.success) {
                     // Update like count in UI
                     const likeCount = buttonElement.querySelector('.like-count');
                     const heartIcon = buttonElement.querySelector('i');
-                    
+
                     if (result.action === 'liked') {
                         // User melakukan like
                         if (likeCount) {
@@ -1699,6 +1208,24 @@ if (!$dashboardData) {
                 console.error('🔴 BERANDA Like exception:', error);
             }
         }
+
+        // Global function to force clear loading states
+        window.clearStuckLoaders = function() {
+            console.log('🧹 Force clearing any stuck loaders...');
+            const postsContainer = document.getElementById('postsContainer');
+            if (postsContainer) {
+                // Check if there are any stuck loading indicators
+                const loadingElements = postsContainer.querySelectorAll('.ti-loader, .animate-spin');
+                const hasLoadingText = postsContainer.innerHTML.includes('Memuat postingan');
+                
+                if (loadingElements.length > 0 || hasLoadingText) {
+                    console.log('🔄 Found stuck loader, attempting to reload...');
+                    loadInitialBerandaPosts();
+                } else {
+                    console.log('✅ No stuck loaders found');
+                }
+            }
+        };
 
         // Make assignment functions globally available
         window.showSubmissionModal = function (assignmentId) {
@@ -1741,6 +1268,7 @@ if (!$dashboardData) {
 
         // File handling functions (same as kelas-posting-stable.js)
         window.handleSubmissionFileSelect = function (assignmentId, input) {
+            const file = input.files[0];
             if (!file) return;
 
             // Validate file size (10MB)
@@ -1942,14 +1470,120 @@ if (!$dashboardData) {
             }
         }
 
+        // Load initial posts for beranda (using API like kelas-guru.php)
+        async function loadInitialBerandaPosts() {
+            const postsContainer = document.getElementById('postsContainer');
+            if (!postsContainer) return;
+
+            console.log('🔄 Loading initial beranda posts...');
+
+            // Create AbortController for timeout handling
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => {
+                controller.abort();
+                console.warn('⏰ Beranda posts request timeout after 15 seconds');
+            }, 15000); // 15 second timeout
+
+            try {
+                const response = await fetch('../logic/get-beranda-posts.php?offset=0&limit=5&_=' + Date.now(), {
+                    signal: controller.signal,
+                    headers: {
+                        'Cache-Control': 'no-cache'
+                    }
+                });
+
+                // Clear timeout since request completed
+                clearTimeout(timeoutId);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+
+                console.log('📥 Initial posts API response:', result);
+
+                // Clear loading state
+                postsContainer.innerHTML = '';
+
+                if (result.success && result.posts && result.posts.length > 0) {
+                    // Create posts using our existing function
+                    result.posts.forEach(post => {
+                        const postElement = createBerandaPostElement(post);
+                        postsContainer.appendChild(postElement);
+                        
+                        // Add event listeners for new post
+                        addPostEventListeners(postElement, post.id);
+                    });
+
+                    berandaOffset = result.posts.length;
+
+                    // Show load more button if there might be more posts
+                    if (result.posts.length >= 5) {
+                        const loadMoreContainer = document.getElementById('loadMoreContainer');
+                        if (loadMoreContainer) {
+                            loadMoreContainer.classList.remove('hidden');
+                        }
+                    }
+
+                    console.log('✅ Initial posts loaded successfully');
+                } else {
+                    // Show empty state
+                    postsContainer.innerHTML = `
+                        <div class="text-center py-12 text-gray-500 space-y-3">
+                            <i class="ti ti-message-off text-6xl text-gray-400 mb-2"></i>
+                            <h3 class="text-xl font-medium text-gray-700">Belum ada postingan</h3>
+                            <p class="text-gray-500">Postingan dari kelas yang Anda ikuti akan muncul di sini</p>
+                            <button command="show-modal" commandfor="join-class-modal"
+                                class="inline-flex items-center mx-auto p-2 border border-transparent rounded-full bg-orange-600 text-white hover:bg-orange-700 transition-colors">
+                                <i class="ti ti-user-plus text-lg md:text-xl"></i>
+                                <span class="inline md:hidden ml-1 text-sm">Gabung</span>
+                                <span class="hidden md:inline ml-1 text-sm">Gabung Kelas</span>
+                            </button>
+                        </div>
+                    `;
+                    console.log('📭 No posts found');
+                }
+            } catch (error) {
+                // Clear timeout in case of error
+                clearTimeout(timeoutId);
+                
+                console.error('❌ Error loading initial posts:', error);
+                
+                let errorMessage = 'Gagal memuat postingan';
+                let errorDetail = 'Silakan muat ulang halaman';
+                
+                if (error.name === 'AbortError') {
+                    errorMessage = 'Koneksi timeout';
+                    errorDetail = 'Periksa koneksi internet Anda';
+                } else if (error.message.includes('HTTP error')) {
+                    errorMessage = 'Server error';
+                    errorDetail = 'Coba lagi dalam beberapa saat';
+                }
+                
+                postsContainer.innerHTML = `
+                    <div class="text-center py-12 text-gray-500">
+                        <i class="ti ti-alert-circle text-4xl mb-4"></i>
+                        <p class="text-lg font-medium">${errorMessage}</p>
+                        <p class="text-sm text-gray-400 mt-1">${errorDetail}</p>
+                        <button onclick="loadInitialBerandaPosts()" 
+                                class="mt-4 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors">
+                            <i class="ti ti-refresh mr-2"></i>
+                            Coba Lagi
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
         // Beranda lazy loading functionality
-        let berandaOffset = 5; // We already loaded 5 posts
+        let berandaOffset = 0; // Start from 0 since loadInitialBerandaPosts handles first load
         let berandaHasMore = true;
         let berandaLoading = false;
 
         function initializeBerandaLazyLoading() {
-            const loadMoreBtn = document.getElementById('loadMoreBerandaPosts');
-            const container = document.getElementById('berandaPostsContainer');
+            const loadMoreBtn = document.getElementById('loadMorePosts'); // Consistent ID
+            const container = document.getElementById('postsContainer');
 
             console.log('Initialize lazy loading:');
             console.log('- Load more button:', loadMoreBtn);
@@ -1977,8 +1611,8 @@ if (!$dashboardData) {
             if (berandaLoading || !berandaHasMore) return;
 
             berandaLoading = true;
-            const loadMoreBtn = document.getElementById('loadMoreBerandaPosts');
-            const container = document.getElementById('berandaPostsContainer');
+            const loadMoreBtn = document.getElementById('loadMorePosts'); // Consistent with container ID
+            const container = document.getElementById('postsContainer');
 
             // Show loading state
             if (loadMoreBtn) {
@@ -1986,8 +1620,28 @@ if (!$dashboardData) {
                 loadMoreBtn.disabled = true;
             }
 
+            // Create AbortController for timeout handling
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => {
+                controller.abort();
+                console.warn('⏰ Beranda load more request timeout after 15 seconds');
+            }, 15000); // 15 second timeout
+
             try {
-                const response = await fetch(`../logic/get-beranda-posts.php?offset=${berandaOffset}&limit=5&_=${Date.now()}`);
+                const response = await fetch(`../logic/get-beranda-posts.php?offset=${berandaOffset}&limit=5&_=${Date.now()}`, {
+                    signal: controller.signal,
+                    headers: {
+                        'Cache-Control': 'no-cache'
+                    }
+                });
+
+                // Clear timeout since request completed
+                clearTimeout(timeoutId);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
                 const result = await response.json();
 
                 console.log('Beranda API Response:', result); // Debug
@@ -2018,9 +1672,20 @@ if (!$dashboardData) {
                     }
                 }
             } catch (error) {
+                // Clear timeout in case of error
+                clearTimeout(timeoutId);
+                
                 console.error('Error loading more posts:', error);
+                
+                let errorMessage = 'Gagal memuat';
+                if (error.name === 'AbortError') {
+                    errorMessage = 'Timeout - Coba lagi';
+                } else if (error.message.includes('HTTP error')) {
+                    errorMessage = 'Server error';
+                }
+                
                 if (loadMoreBtn) {
-                    loadMoreBtn.innerHTML = '<i class="ti ti-alert-circle mr-2"></i>Gagal memuat';
+                    loadMoreBtn.innerHTML = `<i class="ti ti-alert-circle mr-2"></i>${errorMessage}`;
                 }
             } finally {
                 berandaLoading = false;
@@ -2031,73 +1696,254 @@ if (!$dashboardData) {
             }
         }
 
-        function createBerandaPostElement(post) {
-            // Create post element (similar to PHP template but in JS)
-            const postDiv = document.createElement('div');
-            postDiv.className = 'bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6';
-            postDiv.setAttribute('data-user-id', post.user_id);
-            postDiv.setAttribute('data-post-id', post.id);
+        // Helper function to create assignment content
+        function createAssignmentContent(post) {
+            if (!post.assignment_id || !post.assignment_title) return '';
 
-            // Create photo path for profile image
-            let photoHtml = '';
-            if (post.fotoProfil) {
-                const photoPath = post.fotoProfil.startsWith('uploads/profile/') ?
-                    '../../' + post.fotoProfil :
-                    '../../uploads/profile/' + post.fotoProfil;
-                photoHtml = `<img src="${photoPath}" alt="Profile Photo" class="w-full h-full object-cover post-profile-photo" 
-                    onerror="this.parentElement.innerHTML='<div class=\\'w-full h-full bg-orange-600 rounded-full flex items-center justify-center\\'><span class=\\'text-white font-medium text-sm\\'>${escapeHtml(post.namaPenulis).charAt(0).toUpperCase()}</span></div>'">`;
-            } else {
-                // Role-based colors
-                let bgColor = 'bg-orange-600 text-white';
-                switch (post.rolePenulis) {
-                    case 'admin':
-                        bgColor = 'bg-red-100 text-red-600';
-                        break;
-                    case 'guru':
-                        bgColor = 'bg-blue-100 text-blue-600';
-                        break;
-                    case 'siswa':
-                        bgColor = 'bg-green-100 text-green-600';
-                        break;
-                }
-                photoHtml = `<div class="w-full h-full rounded-full flex items-center justify-center ${bgColor}">
-                    <span class="font-medium text-sm">${escapeHtml(post.namaPenulis).charAt(0).toUpperCase()}</span>
-                </div>`;
-            }
+            const isExpired = post.assignment_deadline && new Date(post.assignment_deadline) < new Date();
+            const deadlineClass = isExpired ? 'border-red-200 bg-red-50' : 'border-gray-200';
+            const deadlineIconClass = isExpired ? 'text-red-500' : 'text-orange-500';
+            const deadlineTextClass = isExpired ? 'text-red-700' : 'text-gray-900';
 
-            // Create full post template
-            // Build images HTML separately to support up to 4 visible images and overlay for >4
-            function buildMediaHtml(post) {
-                if (!post.gambar || post.gambar.length === 0) return '';
-                const total = post.gambar.length;
-                const maxShow = 4;
-                const images = post.gambar.slice(0, maxShow);
-                let html = '<div class="mt-3 post-media-container"><div class="post-media-grid grid-' + images.length + '">';
-
-                images.forEach((media, idx) => {
-                    const mediaPath = (media.path_gambar && media.path_gambar.startsWith('uploads')) ? ('../../' + media.path_gambar) : ('../../uploads/postingan/' + (media.nama_file || ''));
-                    const isVideo = (media.media_type && media.media_type === 'video') || (media.tipe_file && media.tipe_file.indexOf('video/') === 0);
-                    const mediaClass = images.length === 1 ? 'single' : 'multiple';
-
-                    if (isVideo) {
-                        html += `<div class="post-media-item ${mediaClass}"><video controls class="post-media" data-media-index="${idx}" preload="metadata"><source src="${mediaPath}" type="${media.tipe_file || 'video/mp4'}">Your browser does not support the video tag.</video><div class="post-media-type-badge video"><i class="ti ti-video"></i> Video</div><button class="media-download-btn" onclick="downloadMedia('${mediaPath}', '${media.nama_file || ''}')" title="Download Video"><i class="ti ti-download"></i></button></div>`;
-                    } else {
-                        // For the 4th image when total > 4, we'll add overlay later
-                        html += `<div class="post-media-item ${mediaClass}"><img src="${mediaPath}" alt="${media.nama_file || 'Media postingan'}" class="post-media" data-media-index="${idx}" data-pswp-src="${mediaPath}" data-pswp-width="800" data-pswp-height="600" style="cursor: pointer;" onerror="this.style.display='none';"><div class="post-media-type-badge image"><i class="ti ti-photo"></i> Gambar</div><button class="media-download-btn" onclick="downloadMedia('${mediaPath}', '${media.nama_file || ''}')" title="Download Gambar"><i class="ti ti-download"></i></button></div>`;
-                    }
+            // Format deadline
+            const formatDeadline = (deadline) => {
+                if (!deadline) return '';
+                const date = new Date(deadline);
+                return date.toLocaleDateString('id-ID', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
                 });
+            };
 
-                // If there are more than maxShow, add overlay on the last shown image
-                if (total > maxShow) {
-                    const moreCount = total - maxShow;
-                    html += `<div class="post-media-item multiple relative"><div class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-lg"><span class="text-white font-bold text-lg">+${moreCount}</span></div></div>`;
-                }
+            const formatDeadlineMobile = (deadline) => {
+                if (!deadline) return '';
+                const date = new Date(deadline);
+                return date.toLocaleDateString('id-ID', {
+                    day: 'numeric',
+                    month: 'short',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            };
 
-                html += '</div></div>';
+            return `
+                <div id="post-assignment-${post.assignment_id}" class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 mt-3" data-assignment-id="${post.assignment_id}">
+                    <div class="flex items-start space-x-3">
+                        <div class="flex-shrink-0">
+                            <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                                <i class="ti ti-clipboard-text text-blue-600 text-xl"></i>
+                            </div>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-start justify-between mb-3">
+                                <h3 class="text-xl font-bold text-gray-900 flex items-center assignment-title">
+                                    <i class="ti ti-assignment text-blue-600 mr-2"></i>
+                                    ${escapeHtml(post.assignment_title)}
+                                </h3>
+                            </div>
+                            
+                            <!-- Assignment Description -->
+                            ${post.konten ? `
+                                <div class="mb-4 p-3 bg-white rounded-lg border border-gray-200">
+                                    <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Deskripsi Tugas</div>
+                                    <div class="text-gray-900 text-sm leading-relaxed" style="word-break: break-word; overflow-wrap: break-word;">${formatPostContent(post.konten)}</div>
+                                </div>
+                            ` : ''}
+                            
+                            <!-- Assignment Details Grid -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                                ${post.assignment_deadline ? `
+                                    <div class="flex items-center space-x-2 p-3 bg-white rounded-lg border ${deadlineClass}">
+                                        <div class="flex-shrink-0">
+                                            <i class="ti ti-calendar-due text-lg ${deadlineIconClass}"></i>
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <div class="text-xs font-medium text-gray-500 uppercase tracking-wide">Deadline</div>
+                                            <div class="text-sm font-semibold ${deadlineTextClass} truncate">
+                                                <span class="hidden sm:inline">${formatDeadline(post.assignment_deadline)}</span>
+                                                <span class="sm:hidden">${formatDeadlineMobile(post.assignment_deadline)}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ` : ''}
+                                
+                                ${post.assignment_max_score ? `
+                                    <div class="flex items-center space-x-2 p-3 bg-white rounded-lg border border-gray-200">
+                                        <div class="flex-shrink-0">
+                                            <i class="ti ti-trophy text-lg text-yellow-500"></i>
+                                        </div>
+                                        <div class="flex-1">
+                                            <div class="text-xs font-medium text-gray-500 uppercase tracking-wide">Nilai Maksimal</div>
+                                            <div class="text-sm font-semibold text-gray-900">${post.assignment_max_score} Poin</div>
+                                        </div>
+                                    </div>
+                                ` : ''}
+                            </div>
+                            
+                            <!-- Assignment Files -->
+                            ${post.assignment_files && post.assignment_files.length > 0 ? createAssignmentFilesHtml(post.assignment_files) : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Helper function to create assignment files HTML
+        function createAssignmentFilesHtml(files) {
+            if (!files || files.length === 0) return '';
+
+            const getFileIcon = (fileName) => {
+                const ext = fileName.toLowerCase().split('.').pop();
+                const iconMap = {
+                    'pdf': 'ti ti-file-type-pdf',
+                    'doc': 'ti ti-file-type-doc',
+                    'docx': 'ti ti-file-type-docx',
+                    'ppt': 'ti ti-presentation',
+                    'pptx': 'ti ti-presentation',
+                    'xls': 'ti ti-file-type-xls',
+                    'xlsx': 'ti ti-file-type-xlsx',
+                    'txt': 'ti ti-file-text',
+                    'zip': 'ti ti-file-zip',
+                    'rar': 'ti ti-file-zip',
+                    'jpg': 'ti ti-photo',
+                    'jpeg': 'ti ti-photo',
+                    'png': 'ti ti-photo',
+                    'gif': 'ti ti-photo',
+                    'mp4': 'ti ti-video',
+                    'mp3': 'ti ti-music',
+                    'avi': 'ti ti-video',
+                    'mov': 'ti ti-video'
+                };
+                return iconMap[ext] || 'ti ti-file';
+            };
+
+            const formatFileSize = (bytes) => {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            };
+
+            if (files.length === 1) {
+                const file = files[0];
+                const fileIcon = getFileIcon(file.nama_file);
+                return `
+                    <div class="mt-4">
+                        <div class="flex items-center p-3 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer"
+                             onclick="window.open('/lms/${file.path_file}', '_blank')">
+                            <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mr-3 flex-shrink-0">
+                                <i class="${fileIcon} text-blue-600"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="text-xs font-medium text-gray-500 uppercase tracking-wide">File Tugas</div>
+                                <div class="text-sm font-semibold text-gray-900 truncate">${escapeHtml(file.nama_file)}</div>
+                                <div class="text-xs text-gray-500 mt-0.5">${formatFileSize(file.ukuran_file)} • Klik untuk mengunduh</div>
+                            </div>
+                            <div class="flex items-center space-x-1 bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex-shrink-0">
+                                <i class="ti ti-download"></i>
+                                <span class="hidden sm:inline">Unduh</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                let html = `<div class="mt-4"><div class="grid gap-2">`;
+                files.forEach(file => {
+                    const fileIcon = getFileIcon(file.nama_file);
+                    html += `
+                        <div class="flex items-center p-2 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer"
+                             onclick="window.open('/lms/${file.path_file}', '_blank')">
+                            <div class="w-8 h-8 bg-blue-100 rounded flex items-center justify-center mr-2 flex-shrink-0">
+                                <i class="${fileIcon} text-blue-600 text-sm"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="text-xs font-medium text-gray-900 truncate">${escapeHtml(file.nama_file)}</div>
+                                <div class="text-xs text-gray-500">${formatFileSize(file.ukuran_file)}</div>
+                            </div>
+                            <button class="text-blue-600 hover:text-blue-800 p-1">
+                                <i class="ti ti-download text-sm"></i>
+                            </button>
+                        </div>
+                    `;
+                });
+                html += `</div></div>`;
                 return html;
             }
+        }
 
-            postDiv.innerHTML = `
+        function createBerandaPostElement(post) {
+            try {
+                // Create post element (similar to PHP template but in JS)
+                const postDiv = document.createElement('div');
+                postDiv.className = 'bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6';
+                postDiv.setAttribute('data-user-id', post.user_id || '');
+                postDiv.setAttribute('data-post-id', post.id || '');
+
+                // Create photo path for profile image
+                let photoHtml = '';
+                if (post.fotoProfil) {
+                    const photoPath = post.fotoProfil.startsWith('uploads/profile/') ?
+                        '../../' + post.fotoProfil :
+                        '../../uploads/profile/' + post.fotoProfil;
+                    photoHtml = `<img src="${photoPath}" alt="Profile Photo" class="w-full h-full object-cover post-profile-photo" 
+                    onerror="this.parentElement.innerHTML='<div class=\\'w-full h-full bg-orange-600 rounded-full flex items-center justify-center\\'><span class=\\'text-white font-medium text-sm\\'>${escapeHtml(post.namaPenulis).charAt(0).toUpperCase()}</span></div>'">`;
+                } else {
+                    // Role-based colors
+                    let bgColor = 'bg-orange-600 text-white';
+                    switch (post.rolePenulis) {
+                        case 'admin':
+                            bgColor = 'bg-red-100 text-red-600';
+                            break;
+                        case 'guru':
+                            bgColor = 'bg-blue-100 text-blue-600';
+                            break;
+                        case 'siswa':
+                            bgColor = 'bg-green-100 text-green-600';
+                            break;
+                    }
+                    photoHtml = `<div class="w-full h-full rounded-full flex items-center justify-center ${bgColor}">
+                    <span class="font-medium text-sm">${escapeHtml(post.namaPenulis).charAt(0).toUpperCase()}</span>
+                </div>`;
+                }
+
+                // Create full post template
+                // Build images HTML separately to support up to 4 visible images and overlay for >4
+                function buildMediaHtml(post) {
+                    if (!post.gambar || post.gambar.length === 0) return '';
+                    const total = post.gambar.length;
+                    const maxShow = 4;
+                    const images = post.gambar.slice(0, maxShow);
+                    let html = '<div class="mt-3 post-media-container"><div class="post-media-grid grid-' + images.length + '">';
+
+                    images.forEach((media, idx) => {
+                        const mediaPath = (media.path_gambar && media.path_gambar.startsWith('uploads')) ? ('../../' + media.path_gambar) : ('../../uploads/postingan/' + (media.nama_file || ''));
+                        const isVideo = (media.media_type && media.media_type === 'video') || (media.tipe_file && media.tipe_file.indexOf('video/') === 0);
+                        const mediaClass = images.length === 1 ? 'single' : 'multiple';
+
+                        if (isVideo) {
+                            html += `<div class="post-media-item ${mediaClass}"><video controls class="post-media" data-media-index="${idx}" preload="metadata"><source src="${mediaPath}" type="${media.tipe_file || 'video/mp4'}">Your browser does not support the video tag.</video><div class="post-media-type-badge video"><i class="ti ti-video"></i> Video</div><button class="media-download-btn" onclick="downloadMedia('${mediaPath}', '${media.nama_file || ''}')" title="Download Video"><i class="ti ti-download"></i></button></div>`;
+                        } else {
+                            // For the 4th image when total > 4, we'll add overlay later
+                            html += `<div class="post-media-item ${mediaClass}"><img src="${mediaPath}" alt="${media.nama_file || 'Media postingan'}" class="post-media" data-media-index="${idx}" data-pswp-src="${mediaPath}" data-pswp-width="800" data-pswp-height="600" style="cursor: pointer;" onerror="this.style.display='none';"><div class="post-media-type-badge image"><i class="ti ti-photo"></i> Gambar</div><button class="media-download-btn" onclick="downloadMedia('${mediaPath}', '${media.nama_file || ''}')" title="Download Gambar"><i class="ti ti-download"></i></button></div>`;
+                        }
+                    });
+
+                    // If there are more than maxShow, add overlay on the last shown image
+                    if (total > maxShow) {
+                        const moreCount = total - maxShow;
+                        html += `<div class="post-media-item multiple relative"><div class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-lg"><span class="text-white font-bold text-lg">+${moreCount}</span></div></div>`;
+                    }
+
+                    html += '</div></div>';
+                    return html;
+                }
+
+                postDiv.innerHTML = `
                 <!-- Post Header -->
                 <div class="flex items-start justify-between mb-3">
                     <div class="flex items-center space-x-3">
@@ -2119,8 +1965,14 @@ if (!$dashboardData) {
                 
                 <!-- Post Content -->
                 <div class="mb-4">
-                    ${post.konten ? `<div class="post-content text-gray-800 whitespace-pre-wrap">${formatPostContent(post.konten)}</div>` : ''}
+                    ${post.konten && post.tipe_postingan !== 'assignment' ? `<div class="post-content text-gray-800 whitespace-pre-wrap">${formatPostContent(post.konten)}</div>` : ''}
                 </div>
+                
+                <!-- Assignment Content (if it's an assignment post) -->
+                ${post.tipe_postingan === 'assignment' ? createAssignmentContent(post) : ''}
+                
+                <!-- Post Media -->
+                ${buildMediaHtml(post)}
                 
                 <!-- Post Actions -->
                 <div class="flex items-center justify-between pt-3 border-t border-gray-100">
@@ -2144,6 +1996,12 @@ if (!$dashboardData) {
                             <span class="text-sm">Komentar dinonaktifkan</span>
                         </span>
                         `}
+                        
+                        <!-- AI Explanation Button -->
+                        <button class="ai-explain-btn flex items-center space-x-2 text-gray-600 hover:text-purple-600 transition-colors" 
+                                data-post-id="${post.id}" title="Analisis AI">
+                            <i class="ti ti-sparkles"></i>
+                        </button>
                     </div>
                     
                     <!-- Class Link -->
@@ -2154,17 +2012,24 @@ if (!$dashboardData) {
                 
                 <!-- Comments Section for KelasPosting compatibility -->
                 ${!post.restrict_comments ? `
-                <button class="view-all-comments text-orange text-sm hover:text-orange-600 transition-colors" data-post-id="${post.id}" style="display: none;">
+                <button class="view-all-comments text-orange text-sm hover:text-orange-600 transition-colors mt-3" data-post-id="${post.id}" style="display: none;">
                     Lihat komentar lainnya
                 </button>
                 <div id="comments-preview-${post.id}" class="mt-4 pt-4 border-t border-gray-100" style="display: none;">
                     <!-- Preview comments will be loaded here -->
                 </div>
                 ` : ''}
-                ${buildMediaHtml(post)}
             `;
 
-            return postDiv;
+                return postDiv;
+            } catch (error) {
+                console.error('Error creating post element:', error);
+                // Return a simple error element instead of breaking the page
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'bg-red-50 border border-red-200 rounded-lg p-4 text-red-800';
+                errorDiv.innerHTML = '<p>Error loading post content</p>';
+                return errorDiv;
+            }
         }
 
         function formatTimeAgo(dateString) {
@@ -2227,18 +2092,16 @@ if (!$dashboardData) {
 
             // Comment button
             const commentBtn = postElement.querySelector('.comment-btn');
-            if (commentBtn && window.kelasPosting) {
+            if (commentBtn) {
                 commentBtn.addEventListener('click', function () {
-                    window.kelasPosting.openCommentsModal(postId);
+                    openCommentsModal(postId); // Direct call for beranda
                 });
             }
 
             // Load comments preview for new post
-            if (window.kelasPosting) {
-                setTimeout(() => {
-                    window.kelasPosting.loadCommentsPreview(postId);
-                }, 300);
-            }
+            setTimeout(() => {
+                loadCommentsPreview(postId); // Direct call for beranda
+            }, 300);
         }
 
         // Inline assignment submission handlers (beranda)
@@ -2258,9 +2121,43 @@ if (!$dashboardData) {
                 openBtn.classList.remove('hidden');
             }
         };
+
+        // Global functions for beranda comments (since we don't use KelasPosting)
+        window.openCommentsModal = function(postId) {
+            // Implementation for opening comments modal in beranda context
+            console.log('Opening comments modal for post:', postId);
+            
+            // Use the same modal system as other pages
+            const modal = document.getElementById('commentsModal');
+            if (modal) {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                
+                // Set post ID for modal
+                modal.setAttribute('data-post-id', postId);
+                
+                // Load comments for this post
+                loadCommentsForModal(postId);
+            }
+        };
+
+        window.loadCommentsPreview = function(postId) {
+            // Implementation for loading comments preview in beranda context
+            console.log('Loading comments preview for post:', postId);
+            // This can be implemented later if needed for preview functionality
+        };
+
+        window.loadCommentsForModal = async function(postId) {
+            try {
+                // You can implement actual comments loading here
+                console.log('Loading comments for modal, post:', postId);
+            } catch (error) {
+                console.error('Error loading comments:', error);
+            }
+        };
     </script>
     <script src="../script/profile-sync.js"></script>
-    
+
     <!-- Dynamic Modal Component -->
     <?php require '../component/modal-dynamic.php'; ?>
 </body>

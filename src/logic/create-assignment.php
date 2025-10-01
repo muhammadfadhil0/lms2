@@ -55,7 +55,7 @@ try {
     $uploaded_files = [];
     error_log("✏️ [DEBUG] Checking for uploaded files...");
 
-    if (isset($_FILES['assignment_files']) && is_array($_FILES['assignment_files']['name'])) {
+    if (isset($_FILES['assignment_files']) && is_array($_FILES['assignment_files']['name']) && !empty(array_filter($_FILES['assignment_files']['name']))) {
         error_log("✏️ [DEBUG] Found assignment files to process: " . count($_FILES['assignment_files']['name']) . " files");
         $upload_dir = '../../uploads/assignments/';
         
@@ -102,7 +102,8 @@ try {
                 exit();
             }
             
-            if (empty($file_name)) {
+            if (empty($file_name) || $file_error === UPLOAD_ERR_NO_FILE) {
+                error_log("✏️ [DEBUG] Skipping empty file at index $i");
                 continue; // Skip empty files
             }
             
@@ -132,7 +133,11 @@ try {
                 ];
             }
         }
+    } else {
+        error_log("✏️ [DEBUG] No files to process or assignment_files not set");
     }
+    
+    error_log("✏️ [DEBUG] Final uploaded files count: " . count($uploaded_files));
     
     // Insert assignment (keep file_path for backward compatibility - use first file or null)
     $first_file_path = !empty($uploaded_files) ? $uploaded_files[0]['path'] : null;

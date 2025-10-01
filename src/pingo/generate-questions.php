@@ -1,8 +1,12 @@
 <?php
-// DEBUG: Show all errors for troubleshooting
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
+// Disable display errors for clean JSON output
+ini_set('display_errors', 0);
+ini_set('display_startup_errors', 0);
 error_reporting(E_ALL);
+
+// Use output buffering to catch any unexpected output
+ob_start();
+
 session_start();
 require_once '../logic/koneksi.php';
 require_once '../logic/ujian-logic.php';
@@ -10,6 +14,8 @@ require_once '../logic/soal-logic.php';
 require_once 'pingo-ai.php';
 require_once 'pingo-api-helper.php';
 
+// Clean any buffered output before sending JSON
+ob_clean();
 header('Content-Type: application/json');
 
 // Check authentication
@@ -76,10 +82,13 @@ try {
     
     // Prepare parameters for AI
     $params = [
+        'ujian_id' => $ujian_id,
         'exam_name' => $ujian['namaUjian'],
         'subject' => $ujian['mataPelajaran'] ?? 'Umum',
+        'kelas' => $ujian['namaKelas'] ?? 'Umum',
         'description' => $ujian['deskripsi'] ?? '',
-        'topik' => $ujian['topik'] ?? '', // ← Tambahkan topik spesifik
+        'topik' => $ujian['topik'] ?? '',
+        'auto_score' => $isAutoScore,
         'question_count' => $questionCount,
         'question_type' => $questionType,
         'answer_options' => $answerOptions,
@@ -92,7 +101,9 @@ try {
     $userId = $_SESSION['user']['id'];
     
     // Generate questions using selected API
+    error_log("🚀 Starting AI question generation with parameters: " . json_encode($params));
     $result = $apiHelper->generateQuestions($userId, $params, 'buat-soal');
+    error_log("📥 AI generation result: " . json_encode($result));
     
     if (!$result['success']) {
         throw new Exception($result['error']);
@@ -131,7 +142,7 @@ try {
                     $question['question'],
                     $question['options'],
                     $question['correct_answer'],
-                    $question['points']
+                    $question['points'] ?? 10
                 );
             } else if ($question['type'] === 'essay') {
                 // Get next question number
@@ -149,7 +160,7 @@ try {
                     $question['question'],
                     'essay',
                     $question['sample_answer'] ?? '',
-                    $question['points']
+                    $question['points'] ?? 10
                 );
             }
             
@@ -161,7 +172,7 @@ try {
                     'options' => $question['options'] ?? [],
                     'correct_answer' => $question['correct_answer'] ?? '',
                     'explanation' => $question['explanation'] ?? '',
-                    'points' => $question['points']
+                    'points' => $question['points'] ?? 10
                 ];
                 $totalQuestions++;
             }
@@ -171,7 +182,8 @@ try {
         }
     }
     
-    // Return success response
+    // Clean output buffer and return success response
+    ob_clean();
     echo json_encode([
         'success' => true,
         'message' => "Berhasil generate {$totalQuestions} soal menggunakan PingoAI",
@@ -180,6 +192,8 @@ try {
     ]);
     
 } catch (Exception $e) {
+    // Clean output buffer and return error response
+    ob_clean();
     echo json_encode([
         'success' => false,
         'error' => $e->getMessage()

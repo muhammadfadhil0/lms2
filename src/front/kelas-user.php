@@ -405,6 +405,7 @@ require_once '../logic/profile-photo-helper.php';
     <!-- Include Modal Components -->
     <?php require '../component/modal-delete-post.php'; ?>
     <?php require '../component/modal-comments.php'; ?>
+    <?php require '../component/modal-ai-explanation.php'; ?>
     <!-- modal-class-info removed -->
     <?php require '../component/modal-submit-assignment.php'; ?>
     <?php require '../component/modal-assignment-list.php'; ?>
@@ -421,6 +422,7 @@ require_once '../logic/profile-photo-helper.php';
     <script src="../script/assignment-list-modal.js?v=<?php echo time(); ?>"></script>
     <script src="../script/kelas-files-manager.js"></script>
     <script src="../script/list-modals-manager.js?v=<?php echo time(); ?>"></script>
+    <script src="../script/ai-explanation-manager.js?v=<?php echo time(); ?>"></script>
     <script src="../script/kelas-posting-stable.js?v=<?php echo time(); ?>"></script>
     <script src="../script/profile-sync.js"></script>
     <script>
@@ -449,6 +451,14 @@ require_once '../logic/profile-photo-helper.php';
             
             // Initialize assignment list modal
             window.assignmentListModal = new AssignmentListModal(kelasId);
+            
+            // ⭐ Initialize AI Explanation Manager
+            if (typeof AiExplanationManager !== 'undefined') {
+                console.log('🧠 Initializing AI Explanation Manager for Kelas...');
+                window.aiExplanationManager = new AiExplanationManager();
+            } else {
+                console.warn('⚠️ AiExplanationManager not loaded');
+            }
             
             // Check for tab parameter in URL, but do NOT open modal if hash is present (redirect from assignment modal)
             const urlParams = new URLSearchParams(window.location.search);

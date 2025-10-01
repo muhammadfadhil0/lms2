@@ -4,35 +4,6 @@ async function createKelas(event) {
     
     const form = event.target;
     const formData = new FormData(form);
-    // Handle mata pelajaran kustom
-    try {
-        const mataPelajaran = formData.get('mataPelajaran');
-        if (mataPelajaran === '__custom') {
-            const customVal = (formData.get('mataPelajaranCustom') || '').toString().trim();
-            if (!customVal) {
-                showNotification('Mata pelajaran kustom harus diisi', 'error');
-                return;
-            }
-            if (customVal.length < 2) {
-                showNotification('Nama mata pelajaran kustom terlalu pendek', 'error');
-                return;
-            }
-            if (customVal.length > 100) {
-                showNotification('Nama mata pelajaran kustom terlalu panjang', 'error');
-                return;
-            }
-            // Pastikan nama mata pelajaran hanya berisi huruf, angka, spasi, dan tanda baca dasar
-            const cleanCustomVal = customVal.replace(/[^\w\s\-\.]/g, '').trim();
-            if (!cleanCustomVal) {
-                showNotification('Nama mata pelajaran kustom harus berisi minimal huruf atau angka', 'error');
-                return;
-            }
-            // Replace original field with custom value for backend
-            formData.set('mataPelajaran', cleanCustomVal);
-        }
-    } catch(e) {
-        console.error('Custom mapel handling error', e);
-    }
     // Cari submit button menggunakan selector yang lebih spesifik
     const submitBtn = document.querySelector('button[form="add-class-form"]');
     const originalText = submitBtn ? submitBtn.innerHTML : 'Tambah Kelas';
@@ -73,7 +44,22 @@ async function createKelas(event) {
                 }
             }, 2000);
         } else {
-            showNotification(result.message || 'Gagal membuat kelas', 'error');
+            // Check if it's a limit reached error
+            if (result.limit_reached) {
+                // Close the add class modal first
+                closeModal('add-class-modal');
+                
+                // Small delay then show upgrade modal
+                setTimeout(() => {
+                    if (typeof showUpgradeToProModal === 'function') {
+                        showUpgradeToProModal();
+                    } else {
+                        showNotification(result.message || 'Anda telah mencapai batas maksimum kelas', 'error');
+                    }
+                }, 300);
+            } else {
+                showNotification(result.message || 'Gagal membuat kelas', 'error');
+            }
         }
     } catch (error) {
         console.error('Error:', error);

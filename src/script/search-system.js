@@ -9,7 +9,7 @@
  *     resultsContainerSelector: '.search-results-container',
  *     cardSelector: '.search-card',
  *     apiEndpoint: '../logic/search-kelas-api.php',
- *     searchFields: ['namaKelas', 'mataPelajaran', 'deskripsi']
+ *     searchFields: ['namaKelas', 'deskripsi']
  * });
  */
 
@@ -22,7 +22,7 @@ class SearchSystem {
             resultsContainerSelector: '.search-results-container', 
             cardSelector: '.search-card',
             apiEndpoint: '../logic/search-kelas-api.php',
-            searchFields: ['namaKelas', 'mataPelajaran', 'deskripsi'],
+            searchFields: ['namaKelas', 'deskripsi'],
             debounceDelay: 800,
             minSearchLength: 1,
             ...options
@@ -347,8 +347,6 @@ class SearchSystem {
             if (result.namaKelas_highlighted && result.namaUjian_highlighted) {
                 // For ujian pages, show class name in subject position
                 subjectElement.innerHTML = result.namaKelas_highlighted;
-            } else if (result.mataPelajaran_highlighted) {
-                subjectElement.innerHTML = result.mataPelajaran_highlighted;
             } else if (result.namaGuru_highlighted) {
                 // For siswa class page, show teacher name in subject position
                 subjectElement.innerHTML = result.namaGuru_highlighted;
@@ -395,8 +393,8 @@ class SearchSystem {
             }
             
             if (subjectElement) {
-                // Restore subject (could be mataPelajaran, namaGuru, or class info)
-                subjectElement.textContent = originalCard.mataPelajaran || originalCard.namaGuru || originalCard.subject || originalCard.kelas;
+                // Restore subject (could be namaGuru, or class info)
+                subjectElement.textContent = originalCard.namaGuru || originalCard.subject || originalCard.kelas;
             }
         }
     }
@@ -426,7 +424,6 @@ class SearchSystem {
                 // Store subject/secondary info
                 if (subjectElement) {
                     cardData.subject = subjectElement.textContent.trim();
-                    cardData.mataPelajaran = subjectElement.textContent.trim();
                     cardData.kelas = subjectElement.textContent.trim();
                     cardData.namaGuru = subjectElement.textContent.trim(); // For siswa page
                 }

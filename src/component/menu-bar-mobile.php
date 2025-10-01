@@ -91,12 +91,19 @@ if (!$resolvedPhotoPath) {
                         <p class="mt-1 text-xs sm:text-sm text-gray-500 truncate">
                             <?php 
                                 $userRole = $_SESSION['user']['role'] ?? 'siswa';
-                                echo match($userRole) {
-                                    'admin' => 'Administrator',
-                                    'guru' => 'Guru',
-                                    'siswa' => 'Siswa',
-                                    default => 'User'
-                                };
+                                switch($userRole) {
+                                    case 'admin':
+                                        echo 'Administrator';
+                                        break;
+                                    case 'guru':
+                                        echo 'Guru';
+                                        break;
+                                    case 'siswa':
+                                        echo 'Siswa';
+                                        break;
+                                    default:
+                                        echo 'User';
+                                }
                             ?>
                         </p>
                     </div>

@@ -117,7 +117,7 @@ function getJawabanStatus($soal, $is_answered) {
 
                             <div class="space-y-4">
                                 <!-- Header Info Siswa -->
-                                <div class="flex items-center space-x-3 pb-4 border-b border-gray-200">
+                                <div class="flex items-center space-x-3 pb-4">
                                     <div class="w-12 h-12 bg-orange text-white rounded-full flex items-center justify-center text-lg font-bold">
                                         <?php if (isset($siswa['fotoProfil']) && !empty($siswa['fotoProfil'])): 
                                             $photoPath = '';
@@ -142,97 +142,51 @@ function getJawabanStatus($soal, $is_answered) {
                                     </div>
                                 </div>
 
-                                <!-- Combined Info List -->
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                                    <div class="flex items-center space-x-3">
-                                        <span class="w-8 h-8 rounded-md bg-orange-50 flex items-center justify-center text-orange-600">
-                                            <i class="ti ti-id-badge"></i>
-                                        </span>
-                                        <div>
-                                            <div class="text-xs text-grey-300">ID Siswa</div>
-                                            <div class="font-medium text-black"><?= htmlspecialchars($siswa['id']) ?></div>
+                                <!-- Analisis Ujian Siswa dengan Pingo -->
+                                <div class="border border-gray-200 rounded-lg p-6">
+                                        <div class="text-center space-y-4">
+                                        <div class="flex align-center space-x-3 mb-4">
+                                            <div class="w-10 text-orange rounded-full flex items-center justify-center">
+                                                <i class="ti ti-sparkles text-2xl"></i>
+                                            </div>
+                                            <div class="text-left content-center">
+                                                <h3 class="text-xl font-bold">Analisis Ujian Siswa dengan Pingo</h3>
+                                                <p class="text-sm mt-1">Klik di bawah untuk mendapatkan analisis lengkap</p>
+                                            </div>
+                                        </div>                                        <!-- Statistik Default -->
+                                        <div id="statistik-default" class="bg-white/60 rounded-lg p-4 mb-4">
+                                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                                                <div class="text-center border border-r border-l-0 border-t-0 border-b-0 border-gray-200">
+                                                    <div class="text-lg font-bold text-blue-700"><?= count($soalList) ?></div>
+                                                    <div class="text-xs text-blue-600">Total Soal</div>
+                                                </div>
+                                                <div class="text-center border border-r border-l-0 border-t-0 border-b-0 border-gray-200">
+                                                    <div class="text-lg font-bold text-green-600"><?= (int)($hasilUjian['jumlahBenar'] ?? 0) ?></div>
+                                                    <div class="text-xs text-green-600">Benar</div>
+                                                </div>
+                                                <div class="text-center border border-r border-l-0 border-t-0 border-b-0 border-gray-200">
+                                                    <div class="text-lg font-bold text-red-600"><?= (int)($hasilUjian['jumlahSalah'] ?? 0) ?></div>
+                                                    <div class="text-xs text-red-600">Salah</div>
+                                                </div>
+                                                <div class="text-center">
+                                                    <div class="text-lg font-bold text-orange-600">
+                                                        <?= $hasilUjian['totalNilai'] !== null ? number_format($hasilUjian['totalNilai'], 0) : '-' ?>
+                                                    </div>
+                                                    <div class="text-xs text-orange-600">Nilai</div>
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
 
-                                    <div class="flex items-center space-x-3">
-                                        <span class="w-8 h-8 rounded-md bg-orange-50 flex items-center justify-center text-orange-600">
-                                            <i class="ti ti-book"></i>
-                                        </span>
-                                        <div>
-                                            <div class="text-xs text-grey-300">Nama Ujian</div>
-                                            <div class="font-medium text-black"><?= htmlspecialchars($ujian['namaUjian']) ?></div>
+                                        <!-- Container Hasil AI (Hidden by default) -->
+                                        <div id="hasil-ai" class="hidden mb-4">
+                                            <!-- Hasil AI akan ditampilkan di sini -->
                                         </div>
-                                    </div>
 
-                                    <?php if (!empty($siswa['email'])): ?>
-                                    <div class="flex items-center space-x-3">
-                                        <span class="w-8 h-8 rounded-md bg-orange-50 flex items-center justify-center text-orange-600">
-                                            <i class="ti ti-mail"></i>
-                                        </span>
-                                        <div>
-                                            <div class="text-xs text-grey-300">Email</div>
-                                            <div class="font-medium text-black"><?= htmlspecialchars($siswa['email']) ?></div>
-                                        </div>
+                                        <button id="btn-analisis" onclick="evaluateWithAI()" class="w-full bg-orange text-white font-medium py-3 px-6 rounded-lg transition-colors flex items-center justify-center space-x-2">
+                                            <i class="ti ti-sparkles"></i>
+                                            <span>Mulai Analisis dengan AI</span>
+                                        </button>
                                     </div>
-                                    <?php endif; ?>
-
-                                    <div class="flex items-center space-x-3">
-                                        <span class="w-8 h-8 rounded-md bg-orange-50 flex items-center justify-center text-orange-600">
-                                            <i class="ti ti-books"></i>
-                                        </span>
-                                        <div>
-                                            <div class="text-xs text-grey-300">Mata Pelajaran</div>
-                                            <div class="font-medium text-black"><?= htmlspecialchars($ujian['mataPelajaran']) ?></div>
-                                        </div>
-                                    </div>
-
-                                    <?php if (!empty($siswa['kelas'])): ?>
-                                    <div class="flex items-center space-x-3">
-                                        <span class="w-8 h-8 rounded-md bg-orange-50 flex items-center justify-center text-orange-600">
-                                            <i class="ti ti-building-community"></i>
-                                        </span>
-                                        <div>
-                                            <div class="text-xs text-grey-300">Kelas</div>
-                                            <div class="font-medium text-black"><?= htmlspecialchars($siswa['kelas']) ?></div>
-                                        </div>
-                                    </div>
-                                    <?php endif; ?>
-
-                                    <div class="flex items-center space-x-3">
-                                        <span class="w-8 h-8 rounded-md bg-orange-50 flex items-center justify-center text-orange-600">
-                                            <i class="ti ti-list-check"></i>
-                                        </span>
-                                        <div>
-                                            <div class="text-xs text-grey-300">Total Soal</div>
-                                            <div class="font-medium text-black"><?= count($soalList) ?></div>
-                                        </div>
-                                    </div>
-
-                                    <?php if (!empty($ujian['durasi'])): ?>
-                                    <div class="flex items-center space-x-3">
-                                        <span class="w-8 h-8 rounded-md bg-orange-50 flex items-center justify-center text-orange-600">
-                                            <i class="ti ti-clock"></i>
-                                        </span>
-                                        <div>
-                                            <div class="text-xs text-grey-300">Durasi</div>
-                                            <div class="font-medium text-black"><?= htmlspecialchars($ujian['durasi']) ?></div>
-                                        </div>
-                                    </div>
-                                    <?php endif; ?>
-
-                                    <?php if (!empty($ujian['tanggal']) || !empty($ujian['tanggalUjian']) || !empty($ujian['waktuMulai'])): 
-                                        $tanggal = $ujian['tanggal'] ?? $ujian['tanggalUjian'] ?? $ujian['waktuMulai'];
-                                    ?>
-                                    <div class="flex items-center space-x-3">
-                                        <span class="w-8 h-8 rounded-md bg-orange-50 flex items-center justify-center text-orange-600">
-                                            <i class="ti ti-calendar"></i>
-                                        </span>
-                                        <div>
-                                            <div class="text-xs text-grey-300">Waktu Ujian</div>
-                                            <div class="font-medium text-black"><?= htmlspecialchars($tanggal) ?></div>
-                                        </div>
-                                    </div>
-                                    <?php endif; ?>
                                 </div>
                             </div>
                         </div>
@@ -430,6 +384,210 @@ function getJawabanStatus($soal, $is_answered) {
     </div>
 
     <script src="../script/menu-bar-script.js"></script>
+    <script>
+        // Data untuk evaluasi AI
+        const evaluationData = {
+            ujian_id: <?= $ujian_id ?>,
+            ujian_siswa_id: <?= $ujian_siswa_id ?>,
+            guru_id: <?= $_SESSION['user']['id'] ?>
+        };
+
+        /**
+         * Fungsi untuk memulai evaluasi AI
+         */
+        function evaluateWithAI() {
+            const statistikDefault = document.getElementById('statistik-default');
+            const hasilAI = document.getElementById('hasil-ai');
+            const btnAnalisis = document.getElementById('btn-analisis');
+            
+            // Sembunyikan statistik default
+            statistikDefault.classList.add('hidden');
+            
+            // Tampilkan container hasil AI dengan loading
+            hasilAI.classList.remove('hidden');
+            hasilAI.innerHTML = `
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                    <div class="flex items-center justify-center py-8">
+                        <div class="flex items-center space-x-3">
+                            <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                            <span class="text-blue-600 font-medium">AI sedang menganalisis hasil ujian...</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Ubah tombol menjadi disabled
+            btnAnalisis.disabled = true;
+            btnAnalisis.innerHTML = `
+                <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <span>Menganalisis...</span>
+            `;
+            
+            // Kirim request ke API
+            fetch('../api/ai-evaluation-simple.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(evaluationData)
+            })
+            .then(response => {
+                // Log response status for debugging
+                console.log('Response status:', response.status);
+                
+                // Get response text first
+                return response.text().then(text => {
+                    console.log('Response text:', text);
+                    
+                    // Try to parse as JSON
+                    try {
+                        const data = JSON.parse(text);
+                        return { ok: response.ok, data: data };
+                    } catch (e) {
+                        // If not JSON, return the raw text as error
+                        throw new Error('Server returned non-JSON response: ' + text.substring(0, 200));
+                    }
+                });
+            })
+            .then(result => {
+                if (result.ok && result.data.success) {
+                    displayEvaluation(result.data.evaluation);
+                } else {
+                    const errorMsg = result.data.error || 'Terjadi kesalahan saat evaluasi';
+                    const debugInfo = result.data.debug ? ` (${result.data.debug.file}:${result.data.debug.line})` : '';
+                    displayError(errorMsg + debugInfo);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                displayError('Error: ' + error.message);
+            });
+        }
+
+        /**
+         * Fungsi untuk menampilkan hasil evaluasi
+         */
+        function displayEvaluation(evaluation) {
+            const hasilAI = document.getElementById('hasil-ai');
+            const btnAnalisis = document.getElementById('btn-analisis');
+            
+            hasilAI.innerHTML = `
+                <div class="space-y-4">
+                    <!-- Deskripsi -->
+                    <div class="border border-gray-300 rounded-lg p-4">
+                        <h4 class="font-semibold text-gray-800 mb-2 flex items-center text-sm">
+                            <i class="ti ti-file-description mr-2"></i>
+                            Deskripsi Evaluasi
+                        </h4>
+                        <p class="text-gray-700 leading-relaxed text-left text-sm">${evaluation.deskripsi}</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Materi Perlu Evaluasi -->
+                        <div class="border border-gray-300 rounded-lg p-4">
+                            <h4 class="font-semibold text-gray-800 mb-2 flex items-center text-sm">
+                                <i class="ti ti-alert-triangle mr-2"></i>
+                                Perlu Dievaluasi (Jawaban Salah)
+                            </h4>
+                            <div class="mb-2 text-left">
+                                <span class="text-xs text-gray-600">
+                                    ${evaluation.materi_perlu_evaluasi.jumlah_salah} dari ${evaluation.materi_perlu_evaluasi.total_soal} soal
+                                </span>
+                            </div>
+                            <ul class="space-y-1">
+                                ${evaluation.materi_perlu_evaluasi.topik.map(topik => `
+                                    <li class="flex items-start space-x-2">
+                                        <i class="ti ti-point text-gray-500 text-xs mt-1"></i>
+                                        <span class="text-gray-700 text-xs leading-relaxed text-left">${topik}</span>
+                                    </li>
+                                `).join('')}
+                            </ul>
+                        </div>
+
+                        <!-- Materi Sudah Dikuasai -->
+                        <div class="border border-gray-300 rounded-lg p-4">
+                            <h4 class="font-semibold text-gray-800 mb-2 flex items-center text-sm">
+                                <i class="ti ti-circle-check mr-2"></i>
+                                Sudah Dikuasai
+                            </h4>
+                            <div class="mb-2 text-left">
+                                <span class="text-xs text-gray-600">
+                                    ${evaluation.materi_sudah_dikuasai.jumlah_benar} dari ${evaluation.materi_sudah_dikuasai.total_soal} soal
+                                </span>
+                            </div>
+                            <ul class="space-y-1">
+                                ${evaluation.materi_sudah_dikuasai.topik.map(topik => `
+                                    <li class="flex items-start space-x-2">
+                                        <i class="ti ti-check text-gray-500 text-xs mt-1"></i>
+                                        <span class="text-gray-700 text-xs leading-relaxed text-left">${topik}</span>
+                                    </li>
+                                `).join('')}
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Saran Pembelajaran -->
+                    <div class="border border-gray-300 rounded-lg p-4">
+                        <h4 class="font-semibold text-gray-800 mb-2 flex items-center text-sm">
+                            <i class="ti ti-bulb mr-2"></i>
+                            Saran Pembelajaran
+                        </h4>
+                        <ul class="space-y-2">
+                            ${evaluation.saran_pembelajaran.map((saran, index) => `
+                                <li class="flex items-start space-x-2">
+                                    <span class="inline-flex items-center justify-center w-4 h-4 text-xs font-semibold rounded-full border border-gray-300 text-gray-700 mt-0.5">
+                                        ${index + 1}
+                                    </span>
+                                    <span class="text-gray-700 text-xs leading-relaxed text-left">${saran}</span>
+                                </li>
+                            `).join('')}
+                        </ul>
+                    </div>
+                </div>
+            `;
+            
+            // Ubah tombol menjadi "Analisis Ulang"
+            btnAnalisis.disabled = false;
+            btnAnalisis.innerHTML = `
+                <i class="ti ti-refresh"></i>
+                <span>Analisis Ulang</span>
+            `;
+        }
+
+        /**
+         * Fungsi untuk menampilkan error
+         */
+        function displayError(errorMessage) {
+            const hasilAI = document.getElementById('hasil-ai');
+            const btnAnalisis = document.getElementById('btn-analisis');
+            const statistikDefault = document.getElementById('statistik-default');
+            
+            hasilAI.innerHTML = `
+                <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <div class="flex items-center space-x-3">
+                        <i class="ti ti-alert-circle text-red-500 text-lg"></i>
+                        <div>
+                            <h4 class="font-semibold text-red-800 text-sm">Gagal Melakukan Evaluasi</h4>
+                            <p class="text-red-600 text-xs mt-1">${errorMessage}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Kembalikan tombol ke keadaan semula
+            btnAnalisis.disabled = false;
+            btnAnalisis.innerHTML = `
+                <i class="ti ti-sparkles"></i>
+                <span>Mulai Analisis dengan AI</span>
+            `;
+            
+            // Tampilkan kembali statistik default setelah 3 detik
+            setTimeout(() => {
+                hasilAI.classList.add('hidden');
+                statistikDefault.classList.remove('hidden');
+            }, 3000);
+        }
+    </script>
 
 </body>
 

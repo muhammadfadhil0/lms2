@@ -14,6 +14,7 @@ class KelasPosting {
         this.initialized = false;
         this.pendingTimeouts = []; // Track pending timeouts
         this.postToDelete = null; // Track post ID to delete
+        this.loadingFallbackTimeout = null; // Emergency fallback timeout
         
         this.initializeEventListeners();
         this.initializeDeleteModal();
@@ -210,12 +211,43 @@ class KelasPosting {
     }
     
     async loadPostingan(refresh = false) {
+        console.log('👍 loadPostingan() called with refresh:', refresh);
+        
         // Prevent multiple simultaneous loads
         if (this.isLoading || (!this.hasMorePosts && !refresh)) {
+            console.log('👍 loadPostingan() cancelled - isLoading:', this.isLoading, 'hasMorePosts:', this.hasMorePosts);
             return;
         }
         
+        console.log('👍 Starting loadPostingan process...');
         this.isLoading = true;
+        
+        // Clear any existing fallback timeout
+        if (this.loadingFallbackTimeout) {
+            clearTimeout(this.loadingFallbackTimeout);
+        }
+        
+        // Set emergency fallback timeout to ensure loading state is always cleared
+        this.loadingFallbackTimeout = setTimeout(() => {
+            console.warn('⚠️ Emergency fallback: Force clearing loading state after 30 seconds');
+            this.isLoading = false;
+            this.hideLoadingIndicator();
+            
+            const postsContainer = document.getElementById('postsContainer');
+            if (postsContainer && postsContainer.innerHTML.includes('Memuat postingan')) {
+                postsContainer.innerHTML = `
+                    <div class="text-center py-8 text-red-500">
+                        <i class="ti ti-alert-triangle text-4xl mb-2"></i>
+                        <p>Koneksi terlalu lama - Silakan coba lagi</p>
+                        <button onclick="window.kelasPosting.refreshPosts()" 
+                                class="mt-4 px-4 py-2 bg-orange text-white rounded-lg hover:bg-orange-600 transition-colors">
+                            <i class="ti ti-refresh mr-2"></i>
+                            Muat Ulang
+                        </button>
+                    </div>
+                `;
+            }
+        }, 30000); // 30 second emergency fallback
         
         if (refresh) {
             this.currentOffset = 0;
@@ -243,19 +275,34 @@ class KelasPosting {
         
         try {
             const url = `../logic/get-postingan.php?kelas_id=${this.kelasId}&limit=${this.limit}&offset=${this.currentOffset}&_=${Date.now()}`;
+            console.log('👍 Fetching posts from URL:', url);
+            
+            // Create AbortController for timeout handling
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => {
+                controller.abort();
+                console.warn('⏰ Posts request timeout after 15 seconds');
+            }, 15000); // 15 second timeout
             
             const response = await fetch(url, {
+                signal: controller.signal,
                 cache: 'no-store',
                 headers: {
                     'Cache-Control': 'no-cache'
                 }
             });
             
+            // Clear timeout since request completed
+            clearTimeout(timeoutId);
+            
+            console.log('👍 Fetch response status:', response.status);
+            
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             
             const result = await response.json();
+            console.log('👍 Posts data received:', result.data ? result.data.length : 0, 'posts');
             
             if (result.success) {
                 if (refresh) {
@@ -278,11 +325,14 @@ class KelasPosting {
                     this.hideLoadingIndicator();
                     
                     // Add posts with optimized rendering
+                    console.log('👍 Starting to render', result.data.length, 'posts');
                     result.data.forEach((post, index) => {
                         const timeoutId = setTimeout(() => {
+                            console.log('👍 Rendering post', index + 1, '- ID:', post.id, 'Title:', post.judul || post.konten?.substring(0, 50));
                             const postElement = this.createPostElement(post, result.user_id, result.user_role);
                             if (postsContainer && postElement) {
                                 postsContainer.appendChild(postElement);
+                                console.log('👍 Post', index + 1, 'successfully added to container');
                                 
                                 // Lazy load comments preview for better performance
                                 if (this.permissions.canComment) {
@@ -391,10 +441,22 @@ class KelasPosting {
             }
         } catch (error) {
             console.error('Load error:', error);
+            
+            let errorMessage = 'Terjadi kesalahan saat memuat postingan';
+            let errorIcon = 'ti ti-wifi-off';
+            
+            if (error.name === 'AbortError') {
+                errorMessage = 'Koneksi timeout - Coba lagi dalam beberapa saat';
+                errorIcon = 'ti ti-clock-exclamation';
+            } else if (error.message.includes('HTTP error')) {
+                errorMessage = 'Server error - Silakan coba lagi';
+                errorIcon = 'ti ti-server-off';
+            }
+            
             postsContainer.innerHTML = `
                 <div class="text-center py-8 text-red-500">
-                    <i class="ti ti-wifi-off text-4xl mb-2"></i>
-                    <p>Terjadi kesalahan saat memuat postingan</p>
+                    <i class="${errorIcon} text-4xl mb-2"></i>
+                    <p>${errorMessage}</p>
                     <button onclick="window.kelasPosting.refreshPosts()" 
                             class="mt-4 px-4 py-2 bg-orange text-white rounded-lg hover:bg-orange-600 transition-colors">
                         <i class="ti ti-refresh mr-2"></i>
@@ -403,6 +465,12 @@ class KelasPosting {
                 </div>
             `;
         } finally {
+            // Clear emergency fallback timeout since we're done
+            if (this.loadingFallbackTimeout) {
+                clearTimeout(this.loadingFallbackTimeout);
+                this.loadingFallbackTimeout = null;
+            }
+            
             // Always hide any scroll loading indicator and reset loading flag
             try { this.hideLoadingIndicator(); } catch (e) { /* ignore */ }
             this.isLoading = false;
@@ -510,8 +578,8 @@ class KelasPosting {
                     ` : ''}
                 </div>
                 <div class="mb-4">
-                    <!-- Post Content -->
-                    ${post.konten ? `
+                    <!-- Post Content (skip for assignments as description is moved to assignment header) -->
+                    ${post.konten && post.tipe_postingan !== 'assignment' ? `
                         <div class="post-content text-gray-900 text-sm lg:text-base mb-3" style="line-height: 1.6; white-space: pre-wrap; word-break: break-word; overflow-wrap: break-word; max-width: 100%;">${this.escapeHtml(post.konten)}</div>
                     ` : ''}
                     ${post.deadline ? `
@@ -543,6 +611,13 @@ class KelasPosting {
                         <button class="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors text-sm lg:text-base">
                             <i class="ti ti-share"></i>
                             <span class="hidden sm:inline">Bagikan</span>
+                        </button>
+                    </div>
+                    <div class="flex items-center">
+                        <button class="ai-explain-btn flex items-center p-2 text-gray-600 hover:text-purple-600 transition-colors" 
+                                data-post-id="${post.id}" 
+                                title="Penjelasan AI tentang postingan ini">
+                            <i class="ti ti-sparkles text-lg"></i>
                         </button>
                     </div>
                     ${this.permissions.canComment ? `
@@ -686,19 +761,41 @@ class KelasPosting {
     
     // Remove loading indicator
     hideLoadingIndicator() {
-        const indicator = document.getElementById('scrollLoadingIndicator');
-        if (indicator) {
-            indicator.remove();
+        try {
+            // Remove scroll loading indicator
+            const indicator = document.getElementById('scrollLoadingIndicator');
+            if (indicator) {
+                indicator.remove();
+            }
+            
+            // Also remove any loading indicators that might be stuck in posts container
+            const postsContainer = document.getElementById('postsContainer');
+            if (postsContainer) {
+                const loadingElements = postsContainer.querySelectorAll('[class*="loader"], [class*="animate-spin"], .text-center:has(.ti-loader)');
+                loadingElements.forEach(el => {
+                    // Only remove if it contains loading text
+                    if (el.textContent && el.textContent.includes('Memuat')) {
+                        console.log('🧹 Removing stuck loading element:', el.textContent.trim());
+                        el.remove();
+                    }
+                });
+            }
+        } catch (error) {
+            console.warn('Error in hideLoadingIndicator:', error);
         }
     }
     
     // Method untuk refresh manual
     refreshPosts() {
+        console.log('👍 refreshPosts() called - starting refresh process');
+        
         // Stop any ongoing operations and clear any pending timeouts
         this.isLoading = false;
         this.submitInProgress = false;
         this.currentOffset = 0;
         this.hasMorePosts = true;
+        
+        console.log('👍 Cleared loading states and reset pagination');
         
         // Clear any pending staggered timeouts
         if (this.pendingTimeouts) {
@@ -709,11 +806,14 @@ class KelasPosting {
         // Clear container
         const postsContainer = document.getElementById('postsContainer');
         if (postsContainer) {
+            console.log('👍 Clearing posts container');
             postsContainer.innerHTML = '';
         }
         
         // Load fresh posts with delay
+        console.log('👍 Scheduling loadPostingan(true) in 200ms...');
         setTimeout(() => {
+            console.log('👍 Now calling loadPostingan(true) to fetch fresh data');
             this.loadPostingan(true);
         }, 200);
     }
@@ -1371,6 +1471,14 @@ class KelasPosting {
                             </h3>
                         </div>
                         
+                        <!-- Assignment Description -->
+                        ${post.konten ? `
+                            <div class="mb-4 p-3 bg-white rounded-lg border border-gray-200">
+                                <div class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Deskripsi Tugas</div>
+                                <div class="text-gray-900 text-sm leading-relaxed" style="word-break: break-word; overflow-wrap: break-word;">${this.escapeHtml(post.konten)}</div>
+                            </div>
+                        ` : ''}
+                        
                         <!-- Assignment Details Grid -->
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
                             ${post.assignment_deadline ? `
@@ -1878,7 +1986,25 @@ function openAssignmentReports(assignmentId) {
 function showSubmissionForm(assignmentId) {
     console.log('🎯 showSubmissionForm called with ID:', assignmentId);
     const form = document.getElementById(`submission-form-${assignmentId}`);
-    const button = form?.previousElementSibling?.querySelector('button');
+    
+    // Find button by onclick attribute - this is the most reliable way
+    let button = document.querySelector(`button[onclick*="showSubmissionForm(${assignmentId})"]`);
+    
+    // Alternative: find button in the same parent container as the form
+    if (!button && form?.parentElement) {
+        const buttons = form.parentElement.querySelectorAll('button');
+        button = Array.from(buttons).find(btn => 
+            btn.onclick && btn.onclick.toString().includes(`showSubmissionForm(${assignmentId})`)
+        );
+    }
+    
+    console.log('🔍 Debug info:', {
+        form: !!form,
+        button: !!button,
+        assignmentId,
+        buttonText: button?.textContent,
+        formClasses: form?.className
+    });
     
     if (form && button) {
         form.classList.remove('hidden');
@@ -1889,14 +2015,27 @@ function showSubmissionForm(assignmentId) {
         console.error('❌ Form or button not found:', {
             form: !!form,
             button: !!button,
-            assignmentId
+            assignmentId,
+            allButtonsWithAssignmentId: document.querySelectorAll(`button[onclick*="${assignmentId}"]`).length,
+            allFormsWithAssignmentId: document.querySelectorAll(`[id*="${assignmentId}"]`).length
         });
     }
 }
 
 function hideSubmissionForm(assignmentId) {
     const form = document.getElementById(`submission-form-${assignmentId}`);
-    const button = form.previousElementSibling.querySelector('button');
+    
+    // Find button that currently says "Batal" or find by parent container
+    let button = null;
+    
+    if (form?.parentElement) {
+        const buttons = form.parentElement.querySelectorAll('button');
+        // Look for button with text "Batal" or that contains the assignment ID
+        button = Array.from(buttons).find(btn => 
+            btn.textContent.includes('Batal') || 
+            (btn.onclick && btn.onclick.toString().includes(assignmentId.toString()))
+        );
+    }
     
     if (form && button) {
         form.classList.add('hidden');
@@ -1905,7 +2044,17 @@ function hideSubmissionForm(assignmentId) {
         
         // Reset form
         removeSubmissionFile(assignmentId);
-        document.getElementById(`submission-notes-${assignmentId}`).value = '';
+        const notesField = document.getElementById(`submission-notes-${assignmentId}`);
+        if (notesField) {
+            notesField.value = '';
+        }
+        console.log('✅ Form hidden successfully');
+    } else {
+        console.error('❌ Could not hide form:', {
+            form: !!form,
+            button: !!button,
+            assignmentId
+        });
     }
 }
 

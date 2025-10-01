@@ -11,6 +11,9 @@ let assignmentFilesArray = [];
 let editAssignmentFilesArray = [];
 let currentAssignmentFiles = []; // For existing files in edit mode
 
+// Expose assignmentFilesArray to global scope
+window.assignmentFilesArray = assignmentFilesArray;
+
 const MAX_FILES = 4;
 const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15MB
 
@@ -87,6 +90,7 @@ function showAssignmentFilePreview(file, index) {
 function removeAssignmentFile(index) {
     // Remove from array
     assignmentFilesArray.splice(index, 1);
+    window.assignmentFilesArray = assignmentFilesArray; // Update global reference
     
     // Remove from DOM and re-render all previews
     refreshAssignmentFilePreviews();
@@ -126,6 +130,7 @@ function updateAssignmentFileCounter() {
 // Clear assignment files
 function clearAssignmentFiles() {
     assignmentFilesArray = [];
+    window.assignmentFilesArray = assignmentFilesArray; // Update global reference
     refreshAssignmentFilePreviews();
     updateAssignmentFileCounter();
 }

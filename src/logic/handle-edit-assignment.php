@@ -1,9 +1,15 @@
 <?php
+// Clean output buffer and prevent any output before JSON
+ob_clean();
+ini_set('display_errors', 0);
+error_reporting(0);
+
 session_start();
 require_once 'koneksi.php';
 
-// Set content type to JSON
+// Set content type to JSON and prevent caching
 header('Content-Type: application/json');
+header('Cache-Control: no-cache, must-revalidate');
 
 // Check if user is logged in and is a teacher
 if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'guru') {
@@ -14,6 +20,12 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'guru') {
 
 $action = $_GET['action'] ?? $_POST['action'] ?? '';
 $user_id = $_SESSION['user']['id'];
+
+// Debug log request details
+error_log("Action: " . $action);
+error_log("User ID: " . $user_id);
+error_log("GET params: " . print_r($_GET, true));
+error_log("POST params: " . print_r($_POST, true));
 
 try {
     switch ($action) {
@@ -26,12 +38,19 @@ try {
             break;
             
         default:
-            echo json_encode(['success' => false, 'message' => 'Action tidak valid']);
+            echo json_encode(['success' => false, 'message' => 'Action tidak valid: ' . $action]);
             break;
     }
 } catch (Exception $e) {
-    error_log("Error in handle-edit-assignment.php: " . $e->getMessage());
-    echo json_encode(['success' => false, 'message' => 'Terjadi kesalahan server']);
+    // Log the actual error for debugging
+    error_log("Error in handle-edit-assignment.php: " . $e->getMessage() . " | File: " . $e->getFile() . " | Line: " . $e->getLine());
+    echo json_encode(['success' => false, 'message' => 'Terjadi kesalahan server: ' . $e->getMessage()]);
+} catch (ParseError $e) {
+    error_log("Parse Error in handle-edit-assignment.php: " . $e->getMessage());
+    echo json_encode(['success' => false, 'message' => 'Parse error: ' . $e->getMessage()]);
+} catch (Error $e) {
+    error_log("Fatal Error in handle-edit-assignment.php: " . $e->getMessage());
+    echo json_encode(['success' => false, 'message' => 'Fatal error: ' . $e->getMessage()]);
 }
 
 function handleGetAssignmentDetail($pdo, $user_id) {
@@ -89,12 +108,20 @@ function handleGetAssignmentDetail($pdo, $user_id) {
 }
 
 function handleEditAssignment($pdo, $user_id) {
+    // Debug log
+    error_log("handleEditAssignment called with user_id: " . $user_id);
+    
     $assignment_id = $_POST['assignment_id'] ?? '';
     $judul = trim($_POST['assignmentTitle'] ?? '');
     $deskripsi = trim($_POST['assignmentDescription'] ?? '');
     $deadline = $_POST['assignmentDeadline'] ?? '';
     $nilai_maksimal = $_POST['maxScore'] ?? 100;
     $delete_current_file = $_POST['delete_current_file'] ?? '0';
+    
+    // Debug log POST data
+    error_log("POST data - assignment_id: " . $assignment_id . ", judul: " . $judul);
+    error_log("POST data - deskripsi: " . $deskripsi . ", deadline: " . $deadline);
+    error_log("POST data - nilai_maksimal: " . $nilai_maksimal);
     
     // Validation
     if (empty($assignment_id) || empty($judul) || empty($deskripsi) || empty($deadline)) {
@@ -113,13 +140,24 @@ function handleEditAssignment($pdo, $user_id) {
             SELECT t.*, k.guru_id 
             FROM tugas t 
             JOIN kelas k ON t.kelas_id = k.id 
-            WHERE t.id = ? AND k.guru_id = ?
+            WHERE t.id = ?
         ");
-        $stmt->execute([$assignment_id, $user_id]);
+        $stmt->execute([$assignment_id]);
         $assignment = $stmt->fetch(PDO::FETCH_ASSOC);
         
+        // Debug log
+        error_log("Assignment found: " . ($assignment ? 'Yes' : 'No'));
+        if ($assignment) {
+            error_log("Assignment guru_id: " . $assignment['guru_id'] . ", current user_id: " . $user_id);
+        }
+        
         if (!$assignment) {
-            echo json_encode(['success' => false, 'message' => 'Tugas tidak ditemukan atau Anda tidak memiliki akses']);
+            echo json_encode(['success' => false, 'message' => 'Tugas dengan ID ' . $assignment_id . ' tidak ditemukan']);
+            return;
+        }
+        
+        if ($assignment['guru_id'] != $user_id) {
+            echo json_encode(['success' => false, 'message' => 'Anda tidak memiliki akses untuk mengedit tugas ini']);
             return;
         }
         
@@ -196,7 +234,7 @@ function handleEditAssignment($pdo, $user_id) {
             WHERE id = ?
         ");
         
-        $stmt->execute([
+        $result = $stmt->execute([
             $judul,
             $deskripsi, 
             $deadline,
@@ -204,6 +242,23 @@ function handleEditAssignment($pdo, $user_id) {
             $file_path,
             $assignment_id
         ]);
+        
+        // Debug log update result
+        error_log("Update result: " . ($result ? 'SUCCESS' : 'FAILED'));
+        error_log("Affected rows: " . $stmt->rowCount());
+        
+        // IMPORTANT: Also update the postingan content to keep it consistent
+        error_log("Updating postingan content for assignment_id: " . $assignment_id);
+        $stmt = $pdo->prepare("
+            UPDATE postingan_kelas 
+            SET konten = ?, is_edited = 1, diubah = NOW()
+            WHERE assignment_id = ? AND tipe_postingan = 'assignment'
+        ");
+        $postResult = $stmt->execute([$deskripsi, $assignment_id]);
+        
+        // Debug log postingan update result
+        error_log("Postingan update result: " . ($postResult ? 'SUCCESS' : 'FAILED'));
+        error_log("Postingan affected rows: " . $stmt->rowCount());
         
         $pdo->commit();
         

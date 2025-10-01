@@ -77,7 +77,6 @@ function getClass($db) {
 
 function createClass($db) {
     $namaKelas = $_POST['namaKelas'] ?? '';
-    $mataPelajaran = $_POST['mataPelajaran'] ?? '';
     $kodeKelas = $_POST['kodeKelas'] ?? '';
     $idGuru = $_POST['guru_id'] ?? '';
     $deskripsi = $_POST['deskripsi'] ?? '';
@@ -87,11 +86,6 @@ function createClass($db) {
     // Validation
     if (empty($namaKelas)) {
         echo json_encode(['success' => false, 'message' => 'Nama kelas tidak boleh kosong']);
-        return;
-    }
-    
-    if (empty($mataPelajaran)) {
-        echo json_encode(['success' => false, 'message' => 'Mata pelajaran tidak boleh kosong']);
         return;
     }
     
@@ -133,12 +127,12 @@ function createClass($db) {
     
     try {
         $sql = "
-            INSERT INTO kelas (namaKelas, mataPelajaran, kodeKelas, guru_id, deskripsi, maxSiswa, status, dibuat, updated_at) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+            INSERT INTO kelas (namaKelas, kodeKelas, guru_id, deskripsi, maxSiswa, status, dibuat, updated_at) 
+            VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())
         ";
         
         $stmt = $db->prepare($sql);
-        $result = $stmt->execute([$namaKelas, $mataPelajaran, $kodeKelas, $idGuru, $deskripsi, $maxSiswa, $status]);
+        $result = $stmt->execute([$namaKelas, $kodeKelas, $idGuru, $deskripsi, $maxSiswa, $status]);
         
         if ($result) {
             $classId = $db->lastInsertId();
@@ -159,7 +153,6 @@ function createClass($db) {
 function updateClass($db) {
     $classId = $_POST['class_id'] ?? '';
     $namaKelas = $_POST['namaKelas'] ?? '';
-    $mataPelajaran = $_POST['mataPelajaran'] ?? '';
     $kodeKelas = $_POST['kodeKelas'] ?? '';
     $idGuru = $_POST['guru_id'] ?? '';
     $deskripsi = $_POST['deskripsi'] ?? '';
@@ -174,11 +167,6 @@ function updateClass($db) {
     
     if (empty($namaKelas)) {
         echo json_encode(['success' => false, 'message' => 'Nama kelas tidak boleh kosong']);
-        return;
-    }
-    
-    if (empty($mataPelajaran)) {
-        echo json_encode(['success' => false, 'message' => 'Mata pelajaran tidak boleh kosong']);
         return;
     }
     
@@ -221,12 +209,12 @@ function updateClass($db) {
     try {
         $sql = "
             UPDATE kelas 
-            SET namaKelas = ?, mataPelajaran = ?, kodeKelas = ?, guru_id = ?, deskripsi = ?, maxSiswa = ?, status = ?, updated_at = NOW()
+            SET namaKelas = ?, kodeKelas = ?, guru_id = ?, deskripsi = ?, maxSiswa = ?, status = ?, updated_at = NOW()
             WHERE id = ?
         ";
         
         $stmt = $db->prepare($sql);
-        $result = $stmt->execute([$namaKelas, $mataPelajaran, $kodeKelas, $idGuru, $deskripsi, $maxSiswa, $status, $classId]);
+        $result = $stmt->execute([$namaKelas, $kodeKelas, $idGuru, $deskripsi, $maxSiswa, $status, $classId]);
         
         if ($result) {
             echo json_encode(['success' => true, 'message' => 'Kelas berhasil diperbarui']);

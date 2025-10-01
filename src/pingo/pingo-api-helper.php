@@ -201,8 +201,8 @@ class PingoApiHelper {
         // Use prepared messages if provided, otherwise prepare from chat history
         if ($preparedMessages !== null) {
             $messages = $preparedMessages;
-            // For prepared messages, use default medium token allocation
-            $dynamicTokens = 500;
+            // For question generation, use larger token allocation
+            $dynamicTokens = 2000;
         } else {
             // Analyze user message for dynamic token allocation
             $dynamicTokens = $this->analyzeQuestionType($userMessage);
@@ -607,11 +607,17 @@ INTERAKTIVITAS:
             ];
             
             // Get AI response
+            error_log("🤖 Sending request to AI with model: " . ($apiConfig['model_name'] ?? 'unknown'));
+            error_log("📝 Prompt length: " . strlen($prompt) . " characters");
+            
             $aiResponse = $this->getAIResponse($apiConfig, null, [], $messages);
             
             if (!$aiResponse) {
                 throw new Exception('Tidak ada response dari AI');
             }
+            
+            error_log("🔄 AI Response received, length: " . strlen($aiResponse) . " characters");
+            error_log("👀 AI Response preview: " . substr($aiResponse, 0, 300) . "...");
             
             // Parse the AI response into questions
             $questions = $this->parseQuestionResponse($aiResponse, $params);
@@ -637,49 +643,85 @@ INTERAKTIVITAS:
      * Build prompt for question generation
      */
     private function buildQuestionPrompt($params) {
-        $mapel = $params['mapel'] ?? 'Umum';
+        $mapel = $params['subject'] ?? $params['mapel'] ?? 'Umum';
         $kelas = $params['kelas'] ?? 'Umum';
-        $judul = $params['judul'] ?? '';
-        $deskripsi = $params['deskripsi'] ?? '';
+        $namaUjian = $params['exam_name'] ?? $params['judul'] ?? '';
+        $deskripsi = $params['description'] ?? $params['deskripsi'] ?? '';
+        $topik = $params['topik'] ?? '';
         $questionCount = $params['question_count'] ?? 5;
         $questionType = $params['question_type'] ?? 'multiple_choice';
         $answerOptions = $params['answer_options'] ?? 4;
         $difficulty = $params['difficulty'] ?? 'sedang';
         
-        $prompt = "Buatlah {$questionCount} soal {$questionType} untuk mata pelajaran {$mapel} tingkat {$kelas}.\n\n";
+        // Build comprehensive prompt
+        $prompt = "Anda adalah asisten AI yang ahli dalam membuat soal ujian pendidikan.\n\n";
         
-        if (!empty($judul)) {
-            $prompt .= "Topik: {$judul}\n";
+        $ujianId = $params['ujian_id'] ?? '';
+        $autoScore = $params['auto_score'] ?? false;
+        
+        $prompt .= "KONTEKS UJIAN:\n";
+        if (!empty($ujianId)) {
+            $prompt .= "- ID Ujian: {$ujianId}\n";
         }
-        
+        if (!empty($namaUjian)) {
+            $prompt .= "- Nama Ujian: {$namaUjian}\n";
+        }
+        $prompt .= "- Mata Pelajaran: {$mapel}\n";
+        if (!empty($kelas)) {
+            $prompt .= "- Kelas: {$kelas}\n";
+        }
+        if (!empty($topik)) {
+            $prompt .= "- Materi/Topik: {$topik}\n";
+        }
         if (!empty($deskripsi)) {
-            $prompt .= "Deskripsi: {$deskripsi}\n";
+            $prompt .= "- Deskripsi: {$deskripsi}\n";
         }
+        $prompt .= "- Mode Auto Score: " . ($autoScore ? "AKTIF" : "TIDAK AKTIF") . "\n";
         
-        $prompt .= "Tingkat kesulitan: {$difficulty}\n";
+        $prompt .= "\nINSTRUKSI PEMBUATAN SOAL:\n";
+        $prompt .= "1. Buat {$questionCount} soal " . strtoupper($questionType === 'multiple_choice' ? 'PILIHAN GANDA' : 'ESSAY') . "\n";
+        $prompt .= "2. Tingkat kesulitan: " . strtoupper($difficulty) . "\n";
         
         if ($questionType === 'multiple_choice') {
-            $prompt .= "Jumlah pilihan jawaban: {$answerOptions}\n\n";
+            $optionText = $answerOptions == 4 ? 'A-D' : ($answerOptions == 5 ? 'A-E' : 'A-F');
+            $prompt .= "3. Setiap soal memiliki {$answerOptions} pilihan jawaban ({$optionText})\n";
         }
         
-        $prompt .= "Format output harus dalam JSON dengan struktur berikut:\n";
+        $prompt .= "4. Soal harus sesuai dengan mata pelajaran dan materi yang disebutkan\n";
+        $prompt .= "5. Gunakan bahasa Indonesia yang baik dan benar\n";
+        $prompt .= "6. Pastikan soal sesuai dengan tingkat pendidikan siswa\n\n";
+        
+        $prompt .= "PANDUAN KESULITAN:\n";
+        $prompt .= "- MUDAH: Konsep dasar, mengingat, pemahaman sederhana\n";
+        $prompt .= "- SEDANG: Penerapan konsep, analisis sederhana\n";
+        $prompt .= "- SULIT: Analisis kompleks, sintesis, evaluasi\n\n";
+        
+        $prompt .= "FORMAT RESPONS:\n";
+        $prompt .= "Berikan respons dalam format JSON yang valid dengan struktur berikut:\n\n";
         $prompt .= "{\n";
         $prompt .= "  \"questions\": [\n";
         $prompt .= "    {\n";
-        $prompt .= "      \"question\": \"teks pertanyaan\",\n";
+        $prompt .= "      \"question\": \"Teks pertanyaan yang jelas dan spesifik\",\n";
         
         if ($questionType === 'multiple_choice') {
-            $prompt .= "      \"options\": [\"opsi A\", \"opsi B\", \"opsi C\", \"opsi D\"],\n";
-            $prompt .= "      \"correct_answer\": \"opsi yang benar\",\n";
+            $prompt .= "      \"options\": [\"A. Option pertama\", \"B. Option kedua\", \"C. Option ketiga\", \"D. Option keempat\"],\n";
+            $prompt .= "      \"correct_answer\": \"A\",\n";
         } else {
-            $prompt .= "      \"correct_answer\": \"jawaban yang benar\",\n";
+            $prompt .= "      \"correct_answer\": \"Jawaban lengkap yang benar\",\n";
+            $prompt .= "      \"sample_answer\": \"Contoh jawaban ideal\",\n";
         }
         
-        $prompt .= "      \"explanation\": \"penjelasan jawaban\"\n";
+        $prompt .= "      \"explanation\": \"Penjelasan mengapa jawaban ini benar\",\n";
+        $prompt .= "      \"points\": 10\n";
         $prompt .= "    }\n";
         $prompt .= "  ]\n";
         $prompt .= "}\n\n";
-        $prompt .= "Pastikan semua soal relevan, jelas, dan sesuai dengan tingkat pendidikan yang diminta. Jawab hanya dengan JSON yang valid, tanpa teks tambahan.";
+        $prompt .= "PENTING:\n";
+        $prompt .= "- Berikan HANYA JSON yang valid, tanpa teks tambahan apapun\n";
+        $prompt .= "- Pastikan semua soal berkualitas dan sesuai konteks yang diberikan\n";
+        $prompt .= "- Untuk pilihan ganda, gunakan format \"A. jawaban\", \"B. jawaban\", dll dalam array options\n";
+        $prompt .= "- Field correct_answer harus berisi HANYA huruf (A, B, C, D, dll) tanpa teks tambahan\n";
+        $prompt .= "- Sertakan penjelasan yang informatif untuk setiap jawaban";
         
         return $prompt;
     }
@@ -688,6 +730,9 @@ INTERAKTIVITAS:
      * Parse AI response into structured questions
      */
     private function parseQuestionResponse($response, $params) {
+        // Log raw response for debugging
+        error_log("🤖 AI Raw Response: " . substr($response, 0, 500) . "...");
+        
         // Clean the response to extract JSON
         $response = trim($response);
         
@@ -695,31 +740,97 @@ INTERAKTIVITAS:
         $response = preg_replace('/```json\s*/', '', $response);
         $response = preg_replace('/```\s*$/', '', $response);
         
+        // Remove any text before the first { or after the last }
+        $startPos = strpos($response, '{');
+        $endPos = strrpos($response, '}');
+        
+        if ($startPos !== false && $endPos !== false && $endPos > $startPos) {
+            $response = substr($response, $startPos, $endPos - $startPos + 1);
+        }
+        
         // Try to decode JSON
         $data = json_decode($response, true);
         
         if (json_last_error() !== JSON_ERROR_NONE) {
+            error_log("❌ JSON Parse Error: " . json_last_error_msg());
+            error_log("📄 Cleaned Response: " . $response);
             throw new Exception('Invalid JSON response from AI: ' . json_last_error_msg());
         }
         
         if (!isset($data['questions']) || !is_array($data['questions'])) {
+            error_log("❌ No questions array found in response");
+            error_log("📄 Response structure: " . json_encode($data));
             throw new Exception('No questions found in AI response');
         }
         
         $questions = [];
         foreach ($data['questions'] as $index => $questionData) {
             if (!isset($questionData['question']) || !isset($questionData['correct_answer'])) {
+                error_log("⚠️ Skipping invalid question at index {$index}");
                 continue; // Skip invalid questions
             }
             
-            $questions[] = [
+            $processedQuestion = [
                 'question' => trim($questionData['question']),
-                'options' => isset($questionData['options']) ? $questionData['options'] : [],
-                'correct_answer' => trim($questionData['correct_answer']),
                 'explanation' => isset($questionData['explanation']) ? trim($questionData['explanation']) : '',
+                'points' => isset($questionData['points']) ? intval($questionData['points']) : 10,
+                'sample_answer' => isset($questionData['sample_answer']) ? trim($questionData['sample_answer']) : '',
                 'type' => $params['question_type'] ?? 'multiple_choice'
             ];
+            
+            // Process multiple choice questions
+            if ($processedQuestion['type'] === 'multiple_choice') {
+                $processedOptions = [];
+                $rawOptions = isset($questionData['options']) ? $questionData['options'] : [];
+                $correctAnswer = trim($questionData['correct_answer']);
+                
+                // Process options and convert to proper format
+                if (is_array($rawOptions)) {
+                    $optionKeys = ['A', 'B', 'C', 'D', 'E', 'F'];
+                    foreach ($rawOptions as $i => $optionText) {
+                        $key = $optionKeys[$i] ?? chr(65 + $i); // A, B, C, D, etc.
+                        
+                        // Clean option text (remove "A. " prefix if present)
+                        $cleanText = preg_replace('/^[A-F]\.\s*/', '', trim($optionText));
+                        $processedOptions[$key] = $cleanText;
+                    }
+                }
+                
+                // Extract correct answer key (handle "A. text" format)
+                $correctKey = '';
+                if (preg_match('/^([A-F])\.?\s*/', $correctAnswer, $matches)) {
+                    $correctKey = $matches[1];
+                } else {
+                    // Fallback: find matching option text
+                    $correctText = preg_replace('/^[A-F]\.\s*/', '', $correctAnswer);
+                    foreach ($processedOptions as $key => $text) {
+                        if (stripos($text, $correctText) !== false || stripos($correctText, $text) !== false) {
+                            $correctKey = $key;
+                            break;
+                        }
+                    }
+                }
+                
+                // If still no match, default to 'A'
+                if (empty($correctKey)) {
+                    $correctKey = 'A';
+                    error_log("⚠️ Warning: Could not determine correct answer key for question {$index}, defaulting to 'A'");
+                }
+                
+                $processedQuestion['options'] = $processedOptions;
+                $processedQuestion['correct_answer'] = $correctKey; // Just the letter, not the full text
+                
+                error_log("✅ Question {$index}: Options=" . json_encode($processedOptions) . ", Correct=" . $correctKey);
+            } else {
+                // For essay questions
+                $processedQuestion['options'] = [];
+                $processedQuestion['correct_answer'] = trim($questionData['correct_answer']);
+            }
+            
+            $questions[] = $processedQuestion;
         }
+        
+        error_log("✅ Successfully parsed " . count($questions) . " questions");
         
         return $questions;
     }

@@ -122,17 +122,7 @@ function statusBadgeClass($status)
                   <div class="font-medium text-gray-800"><?= htmlspecialchars($ujian['namaKelas'] ?? '-') ?></div>
                   </div>
                 </div>
-
-                <div class="flex items-center space-x-3">
-                  <span class="w-8 h-8 rounded-md bg-orange-50 flex items-center justify-center text-orange-600">
-                  <i class="ti ti-book"></i>
-                  </span>
-                  <div>
-                  <div class="text-xs text-gray-400">Mata Pelajaran</div>
-                  <div class="font-medium text-gray-800"><?= htmlspecialchars($ujian['mataPelajaran']) ?></div>
-                  </div>
-                </div>
-
+                
                 <div class="flex items-center space-x-3">
                   <span class="w-8 h-8 rounded-md bg-orange-50 flex items-center justify-center text-orange-600">
                   <i class="ti ti-clock"></i>

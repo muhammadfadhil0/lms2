@@ -341,30 +341,25 @@ Berikan respons dalam format JSON yang valid sesuai dengan struktur yang diminta
             }
             
             return `{
-  "success": true,
   "questions": [
     {
-      "pertanyaan": "Teks soal pertama...",
-      "tipe": "multiple_choice",
-      "pilihan": {
-        ${optionLetters.map(letter => `"${letter}": "Teks pilihan ${letter}"`).join(',\n        ')}
-      },
-      "kunci_jawaban": "${optionLetters[0]}",
-      "penjelasan": "Penjelasan jawaban...",
-      "poin": 10
+      "question": "Teks soal pertama...",
+      "options": [${optionLetters.map(letter => `"${letter}. Teks pilihan ${letter}"`).join(', ')}],
+      "correct_answer": "${optionLetters[0]}",
+      "explanation": "Penjelasan jawaban...",
+      "points": 10
     }
   ]
 }`;
         } else {
             return `{
-  "success": true,
   "questions": [
     {
-      "pertanyaan": "Teks soal pertama...",
-      "tipe": "essay",
-      "kunci_jawaban": "a. Poin utama pertama yang singkat\\nb. Poin kedua yang relevan\\nc. Poin ketiga sebagai kesimpulan",
-      "penjelasan": "Kriteria penilaian berdasarkan kelengkapan poin-poin jawaban...",
-      "poin": 20
+      "question": "Teks soal pertama...",
+      "correct_answer": "a. Poin utama pertama yang singkat\\nb. Poin kedua yang relevan\\nc. Poin ketiga sebagai kesimpulan",
+      "sample_answer": "Contoh jawaban ideal",
+      "explanation": "Kriteria penilaian berdasarkan kelengkapan poin-poin jawaban...",
+      "points": 20
     }
   ]
 }`;

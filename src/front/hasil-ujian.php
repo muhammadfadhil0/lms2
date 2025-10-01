@@ -833,14 +833,6 @@ $autoScore = (int)($ujian['autoScore'] ?? 0);
                                         </div>
 
                                         <div class="flex items-start gap-3">
-                                            <i class="ti ti-book w-6 h-6 text-blue-700 flex-shrink-0"></i>
-                                            <div>
-                                                <div class="text-xs text-blue-700 font-semibold">Mata Pelajaran</div>
-                                                <div class="text-sm text-blue-900 font-medium"><?= htmlspecialchars($ujian['mataPelajaran'] ?? '-') ?></div>
-                                            </div>
-                                        </div>
-
-                                        <div class="flex items-start gap-3">
                                             <i class="ti ti-list w-6 h-6 text-blue-700 flex-shrink-0"></i>
                                             <div>
                                                 <div class="text-xs text-blue-700 font-semibold">Total Soal</div>

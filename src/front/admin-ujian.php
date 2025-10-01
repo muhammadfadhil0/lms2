@@ -999,7 +999,7 @@ $kelas_list = $ujianLogic->getKelas();
                             <select name="kelas_id" id="ujian-kelas" class="form-select" required>
                                 <option value="">Pilih Kelas</option>
                                 <?php foreach ($kelas_list as $kelas): ?>
-                                <option value="<?= $kelas['id'] ?>"><?= htmlspecialchars($kelas['namaKelas']) ?> - <?= htmlspecialchars($kelas['mataPelajaran']) ?></option>
+                                <option value="<?= $kelas['id'] ?>"><?= htmlspecialchars($kelas['namaKelas']) ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
@@ -1208,7 +1208,7 @@ $kelas_list = $ujianLogic->getKelas();
                 document.getElementById('ujian-modal-title').textContent = 'Edit Ujian';
                 document.getElementById('ujian-id').value = result.data.id;
                 document.getElementById('ujian-judul').value = result.data.judul || result.data.namaUjian;
-                document.getElementById('ujian-mapel').value = result.data.mata_pelajaran || result.data.mataPelajaran;
+
                 document.getElementById('ujian-kelas').value = result.data.kelas_id;
                 document.getElementById('ujian-guru').value = result.data.guru_id;
                 document.getElementById('ujian-deskripsi').value = result.data.deskripsi || '';

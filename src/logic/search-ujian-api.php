@@ -37,13 +37,13 @@ class SearchUjianLogic {
                    LEFT JOIN ujian_siswa us ON u.id = us.ujian_id
                    WHERE u.guru_id = ? 
                    AND u.status != 'arsip'
-                   AND (u.namaUjian LIKE ? OR u.deskripsi LIKE ? OR u.mataPelajaran LIKE ? OR k.namaKelas LIKE ? OR u.topik LIKE ?)
+                   AND (u.namaUjian LIKE ? OR u.deskripsi LIKE ? OR k.namaKelas LIKE ? OR u.topik LIKE ?)
                    GROUP BY u.id 
                    ORDER BY u.dibuat DESC";
             
             $stmt = $this->conn->prepare($sql);
             $searchPattern = "%{$searchQuery}%";
-            $stmt->bind_param("isssss", $guru_id, $searchPattern, $searchPattern, $searchPattern, $searchPattern, $searchPattern);
+            $stmt->bind_param("issss", $guru_id, $searchPattern, $searchPattern, $searchPattern, $searchPattern);
             
             $stmt->execute();
             $result = $stmt->get_result();
@@ -53,7 +53,6 @@ class SearchUjianLogic {
                 // Highlight matching text
                 $row['namaUjian_highlighted'] = $this->highlightMatch($row['namaUjian'], $searchQuery);
                 $row['deskripsi_highlighted'] = $this->highlightMatch($row['deskripsi'], $searchQuery);
-                $row['mataPelajaran_highlighted'] = $this->highlightMatch($row['mataPelajaran'], $searchQuery);
                 $row['namaKelas_highlighted'] = $this->highlightMatch($row['namaKelas'], $searchQuery);
                 $row['topik_highlighted'] = $this->highlightMatch($row['topik'], $searchQuery);
                 

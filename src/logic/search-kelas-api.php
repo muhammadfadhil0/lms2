@@ -37,13 +37,13 @@ class SearchKelasLogic {
                    LEFT JOIN ujian u ON k.id = u.kelas_id 
                    WHERE k.guru_id = ? 
                    AND k.status = 'aktif'
-                   AND (k.namaKelas LIKE ? OR k.mataPelajaran LIKE ? OR k.deskripsi LIKE ?)
+                   AND (k.namaKelas LIKE ? OR k.deskripsi LIKE ?)
                    GROUP BY k.id 
                    ORDER BY k.dibuat DESC";
             
             $stmt = $this->conn->prepare($sql);
             $searchPattern = "%{$searchQuery}%";
-            $stmt->bind_param("isss", $guru_id, $searchPattern, $searchPattern, $searchPattern);
+            $stmt->bind_param("iss", $guru_id, $searchPattern, $searchPattern);
             
             $stmt->execute();
             $result = $stmt->get_result();
@@ -52,7 +52,6 @@ class SearchKelasLogic {
             while ($row = $result->fetch_assoc()) {
                 // Highlight matching text
                 $row['namaKelas_highlighted'] = $this->highlightMatch($row['namaKelas'], $searchQuery);
-                $row['mataPelajaran_highlighted'] = $this->highlightMatch($row['mataPelajaran'], $searchQuery);
                 $row['deskripsi_highlighted'] = $this->highlightMatch($row['deskripsi'], $searchQuery);
                 
                 $kelas[] = $row;

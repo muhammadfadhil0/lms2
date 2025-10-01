@@ -10,11 +10,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-// Simple response
+// Mock evaluation response for testing
 echo json_encode([
     'success' => true,
-    'message' => 'Simple API test successful',
-    'method' => $_SERVER['REQUEST_METHOD'],
-    'timestamp' => date('Y-m-d H:i:s')
+    'evaluation' => [
+        'deskripsi' => 'Siswa menunjukkan pemahaman yang baik pada materi ujian dengan tingkat keberhasilan 75%. Terdapat beberapa konsep yang perlu diperkuat.',
+        'materi_perlu_evaluasi' => [
+            'jumlah_salah' => 2,
+            'total_soal' => 8,
+            'topik' => [
+                'Pemahaman konsep dasar matematika',
+                'Penerapan rumus dalam soal cerita'
+            ]
+        ],
+        'materi_sudah_dikuasai' => [
+            'jumlah_benar' => 6,
+            'total_soal' => 8,
+            'topik' => [
+                'Operasi hitung dasar',
+                'Pemahaman membaca soal',
+                'Penguasaan rumus sederhana'
+            ]
+        ],
+        'saran_pembelajaran' => [
+            'Perbanyak latihan soal dengan tingkat kesulitan bertahap',
+            'Gunakan metode pembelajaran visual dengan diagram',
+            'Berikan contoh aplikasi nyata dalam kehidupan sehari-hari',
+            'Lakukan review berkala untuk memperkuat konsep dasar'
+        ]
+    ]
 ]);
 ?>

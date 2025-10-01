@@ -772,9 +772,6 @@ $teachers = $guru_stmt->fetchAll(PDO::FETCH_ASSOC);
                                     <th onclick="sortTable('namaKelas')" class="sortable <?= $sort_by === 'namaKelas' ? 'sorted-' . strtolower($sort_order) : '' ?>">
                                         Nama Kelas
                                     </th>
-                                    <th onclick="sortTable('mataPelajaran')" class="sortable <?= $sort_by === 'mataPelajaran' ? 'sorted-' . strtolower($sort_order) : '' ?>">
-                                        Mata Pelajaran
-                                    </th>
                                     <th onclick="sortTable('kodeKelas')" class="sortable <?= $sort_by === 'kodeKelas' ? 'sorted-' . strtolower($sort_order) : '' ?>">
                                         Kode Kelas
                                     </th>
@@ -815,9 +812,6 @@ $teachers = $guru_stmt->fetchAll(PDO::FETCH_ASSOC);
                                                 <span class="display-text font-medium"><?= htmlspecialchars($class['namaKelas']) ?></span>
                                                 <input type="text" class="edit-input" value="<?= htmlspecialchars($class['namaKelas']) ?>" style="display: none;">
                                             </div>
-                                        </td>
-                                        <td>
-                                            <span class="text-sm font-medium text-blue-600"><?= htmlspecialchars($class['mataPelajaran']) ?></span>
                                         </td>
                                         <td>
                                             <span class="font-mono text-sm bg-gray-100 px-2 py-1 rounded"><?= htmlspecialchars($class['kodeKelas']) ?></span>
@@ -909,9 +903,6 @@ $teachers = $guru_stmt->fetchAll(PDO::FETCH_ASSOC);
                                 </span>
                             </div>
                             
-                            <div class="class-card-info">
-                                <strong>Mata Pelajaran:</strong> <?= htmlspecialchars($class['mataPelajaran']) ?>
-                            </div>
                             <div class="class-card-info">
                                 <strong>Kode:</strong> <?= htmlspecialchars($class['kodeKelas']) ?>
                             </div>
@@ -1051,20 +1042,6 @@ $teachers = $guru_stmt->fetchAll(PDO::FETCH_ASSOC);
                                 class="form-input" 
                                 required
                                 placeholder="Contoh: Kelas X IPA 1"
-                            >
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">
-                                Mata Pelajaran <span class="text-red-500">*</span>
-                            </label>
-                            <input 
-                                type="text" 
-                                name="mataPelajaran" 
-                                id="class-mapel" 
-                                class="form-input" 
-                                required
-                                placeholder="Contoh: Matematika"
                             >
                         </div>
 
@@ -1287,7 +1264,6 @@ $teachers = $guru_stmt->fetchAll(PDO::FETCH_ASSOC);
                 document.getElementById('class-modal-title').textContent = 'Edit Kelas';
                 document.getElementById('class-id').value = classData.id;
                 document.getElementById('class-nama').value = classData.namaKelas;
-                document.getElementById('class-mapel').value = classData.mataPelajaran;
                 document.getElementById('class-kode').value = classData.kodeKelas;
                 document.getElementById('class-guru').value = classData.guru_id;
                 document.getElementById('class-deskripsi').value = classData.deskripsi || '';

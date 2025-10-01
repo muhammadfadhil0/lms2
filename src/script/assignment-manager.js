@@ -39,12 +39,13 @@ class AssignmentManager {
         const formData = new FormData(event.target);
         formData.append('kelas_id', this.kelasId);
         
-        // Add multiple files from file manager
+        // Remove any existing assignment_file entries from the default form data
+        formData.delete('assignment_file');
+        formData.delete('assignment_files[]');
+        
+        // Add multiple files from file manager if any exist
         if (window.assignmentFilesArray && window.assignmentFilesArray.length > 0) {
             console.log('✏️ [DEBUG] Adding files from assignmentFilesArray to FormData');
-            // Remove any existing assignment_file entries
-            formData.delete('assignment_file');
-            formData.delete('assignment_files[]');
             
             // Add all selected files
             console.log('Adding files to FormData:', window.assignmentFilesArray);
@@ -61,6 +62,7 @@ class AssignmentManager {
         } else {
             console.log('✏️ [DEBUG] No files in assignmentFilesArray or array is empty');
             console.log('✏️ [DEBUG] assignmentFilesArray length:', window.assignmentFilesArray ? window.assignmentFilesArray.length : 'undefined');
+            console.log('✏️ [DEBUG] Proceeding without files (files are optional)');
         }
         
         // Debug logging

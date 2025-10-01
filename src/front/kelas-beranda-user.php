@@ -158,12 +158,7 @@ if (!$dashboardData) {
                                             <i class="ti ti-book text-white text-4xl"></i>
                                         </div>
                                     <?php endif; ?>
-                                    <div class="absolute top-2 md:top-4 right-2 md:right-4">
-                                        <span
-                                            class="bg-white bg-opacity-90 text-orange-600 text-xs font-medium px-2 py-1 rounded-full">
-                                            <?php echo htmlspecialchars($kelas['mataPelajaran'] ?? $kelas['namaKelas']); ?>
-                                        </span>
-                                    </div>
+
                                     <!-- Teacher avatar positioned at left on the cover/card boundary -->
                                     <div class="absolute left-4 md:left-6 bottom-0 transform translate-y-1/2">
                                         <?php
@@ -264,7 +259,7 @@ if (!$dashboardData) {
             resultsContainerSelector: '.search-results-container',
             cardSelector: '.search-card',
             apiEndpoint: '../logic/search-kelas-siswa-api.php',
-            searchFields: ['namaKelas', 'mataPelajaran', 'deskripsi', 'namaGuru'],
+            searchFields: ['namaKelas', 'deskripsi', 'namaGuru'],
             debounceDelay: 800,
             minSearchLength: 1
         };

@@ -121,10 +121,6 @@ function getJawabanStatus($soal, $is_answered) {
                                     <p class="font-medium text-gray-800"><?= htmlspecialchars($ujian['namaKelas'] ?? '-') ?></p>
                                 </div>
                                 <div>
-                                    <p class="text-gray-600">Mata Pelajaran:</p>
-                                    <p class="font-medium text-gray-800"><?= htmlspecialchars($ujian['mataPelajaran']) ?></p>
-                                </div>
-                                <div>
                                     <p class="text-gray-600">Durasi:</p>
                                     <p class="font-medium text-gray-800"><?= (int)$ujian['durasi'] ?> menit</p>
                                 </div>
