@@ -79,7 +79,13 @@ if ($maintenanceConfig['maintenance_mode'] === true) {
             }
             ?>
 
-            <form action="src/logic/login.php" method="POST" class="space-y-6">
+            <form action="src/logic/login.php<?php 
+                $queryParams = [];
+                if (isset($_GET['redirect'])) $queryParams[] = 'redirect=' . urlencode($_GET['redirect']);
+                if (isset($_GET['post'])) $queryParams[] = 'post=' . urlencode($_GET['post']);
+                if (isset($_GET['kelas'])) $queryParams[] = 'kelas=' . urlencode($_GET['kelas']);
+                echo !empty($queryParams) ? '?' . implode('&', $queryParams) : '';
+            ?>" method="POST" class="space-y-6">
                 <div>
                     <label for="username" class="block text-sm/6 font-medium text-gray-900">Usernamemu</label>
                     <div class="mt-2">

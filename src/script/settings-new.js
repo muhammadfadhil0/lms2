@@ -473,7 +473,7 @@ class SettingsManager {
                 loadingOverlay.innerHTML = `
                     <div class="bg-white rounded-lg p-6 flex items-center space-x-3">
                         <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-orange"></div>
-                        <span class="text-gray-700">Memproses...</span>
+                        <span class="text-gray-700">Mengambil data</span>
                     </div>
                 `;
                 document.body.appendChild(loadingOverlay);

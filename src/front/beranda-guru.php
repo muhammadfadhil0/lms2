@@ -484,147 +484,10 @@ $newClassId = isset($_GET['new_class']) ? intval($_GET['new_class']) : null;
     </script>
 
     <style>
-        /* Simple Modal Upgrade Pro Styles */
-        #upgradeToProModal {
-            z-index: 9999;
-        }
-        
-        /* Backdrop click to close */
-        #upgradeToProModal .el-dialog-backdrop {
-            cursor: pointer;
-        }
-        
-        /* Prevent modal content clicks from closing */
-        #upgradeToProModal .el-dialog-panel {
-            cursor: default;
-        }
-
-        
-        /* Modal panel with smooth slide and scale */
-        #upgradeToProModal .el-dialog-panel,
-        #upgradeToProModal [class*="dialog-panel"] {
-            z-index: 99999 !important;
-            position: relative !important;
-            background-color: white !important;
-            transform: translateY(30px) scale(0.9);
-            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-            opacity: 0;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 
-                        0 10px 20px -5px rgba(0, 0, 0, 0.1) !important;
-        }
-        
-        #upgradeToProModal.show .el-dialog-panel,
-        #upgradeToProModal.show [class*="dialog-panel"] {
-            transform: translateY(0) scale(1);
-            opacity: 1;
-        }
-        
-        /* Gradient border glow effect */
-        #upgradeToProModal .el-dialog-panel::before {
-            content: '';
-            position: absolute;
-            inset: -2px;
-            background: linear-gradient(45deg, #f97316, #f59e0b, #f97316);
-            border-radius: 12px;
-            z-index: -1;
-            opacity: 0.3;
-            filter: blur(8px);
-            animation: gradientShift 3s ease-in-out infinite;
-        }
-        
-        @keyframes gradientShift {
-            0%, 100% { 
-                background: linear-gradient(45deg, #f97316, #f59e0b, #f97316);
-            }
-            50% { 
-                background: linear-gradient(45deg, #f59e0b, #f97316, #f59e0b);
-            }
-        }
-        
-        /* Enhanced button animations */
-        #upgradeToProModal button {
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            transform: translateY(0);
-        }
-        
-        #upgradeToProModal button:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
-        }
-        
-        #upgradeToProModal button:active {
-            transform: translateY(0);
-        }
-        
-        /* Smooth list item animations */
-        #upgradeToProModal ul li {
-            opacity: 0;
-            transform: translateX(-15px);
-            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        
-        #upgradeToProModal.show ul li:nth-child(1) { 
-            transition-delay: 0.3s;
-            opacity: 1;
-            transform: translateX(0);
-        }
-        #upgradeToProModal.show ul li:nth-child(2) { 
-            transition-delay: 0.4s;
-            opacity: 1;
-            transform: translateX(0);
-        }
-        #upgradeToProModal.show ul li:nth-child(3) { 
-            transition-delay: 0.5s;
-            opacity: 1;
-            transform: translateX(0);
-        }
-        #upgradeToProModal.show ul li:nth-child(4) { 
-            transition-delay: 0.6s;
-            opacity: 1;
-            transform: translateX(0);
-        }
-        
-        /* Crown icon animation */
-        #upgradeToProModal .icon-tabler-crown {
-            animation: crownFloat 2s ease-in-out infinite;
-        }
-        
-        @keyframes crownFloat {
-            0%, 100% { transform: translateY(0) rotate(0deg); }
-            50% { transform: translateY(-3px) rotate(2deg); }
-        }
-        
-        /* Price tag pulse effect */
-        #upgradeToProModal .bg-orange-50 {
-            animation: pricePulse 2s ease-in-out infinite;
-        }
-        
-        @keyframes pricePulse {
-            0%, 100% { 
-                box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.3);
-            }
-            50% { 
-                box-shadow: 0 0 0 8px rgba(249, 115, 22, 0.1);
-            }
-        }
-
-        /* Floating dropdown container - Lower z-index when upgrade modal is open */
+        /* Floating dropdown container */
         #floating-dropdowns {
             z-index: 10000;
             pointer-events: none;
-        }
-        
-        /* When upgrade modal is open, lower other high z-index elements */
-        body:has(#upgradeToProModal:not(.hidden)) #floating-dropdowns,
-        body:has(#upgradeToProModal:not(.hidden)) .search-results-container,
-        body:has(#upgradeToProModal:not(.hidden)) .fixed {
-            z-index: 1000 !important;
-        }
-        
-        /* Ensure cards don't interfere */
-        .search-card {
-            z-index: 1;
-            position: relative;
         }
 
         /* Floating dropdown styling */
@@ -651,74 +514,12 @@ $newClassId = isset($_GET['new_class']) ? intval($_GET['new_class']) : null;
             }
         }
 
-        /* Modal backdrop and content styling */
-        #upgradeToProModal:not(.hidden) {
-            display: block !important;
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            width: 100% !important;
-            height: 100% !important;
-        }
-        
-        /* Ensure modal content is always visible */
-        #upgradeToProModal .bg-white {
-            background-color: white !important;
-            position: relative !important;
-            z-index: 99999 !important;
-        }
-
         /* Mobile responsive adjustments */
         @media (max-width: 640px) {
             /* Ensure dropdown works well on mobile */
             [id^="class-dd-"] {
                 min-width: 180px;
                 right: 0;
-            }
-            
-            /* Mobile modal optimizations */
-            #upgradeToProModal {
-                padding: 0.75rem !important;
-            }
-            
-            #upgradeToProModal .el-dialog-panel,
-            #upgradeToProModal [class*="dialog-panel"] {
-                margin: 1rem !important;
-                max-width: calc(100vw - 2rem) !important;
-                transform: translateY(40px) scale(0.9);
-            }
-            
-            #upgradeToProModal.show .el-dialog-panel,
-            #upgradeToProModal.show [class*="dialog-panel"] {
-                transform: translateY(0) scale(1);
-            }
-            
-            /* Mobile animations are faster */
-            #upgradeToProModal,
-            #upgradeToProModal .el-dialog-backdrop,
-            #upgradeToProModal [class*="backdrop"],
-            #upgradeToProModal .el-dialog-panel,
-            #upgradeToProModal [class*="dialog-panel"] {
-                transition-duration: 0.25s !important;
-            }
-            
-            /* Reduce blur on mobile for performance */
-            #upgradeToProModal:not(.hidden) {
-                backdrop-filter: blur(2px);
-            }
-        }
-        
-        /* Reduced motion preferences */
-        @media (prefers-reduced-motion: reduce) {
-            #upgradeToProModal,
-            #upgradeToProModal *,
-            #upgradeToProModal ul li {
-                animation: none !important;
-                transition-duration: 0.1s !important;
-            }
-            
-            #upgradeToProModal:not(.hidden) {
-                backdrop-filter: none;
             }
         }
     </style>

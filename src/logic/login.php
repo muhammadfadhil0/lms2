@@ -26,7 +26,50 @@ if (isset($_POST['login'])) {
         $_SESSION['user'] = $result['user'];
         $_SESSION['login_time'] = time();
         
-        // Redirect berdasarkan role
+        // Check if there's a redirect parameter for shared post
+        if (isset($_GET['redirect']) && $_GET['redirect'] === 'shared-post' && 
+            isset($_GET['post']) && isset($_GET['kelas'])) {
+            $postId = intval($_GET['post']);
+            $kelasId = intval($_GET['kelas']);
+            $userId = $result['user']['id'];
+            $userRole = $result['user']['role'];
+            
+            // Check if user has access to the class or is admin/guru
+            require_once 'koneksi.php';
+            $conn = getConnection();
+            
+            $hasAccess = false;
+            
+            if ($userRole === 'admin') {
+                // Admin has access to all classes
+                $hasAccess = true;
+            } elseif ($userRole === 'guru') {
+                // Check if guru teaches this class
+                $sql = "SELECT id FROM kelas WHERE id = ? AND guru_id = ? AND status = 'aktif'";
+                $stmt = $conn->prepare($sql);
+                $stmt->bind_param("ii", $kelasId, $userId);
+                $stmt->execute();
+                $result_check = $stmt->get_result();
+                $hasAccess = $result_check->num_rows > 0;
+            } elseif ($userRole === 'siswa') {
+                // Check if siswa is enrolled in this class
+                $sql = "SELECT id FROM kelas_siswa WHERE kelas_id = ? AND siswa_id = ? AND status = 'aktif'";
+                $stmt = $conn->prepare($sql);
+                $stmt->bind_param("ii", $kelasId, $userId);
+                $stmt->execute();
+                $result_check = $stmt->get_result();
+                $hasAccess = $result_check->num_rows > 0;
+            }
+            
+            if ($hasAccess) {
+                // User has access, redirect to class
+                header("Location: ../front/kelas-user.php?id=" . $kelasId);
+                exit();
+            }
+            // If no access, continue to default redirect
+        }
+        
+        // Default redirect berdasarkan role
         switch ($result['user']['role']) {
             case 'admin':
                 header("Location: ../front/beranda-admin.php");
@@ -62,8 +105,5 @@ if (isset($_POST['login'])) {
     header("Location: ../../login.php");
     exit();
 }
-?>
-
-$koneksi->close();
 ?>
 

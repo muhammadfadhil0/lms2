@@ -1,7 +1,26 @@
 <?php
-require 'modal-logout.php';
-require '../logic/active-page-sidebar.php';
-require '../logic/profile-photo-helper.php';
+// Use more robust path resolution
+$componentDir = __DIR__;
+$rootDir = dirname(dirname($componentDir));
+
+// Include required files with proper path resolution
+if (file_exists($componentDir . '/modal-logout.php')) {
+    require $componentDir . '/modal-logout.php';
+} else {
+    require __DIR__ . '/modal-logout.php';
+}
+
+if (file_exists($componentDir . '/../logic/active-page-sidebar.php')) {
+    require $componentDir . '/../logic/active-page-sidebar.php';
+} else {
+    require $rootDir . '/src/logic/active-page-sidebar.php';
+}
+
+if (file_exists($componentDir . '/../logic/profile-photo-helper.php')) {
+    require $componentDir . '/../logic/profile-photo-helper.php';
+} else {
+    require $rootDir . '/src/logic/profile-photo-helper.php';
+}
 
 // Get user role from session
 $userRole = $_SESSION['user']['role'] ?? 'siswa';
@@ -196,14 +215,7 @@ $navigationItems = getNavigationItems($userRole);
                         <i class="ti ti-user-cog text-gray-500"></i>
                         <span class="text-sm text-gray-700">Profil Admin</span>
                     </a>
-                <?php endif; ?>
-
-                <?php if ($userRole === 'guru'): ?>
-                    <a href="../front/guru-profile.php" class="flex items-center space-x-2 p-3 hover:bg-gray-50 transition-colors">
-                        <i class="ti ti-id-badge text-gray-500"></i>
-                        <span class="text-sm text-gray-700">Profil Guru</span>
-                    </a>
-                <?php endif; ?>
+                <?php endif; ?> 
 
                 <a href="../front/help.php" class="flex items-center space-x-2 p-3 hover:bg-gray-50 transition-colors">
                     <i class="ti ti-help text-gray-500"></i>

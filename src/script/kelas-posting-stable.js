@@ -74,6 +74,17 @@ class KelasPosting {
                 this.openCommentsModal(postId);
             }
         });
+        
+        // Share button handler
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('share-btn') || e.target.closest('.share-btn')) {
+                e.preventDefault();
+                const btn = e.target.closest('.share-btn');
+                const postId = btn.getAttribute('data-post-id');
+                const kelasId = btn.getAttribute('data-kelas-id');
+                this.sharePost(postId, kelasId);
+            }
+        });
     }
     
     initializeDeleteModal() {
@@ -567,9 +578,11 @@ class KelasPosting {
                                 <i class="ti ti-dots"></i>
                             </button>
                             <div class="dropdown-menu absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 hidden">
-                                <button onclick="openEditPostModal(${post.id})" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                    <i class="ti ti-edit mr-2"></i>Edit
-                                </button>
+                                ${post.tipe_postingan !== 'assignment' ? `
+                                    <button onclick="openEditPostModal(${post.id})" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        <i class="ti ti-edit mr-2"></i>Edit
+                                    </button>
+                                ` : ''}
                                 <button onclick="deletePost(${post.id})" class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100">
                                     <i class="ti ti-trash mr-2"></i>Hapus
                                 </button>
@@ -608,7 +621,7 @@ class KelasPosting {
                             <span class="comment-count">${post.jumlahKomentar || 0}</span>
                         </button>
                         ` : ''}
-                        <button class="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors text-sm lg:text-base">
+                        <button class="share-btn flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors text-sm lg:text-base" data-post-id="${post.id}" data-kelas-id="${post.kelas_id}">
                             <i class="ti ti-share"></i>
                             <span class="hidden sm:inline">Bagikan</span>
                         </button>
@@ -983,6 +996,49 @@ class KelasPosting {
                 }
             }, 300);
         }, 3000);
+    }
+    
+    // Share post method
+    sharePost(postId, kelasId) {
+        const shareUrl = `${window.location.origin}/lms/shared-post.php?post=${postId}&kelas=${kelasId}`;
+        
+        // Try to use modern clipboard API
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(shareUrl).then(() => {
+                this.showAlert('Link postingan telah disalin!', 'success');
+            }).catch(err => {
+                console.error('Failed to copy using clipboard API:', err);
+                this.fallbackCopyText(shareUrl);
+            });
+        } else {
+            this.fallbackCopyText(shareUrl);
+        }
+    }
+    
+    // Fallback method for older browsers
+    fallbackCopyText(text) {
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        
+        try {
+            const successful = document.execCommand('copy');
+            if (successful) {
+                this.showAlert('Link postingan telah disalin!', 'success');
+            } else {
+                this.showAlert('Gagal menyalin link. Silakan copy manual: ' + text, 'error');
+            }
+        } catch (err) {
+            console.error('Fallback copy failed:', err);
+            this.showAlert('Gagal menyalin link. Silakan copy manual: ' + text, 'error');
+        } finally {
+            document.body.removeChild(textArea);
+        }
     }
     
     // Comment related methods
