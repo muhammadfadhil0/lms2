@@ -78,13 +78,22 @@ try {
         case 'GET':
             // Get chat history
             $userId = $_SESSION['user']['id'];
-            $history = $apiHelper->getChatHistory($userId, null, 100); // Get last 100 messages with proper ordering
+            $action = $_GET['action'] ?? 'messages';
+            $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 100;
             
-            // Messages are already in chronological order from the database query
-            echo json_encode([
-                'success' => true,
-                'messages' => $history
-            ]);
+            if ($action === 'history') {
+                $history = $apiHelper->getChatHistory($userId, null, $limit);
+                echo json_encode([
+                    'success' => true,
+                    'history' => $history
+                ]);
+            } else {
+                $history = $apiHelper->getChatHistory($userId, null, $limit);
+                echo json_encode([
+                    'success' => true,
+                    'messages' => $history
+                ]);
+            }
             break;
             
         default:

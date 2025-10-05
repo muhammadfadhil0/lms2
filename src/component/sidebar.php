@@ -10,6 +10,8 @@ if (file_exists($componentDir . '/modal-logout.php')) {
     require __DIR__ . '/modal-logout.php';
 }
 
+// Modal chat bantuan and floating button removed - now using help articles page
+
 if (file_exists($componentDir . '/../logic/active-page-sidebar.php')) {
     require $componentDir . '/../logic/active-page-sidebar.php';
 } else {
@@ -59,7 +61,7 @@ function getNavigationItems($role)
                 ['href' => '../front/admin-users.php', 'icon' => 'ti ti-users', 'text' => 'Manajemen User', 'page' => 'users'],
                 ['href' => '../front/admin-kelas.php', 'icon' => 'ti ti-school', 'text' => 'Manajemen Kelas', 'page' => 'kelas'],
                 ['href' => '../front/admin-ujian.php', 'icon' => 'ti ti-clipboard-check', 'text' => 'Manajemen Ujian', 'page' => 'ujian'],
-                ['href' => '../front/admin-reports.php', 'icon' => 'ti ti-chart-bar', 'text' => 'Laporan', 'page' => 'reports'],
+                ['href' => '../front/admin-ai.php', 'icon' => 'ti ti-article', 'text' => 'Manajemen Artikel', 'page' => 'ai'],
                 ['href' => '../front/admin-settings.php', 'icon' => 'ti ti-settings', 'text' => 'Pengaturan Sistem', 'page' => 'system-settings']
             ];
         case 'guru':
@@ -217,7 +219,7 @@ $navigationItems = getNavigationItems($userRole);
                     </a>
                 <?php endif; ?> 
 
-                <a href="../front/help.php" class="flex items-center space-x-2 p-3 hover:bg-gray-50 transition-colors">
+                <a href="../front/help-articles.php" class="w-full flex items-center space-x-2 p-3 hover:bg-gray-50 transition-colors">
                     <i class="ti ti-help text-gray-500"></i>
                     <span class="text-sm text-gray-700">Bantuan</span>
                 </a>
